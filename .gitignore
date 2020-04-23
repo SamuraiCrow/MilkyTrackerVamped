@@ -1,5 +1,7 @@
-# The build output folder
+# The build output folders
 build/
+Debug/
+Release/
 
 # Resources generated with docerator on OSX
 resources/pictures/docicons/osx/MilkyTracker-*.icns
