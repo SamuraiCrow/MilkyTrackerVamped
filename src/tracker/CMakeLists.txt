@@ -346,6 +346,10 @@ elseif(WIN32)
     set_target_properties(tracker PROPERTIES WIN32_EXECUTABLE TRUE)
 
     target_link_libraries(tracker midi)
+
+    if(MINGW)
+        set_target_properties(tracker PROPERTIES LINK_FLAGS -static)
+    endif()
 else()
     if(ALSA_FOUND AND RTMIDI_FOUND)
         target_compile_definitions(tracker PRIVATE -DHAVE_LIBRTMIDI)

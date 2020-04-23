@@ -170,6 +170,11 @@ elseif(WIN32)
     # Windows MIDI support requires no external libraries
     message(STATUS "Enabled MIDI support (WinMM)")
     add_subdirectory(src/midi)
+
+    if(MINGW)
+        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DWIN32")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DWIN32")
+    endif()
 else()
     # Workaround for SDL bug #3295, which occurs in SDL2 <2.0.5
     # https://bugzilla.libsdl.org/show_bug.cgi?id=3295
