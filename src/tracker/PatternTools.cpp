@@ -170,6 +170,10 @@ void PatternTools::convertEffectsToFT2(pp_int32& eff, pp_int32& op)
 	pp_uint32 effOut = 0;
 	pp_uint32 opOut = 0;
 
+	char xxx[256];
+sprintf(xxx, "effIn = %ld opIn = %ld", effIn, opIn);
+	OutputDebugString(xxx);
+
 	// Protracker commands
 	if (effIn > 0 && effIn <= 0x11)
 	{
