@@ -46,21 +46,21 @@ public:
 	void clear() { for (pp_uint32 i = 0; i < bufferSize; i++) buffer[i] = 0; }
 
 	bool read(pp_uint32 offset) const
-	{		
+	{
 		return (buffer[offset>>3]>>(offset&7))&1;
 	}
 
 	void write(pp_uint32 offset, bool bit)
 	{
-		pp_uint8 mask = ~(1<<(offset&7));;
-		
+		pp_uint8 mask = ~(1<<(offset&7));
+
 		buffer[offset>>3] &= mask;
 		buffer[offset>>3] |= ((pp_uint8)bit<<(offset&7));
 	}
 
 };
 
-class PPFont  
+class PPFont
 {
 private:
 	// cache big font, is created from normal 8x8 font
@@ -79,10 +79,10 @@ public:
 private:
 	static PPFont* fontInstances[MAXFONTS];
 	static pp_uint32 numFontInstances;
-	
+
 	pp_uint32 fontId;
 
-	PPFont(pp_uint8* bits, pp_uint32 charWidth, pp_uint32 charHeight, pp_uint32 fontId); 
+	PPFont(pp_uint8* bits, pp_uint32 charWidth, pp_uint32 charHeight, pp_uint32 fontId);
 
 	struct FontFamilyDescription
 	{
@@ -99,19 +99,19 @@ private:
 							  pp_uint32 theFontEntryIndex,
 							  const pp_uint32 theDefaultFontEntryIndex,
 							  pp_int32 theEnumerationIndex) :
-			size(theSize),							
-			name(theName),						
-			internalName(theInternalName),				
-			fontEntryIndex(theFontEntryIndex),				
+			size(theSize),
+			name(theName),
+			internalName(theInternalName),
+			fontEntryIndex(theFontEntryIndex),
 			defaultFontEntryIndex(theDefaultFontEntryIndex),
-			enumerationIndex(theEnumerationIndex)		
+			enumerationIndex(theEnumerationIndex)
 		{
 		}
 	};
 
 	static FontFamilyDescription fontFamilyDescriptions[FONT_LAST];
 	static pp_int32 enumerationIndex;
-	
+
 	static void createLargeFromSystem(pp_uint32 index);
 
 public:
@@ -133,7 +133,7 @@ public:
 	bool getPixelBit(pp_uint8 chr, pp_uint32 x, pp_uint32 y) const { return bitstream->read(chr*charDim+y*charWidth+x); }
 
 	pp_uint32 getStrWidth(const char* str) const;
-	
+
 	enum ShrinkTypes
 	{
 		ShrinkTypeMiddle,
@@ -143,15 +143,15 @@ public:
 	void shrinkString(const char* text, char* result, pp_uint32 maxWidth, ShrinkTypes shrinkType = ShrinkTypeMiddle)
 	{
 		pp_uint32 numchars = maxWidth / getCharWidth();
-		
+
 		pp_uint32 textLen = strlen(text);
-		
+
 		if (textLen <= numchars)
 		{
 			strcpy(result, text);
 			return;
 		}
-		
+
 		if (shrinkType == ShrinkTypeMiddle)
 		{
 			numchars-=(textLen & 1);
@@ -187,31 +187,31 @@ public:
 
 			while (i > 0 && result[i-1] == '.')
 				i--;
-			
+
 			result[i++] = '\xef';
 			result[i] = '\0';
 		}
 	}
-	
+
 	PPString shrinkString(const PPString& text, pp_uint32 maxWidth, ShrinkTypes shrinkType = ShrinkTypeMiddle)
 	{
 		char* temp = new char[(text.length()+1)*2];
 		shrinkString(text, temp, maxWidth, shrinkType);
-		PPString result(temp);		
+		PPString result(temp);
 		delete[] temp;
 		return result;
-	}	
-	
+	}
+
 	static const char* getFamilyInternalName(FontID fontID);
-	
+
 	static const char* getFirstFontFamilyName();
 	static const char* getNextFontFamilyName();
 
 	static const char* getFirstFontEntryName(FontID fontID);
 	static const char* getNextFontEntryName(FontID fontID);
-	
+
 	static void selectFontFace(FontID fontID, const char* faceName);
 	static const char* getCurrentFontFace(FontID fontID);
 };
 
-#endif 
+#endif

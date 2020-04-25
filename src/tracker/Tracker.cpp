@@ -1311,7 +1311,7 @@ pp_int32 Tracker::handleEvent(PPObject* sender, PPEvent* event)
 				PPListBox* listBoxSrcIns = static_cast<PPListBox*>(container->getControlByID(INSTRUMENT_CHOOSER_LIST_SRC));
 				PPListBox* listBoxSrcSmp = static_cast<PPListBox*>(container->getControlByID(INSTRUMENT_CHOOSER_LIST_SRC2));
 
-				PPListBox* listBoxDstIns = static_cast<PPListBox*>(container->getControlByID(INSTRUMENT_CHOOSER_LIST_DST));;
+				PPListBox* listBoxDstIns = static_cast<PPListBox*>(container->getControlByID(INSTRUMENT_CHOOSER_LIST_DST));
 				PPListBox* listBoxDstSmp = static_cast<PPListBox*>(container->getControlByID(INSTRUMENT_CHOOSER_LIST_DST2));
 
 				if (reinterpret_cast<PPControl*>(sender)->getID() == INSTRUMENT_CHOOSER_LIST_SRC3)

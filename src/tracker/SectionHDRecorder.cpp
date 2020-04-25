@@ -81,7 +81,7 @@ enum ControlIDs
 	HDRECORD_BUTTON_SMP_PLUS,
 	HDRECORD_BUTTON_SMP_MINUS,
 	HDRECORD_BUTTON_MIXER_AUTO,
-	
+
 	RESPONDMESSAGEBOX_SELECTRESAMPLER
 };
 
@@ -90,13 +90,13 @@ class DialogResponderHDRec : public DialogResponder
 {
 private:
 	SectionHDRecorder& section;
-	
+
 public:
-	DialogResponderHDRec(SectionHDRecorder& section) :	
+	DialogResponderHDRec(SectionHDRecorder& section) :
 		section(section)
 	{
 	}
-	
+
 	virtual pp_int32 ActionOkay(PPObject* sender)
 	{
 		switch (reinterpret_cast<PPDialogBase*>(sender)->getID())
@@ -110,7 +110,7 @@ public:
 		}
 		return 0;
 	}
-	
+
 	virtual pp_int32 ActionCancel(PPObject* sender)
 	{
 		return 0;
@@ -134,7 +134,7 @@ void SectionHDRecorder::validate()
 SectionHDRecorder::SectionHDRecorder(Tracker& tracker) :
 	SectionUpperLeft(tracker, NULL, new DialogResponderHDRec(*this)),
 	recorderMode(RecorderModeToFile),
-	fromOrder(0), toOrder(0), mixerVolume(256), 
+	fromOrder(0), toOrder(0), mixerVolume(256),
 	resampler(1),
 	insIndex(0), smpIndex(0),
 	currentFileName(TrackerConfig::untitledSong)
@@ -201,7 +201,7 @@ void SectionHDRecorder::setSettingsFrequency(pp_int32 freq)
 	PPContainer* container = static_cast<PPContainer*>(sectionContainer);
 	PPRadioGroup* radioGroup = static_cast<PPRadioGroup*>(container->getControlByID(HDRECORD_RADIOGROUP_FREQUENCIES));
 	ASSERT(radioGroup);
-	
+
 	for (pp_int32 j = 0; j < TrackerConfig::numMixFrequencies; j++)
 	{
 		if (freq == TrackerConfig::mixFrequencies[j])
@@ -209,7 +209,7 @@ void SectionHDRecorder::setSettingsFrequency(pp_int32 freq)
 			radioGroup->setChoice(j);
 			break;
 		}
-	}	
+	}
 }
 
 pp_int32 SectionHDRecorder::getSettingsMixerShift()
@@ -240,38 +240,38 @@ pp_int32 SectionHDRecorder::handleEvent(PPObject* sender, PPEvent* event)
 			case HDRECORD_BUTTON_START_PLUS:
 				if (fromOrder < toOrder)
 					fromOrder++;
-					
+
 				update();
 				break;
 
 			case HDRECORD_BUTTON_START_MINUS:
 				if (fromOrder > 0)
 					fromOrder--;
-					
+
 				update();
 				break;
 
 			case HDRECORD_BUTTON_END_PLUS:
 				if (toOrder < tracker.moduleEditor->getNumOrders()-1)
 					toOrder++;
-					
+
 				update();
 				break;
 
 			case HDRECORD_BUTTON_END_MINUS:
 				if (toOrder > fromOrder)
 					toOrder--;
-					
+
 				update();
 				break;
-				
-			case HDRECORD_BUTTON_EXIT:	
+
+			case HDRECORD_BUTTON_EXIT:
 				if (event->getID() != eCommand)
 					break;
-					
-				show(false);	
+
+				show(false);
 				break;
-				
+
 			case HDRECORD_BUTTON_RECORD:
 				if (event->getID() != eCommand)
 					break;
@@ -291,10 +291,10 @@ pp_int32 SectionHDRecorder::handleEvent(PPObject* sender, PPEvent* event)
 				{
 					exportWAVAsSample();
 				}
-					
+
 				update();
 				break;
-				
+
 			case HDRECORD_BUTTON_RECORD_AS:
 			{
 				if (event->getID() != eCommand)
@@ -306,7 +306,7 @@ pp_int32 SectionHDRecorder::handleEvent(PPObject* sender, PPEvent* event)
 				update();
 				break;
 			}
-				
+
 			case HDRECORD_BUTTON_RECORDINGMODE:
 				if (recorderMode == RecorderModeToFile)
 					recorderMode = RecorderModeToSample;
@@ -314,7 +314,7 @@ pp_int32 SectionHDRecorder::handleEvent(PPObject* sender, PPEvent* event)
 					recorderMode = RecorderModeToFile;
 				update();
 				break;
-				
+
 			case HDRECORD_BUTTON_MIXER_AUTO:
 				if (event->getID() != eCommand)
 					break;
@@ -323,31 +323,31 @@ pp_int32 SectionHDRecorder::handleEvent(PPObject* sender, PPEvent* event)
 
 				update();
 				break;
-				
+
 			case HDRECORD_BUTTON_INS_PLUS:
 				// update will validate the values
 				insIndex++;
 				update();
 				break;
-				
+
 			case HDRECORD_BUTTON_INS_MINUS:
 				// see above
 				insIndex--;
 				update();
 				break;
-	
+
 			case HDRECORD_BUTTON_SMP_PLUS:
 				// see above
 				smpIndex++;
 				update();
 				break;
-				
+
 			case HDRECORD_BUTTON_SMP_MINUS:
 				// see above
 				smpIndex--;
 				update();
 				break;
-				
+
 			case HDRECORD_BUTTON_RESAMPLING:
 				showResamplerMessageBox();
 				break;
@@ -365,7 +365,7 @@ pp_int32 SectionHDRecorder::handleEvent(PPObject* sender, PPEvent* event)
 			}
 		}
 	}
-	
+
 	return 0;
 }
 
@@ -374,7 +374,7 @@ void SectionHDRecorder::init(pp_int32 px, pp_int32 py)
 	PPScreen* screen = tracker.screen;
 
 	PPContainer* container = new PPContainer(CONTAINER_HDRECORDER, tracker.screen, this, PPPoint(px, py), PPSize(320,UPPERLEFTSECTIONHEIGHT), false);
-	container->setColor(TrackerConfig::colorThemeMain);	
+	container->setColor(TrackerConfig::colorThemeMain);
 	tracker.screen->addControl(container);
 
 	container->addControl(new PPStaticText(0, NULL, NULL, PPPoint(px + 2, py + 2), "HD Recorder", true, true));
@@ -383,13 +383,13 @@ void SectionHDRecorder::init(pp_int32 px, pp_int32 py)
 
 	pp_int32 buttonWidth = 8*4+4;
 	pp_int32 buttonHeight = 22;
-	
+
 	pp_int32 x = px+container->getSize().width-(buttonWidth+4);
 	pp_int32 y = py+container->getSize().height-(buttonHeight+4);
-	
+
 	pp_int32 dy = 11+20;
 	// Horizontal seperator above exit
-	container->addControl(new PPSeperator(0, screen, PPPoint(px+2, py + size.height - dy), size.width-5, container->getColor(), true));	
+	container->addControl(new PPSeperator(0, screen, PPPoint(px+2, py + size.height - dy), size.width-5, container->getColor(), true));
 
 #ifdef __LOWRES__
 	y-=2;
@@ -399,7 +399,7 @@ void SectionHDRecorder::init(pp_int32 px, pp_int32 py)
 	button->setFont(PPFont::getFont(PPFont::FONT_TINY));
 	button->setText("Smp.Ed.");
 	container->addControl(button);
-	
+
 	y+=button->getSize().height+1;
 
 	button = new PPButton(MAINMENU_INSEDIT, screen, &tracker, PPPoint(x, y), PPSize(buttonWidth, buttonHeight/3));
@@ -421,7 +421,7 @@ void SectionHDRecorder::init(pp_int32 px, pp_int32 py)
 
 	// add frequencies
 	pp_int32 x2 = px;
-	pp_int32 y2 = py + 11 + 3 + 4;  
+	pp_int32 y2 = py + 11 + 3 + 4;
 	container->addControl(new PPStaticText(0, NULL, NULL, PPPoint(x2 + 4, y2), "Output:", true));
 
 	PPRadioGroup* radioGroup = new PPRadioGroup(HDRECORD_RADIOGROUP_FREQUENCIES, screen, this, PPPoint(x2+2, y2+10), PPSize(88, TrackerConfig::numMixFrequencies*14));
@@ -436,10 +436,10 @@ void SectionHDRecorder::init(pp_int32 px, pp_int32 py)
 
 	radioGroup->setChoice(2);
 
-	container->addControl(radioGroup);	
+	container->addControl(radioGroup);
 
 	y2+=radioGroup->getSize().height + 17;
-	
+
 	// --------- amplify
 	container->addControl(new PPStaticText(0, NULL, NULL, PPPoint(x2 + 4, y2), "Amplify:", true));
 
@@ -483,9 +483,9 @@ void SectionHDRecorder::init(pp_int32 px, pp_int32 py)
 
 	pp_int32 x3 = x2 - 6;
 	container->addControl(new PPSeperator(0, screen, PPPoint(x2 - 6, py+16 - 2), container->getSize().height - (dy+14), TrackerConfig::colorThemeMain, false));
-	
+
 	container->addControl(new PPStaticText(0, NULL, NULL, PPPoint(x2, y2), "Quality:", true));
-	
+
 	y2+=13;
 
 	container->addControl(new PPStaticText(0, NULL, NULL, PPPoint(x2, y2), "Resampler:", true));
@@ -496,16 +496,16 @@ void SectionHDRecorder::init(pp_int32 px, pp_int32 py)
 
 	container->addControl(new PPStaticText(0, NULL, NULL, PPPoint(x2, y2 + 12), "Volume ramping:", true));
 	container->addControl(new PPCheckBox(HDRECORD_CHECKBOX_RAMPING, screen, this, PPPoint(x2 + 15*8, y2-1+12)));
-	
+
 	y2+=24;
 
 	// Horizontal seperator above exit
-	container->addControl(new PPSeperator(0, screen, PPPoint(x3+1, y2), size.width-5 - (x3-px), container->getColor(), true));	
+	container->addControl(new PPSeperator(0, screen, PPPoint(x3+1, y2), size.width-5 - (x3-px), container->getColor(), true));
 
 	y2+=5;
 
 	container->addControl(new PPStaticText(0, NULL, NULL, PPPoint(x2, y2), "Allow muting:", true));
-	container->addControl(new PPCheckBox(HDRECORD_CHECKBOX_ALLOWMUTING, screen, this, PPPoint(x2 + 15*8, y2-1), false));	
+	container->addControl(new PPCheckBox(HDRECORD_CHECKBOX_ALLOWMUTING, screen, this, PPPoint(x2 + 15*8, y2-1), false));
 
 	x2 += 18*8-4;
 	container->addControl(new PPSeperator(0, screen, PPPoint(x2 - 6, py+16 - 2), container->getSize().height - (dy+28), TrackerConfig::colorThemeMain, false));
@@ -522,7 +522,7 @@ void SectionHDRecorder::init(pp_int32 px, pp_int32 py)
 	button = new PPButton(HDRECORD_BUTTON_START_PLUS, screen, this, PPPoint(x2+7*8+3, y2-1), PPSize(12, 9));
 	button->setText(TrackerConfig::stringButtonPlus);
 	container->addControl(button);
-	
+
 	button = new PPButton(HDRECORD_BUTTON_START_MINUS, screen, this, PPPoint(button->getLocation().x + button->getSize().width+1, y2-1), PPSize(12, 9));
 	button->setText(TrackerConfig::stringButtonMinus);
 	container->addControl(button);
@@ -535,7 +535,7 @@ void SectionHDRecorder::init(pp_int32 px, pp_int32 py)
 	button = new PPButton(HDRECORD_BUTTON_END_PLUS, screen, this, PPPoint(x2+7*8+3, y2-1), PPSize(12, 9));
 	button->setText(TrackerConfig::stringButtonPlus);
 	container->addControl(button);
-	
+
 	button = new PPButton(HDRECORD_BUTTON_END_MINUS, screen, this, PPPoint(button->getLocation().x + button->getSize().width+1, y2-1), PPSize(12, 9));
 	button->setText(TrackerConfig::stringButtonMinus);
 	container->addControl(button);
@@ -554,8 +554,8 @@ void SectionHDRecorder::init(pp_int32 px, pp_int32 py)
 	container->addControl(button);
 
 	y2+=buttonHeight+2;
-	
-	container->addControl(new PPSeperator(0, screen, PPPoint(x3+1, y2), size.width-5 - (x3-px), container->getColor(), true));	
+
+	container->addControl(new PPSeperator(0, screen, PPPoint(x3+1, y2), size.width-5 - (x3-px), container->getColor(), true));
 
 	y2+=5;
 
@@ -583,7 +583,7 @@ void SectionHDRecorder::init(pp_int32 px, pp_int32 py)
 	button = new PPButton(HDRECORD_BUTTON_INS_PLUS, screen, this, PPPoint(x2, y2-1), PPSize(13, 9));
 	button->setText(TrackerConfig::stringButtonPlus);
 	container->addControl(button);
-	
+
 	button = new PPButton(HDRECORD_BUTTON_INS_MINUS, screen, this, PPPoint(button->getLocation().x + button->getSize().width+1, y2-1), PPSize(13, 9));
 	button->setText(TrackerConfig::stringButtonMinus);
 	container->addControl(button);
@@ -598,7 +598,7 @@ void SectionHDRecorder::init(pp_int32 px, pp_int32 py)
 	button = new PPButton(HDRECORD_BUTTON_SMP_PLUS, screen, this, PPPoint(x2, y2-1), PPSize(13, 9));
 	button->setText(TrackerConfig::stringButtonPlus);
 	container->addControl(button);
-	
+
 	button = new PPButton(HDRECORD_BUTTON_SMP_MINUS, screen, this, PPPoint(button->getLocation().x + button->getSize().width+1, y2-1), PPSize(13, 9));
 	button->setText(TrackerConfig::stringButtonMinus);
 	container->addControl(button);
@@ -614,14 +614,14 @@ void SectionHDRecorder::update(bool repaint/* = true*/)
 {
 	PPContainer* container = static_cast<PPContainer*>(tracker.screen->getControlByID(CONTAINER_HDRECORDER));
 	ASSERT(container);
-	
+
 	if (fromOrder < 0)
 		fromOrder = 0;
 	if (toOrder < fromOrder)
 		toOrder = fromOrder;
 	if (toOrder >= tracker.moduleEditor->getNumOrders())
 		toOrder = tracker.moduleEditor->getNumOrders()-1;
-	
+
 	PPStaticText* staticText = static_cast<PPStaticText*>(container->getControlByID(HDRECORD_STATICTEXT_START));
 	ASSERT(staticText);
 	staticText->setHexValue(fromOrder, 2);
@@ -629,12 +629,12 @@ void SectionHDRecorder::update(bool repaint/* = true*/)
 	staticText = static_cast<PPStaticText*>(container->getControlByID(HDRECORD_STATICTEXT_END));
 	ASSERT(staticText);
 	staticText->setHexValue(toOrder, 2);
-	
+
 	// mixer volume
 	char buffer[80], buffer2[80];
 	PPStaticText* text = static_cast<PPStaticText*>(container->getControlByID(HDRECORD_STATICTEXT_MIXERVOLUME));
 	ASSERT(text);
-	
+
 	PPSlider* slider = static_cast<PPSlider*>(container->getControlByID(HDRECORD_SLIDER_MIXERVOLUME));
 	ASSERT(slider);
 
@@ -655,13 +655,13 @@ void SectionHDRecorder::update(bool repaint/* = true*/)
 	{
 		PPButton* button = static_cast<PPButton*>(container->getControlByID(HDRECORD_BUTTON_RECORDINGMODE));
 		button->setText("File:");
-	
+
 		button = static_cast<PPButton*>(container->getControlByID(HDRECORD_BUTTON_RECORD_AS));
 		button->enable(true);
 
 		staticText = static_cast<PPStaticText*>(container->getControlByID(HDRECORD_STATICTEXT_SAVETOFILENAME));
 		staticText->show(true);
-		
+
 		if (TrackerConfig::untitledSong.compareTo(currentFileName.stripExtension()) == 0)
 		{
 			staticText->setText("<None specified>");
@@ -701,7 +701,7 @@ void SectionHDRecorder::update(bool repaint/* = true*/)
 		sprintf(buffer, "Smp:%x", smpIndex);
 		staticText = static_cast<PPStaticText*>(container->getControlByID(HDRECORD_STATICTEXT_SMP));
 		staticText->setText(buffer);
-		
+
 		container->getControlByID(HDRECORD_STATICTEXT_INS)->show(true);
 		container->getControlByID(HDRECORD_BUTTON_INS_PLUS)->show(true);
 		container->getControlByID(HDRECORD_BUTTON_INS_MINUS)->show(true);
@@ -709,7 +709,7 @@ void SectionHDRecorder::update(bool repaint/* = true*/)
 		container->getControlByID(HDRECORD_BUTTON_SMP_PLUS)->show(true);
 		container->getControlByID(HDRECORD_BUTTON_SMP_MINUS)->show(true);
 	}
-	
+
 	if (repaint)
 		tracker.screen->paintControl(container);
 }
@@ -717,8 +717,8 @@ void SectionHDRecorder::update(bool repaint/* = true*/)
 void SectionHDRecorder::notifyInstrumentSelect(pp_int32 index)
 {
 	insIndex = index-1;
-		
-	if (!sectionContainer->isVisible()) 
+
+	if (!sectionContainer->isVisible())
 		return;
 
 	update();
@@ -728,30 +728,30 @@ void SectionHDRecorder::notifySampleSelect(pp_int32 index)
 {
 	smpIndex = index-1;
 
-	if (!sectionContainer->isVisible()) 
+	if (!sectionContainer->isVisible())
 		return;
 
 	update();
 }
 
 void SectionHDRecorder::show(bool bShow)
-{ 
-	SectionUpperLeft::show(bShow); 
+{
+	SectionUpperLeft::show(bShow);
 }
 
 void SectionHDRecorder::exportWAVWithPanel(const PPSystemString& defaultFileName)
 {
 	PPSavePanel savePanel(tracker.screen, "Export Song to WAV", defaultFileName);
 	savePanel.addExtension("wav","Uncompressed WAV");
-	
+
 	if (savePanel.runModal() == PPModalDialog::ReturnCodeOK)
 	{
 		const SYSCHAR* finalFileName = savePanel.getFileName();
-		
+
 		if (finalFileName)
 		{
 			currentFileName = finalFileName;
-			exportWAVAsFileName(finalFileName);			
+			exportWAVAsFileName(finalFileName);
 		}
 	}
 }
@@ -764,7 +764,7 @@ void SectionHDRecorder::exportWAVAsFileName(const PPSystemString& fileName)
 	parameters.sampleRate = getSettingsFrequency();
 	parameters.resamplerType = (getSettingsRamping() ? 1 : 0) | (getSettingsResampler() << 1);
 	parameters.playMode = tracker.playerController->getPlayMode();
-	parameters.mixerShift = getSettingsMixerShift(); 
+	parameters.mixerShift = getSettingsMixerShift();
 	parameters.mixerVolume = mixerVolume;
 
 	mp_ubyte* muting = new mp_ubyte[moduleEditor->getNumChannels()];
@@ -782,7 +782,7 @@ void SectionHDRecorder::exportWAVAsFileName(const PPSystemString& fileName)
 
 	tracker.signalWaitState(true);
 
-	pp_int32 res = moduleEditor->getModuleServices()->exportToWAV(fileName, parameters);;
+	pp_int32 res = moduleEditor->getModuleServices()->exportToWAV(fileName, parameters);
 
 	tracker.signalWaitState(false);
 
@@ -809,7 +809,7 @@ void SectionHDRecorder::getPeakLevel()
 	parameters.sampleRate = getSettingsFrequency();
 	parameters.resamplerType = (getSettingsRamping() ? 1 : 0) | (getSettingsResampler() << 1);
 	parameters.playMode = tracker.playerController->getPlayMode();
-	parameters.mixerShift = getSettingsMixerShift(); 
+	parameters.mixerShift = getSettingsMixerShift();
 	parameters.mixerVolume = 256;
 
 	mp_ubyte* muting = new mp_ubyte[moduleEditor->getNumChannels()];
@@ -828,7 +828,7 @@ void SectionHDRecorder::getPeakLevel()
 	tracker.signalWaitState(true);
 
 	mixerVolume = moduleEditor->getModuleServices()->estimateMixerVolume(parameters);
-	
+
 	tracker.signalWaitState(false);
 
 	delete[] muting;
@@ -863,14 +863,14 @@ void SectionHDRecorder::exportWAVAs(const PPSystemString& fileName)
 }
 
 void SectionHDRecorder::exportWAVAsSample()
-{	
+{
 	ModuleEditor* moduleEditor = tracker.moduleEditor;
 
 	ModuleServices::WAVWriterParameters parameters;
 	parameters.sampleRate = getSettingsFrequency();
 	parameters.resamplerType = (getSettingsRamping() ? 1 : 0) | (getSettingsResampler() << 1);
 	parameters.playMode = tracker.playerController->getPlayMode();
-	parameters.mixerShift = getSettingsMixerShift(); 
+	parameters.mixerShift = getSettingsMixerShift();
 	parameters.mixerVolume = mixerVolume;
 
 	mp_ubyte* muting = new mp_ubyte[moduleEditor->getNumChannels()];
@@ -889,18 +889,18 @@ void SectionHDRecorder::exportWAVAsSample()
 	tracker.signalWaitState(true);
 
 	mp_sint32 numSamples = moduleEditor->getModuleServices()->estimateWaveLengthInSamples(parameters);
-	
+
 	validate();
 	pp_int32 curIns = moduleEditor->getCurrentInstrumentIndex();
 	pp_int32 curSmp = moduleEditor->getCurrentSampleIndex();
-	
+
 	// surpress screen updates from here on...
 	tracker.screen->pauseUpdate(true);
 
 	moduleEditor->reloadSample(insIndex, smpIndex);
-	
+
 	SampleEditor::WorkSample* workSample = moduleEditor->getSampleEditor()->createWorkSample(numSamples, 16, parameters.sampleRate);
-	
+
 	if (workSample)
 	{
 		pp_int16* buffer = (pp_int16*)workSample->getBuffer();
@@ -910,7 +910,7 @@ void SectionHDRecorder::exportWAVAsSample()
 	}
 
 	moduleEditor->reloadSample(curIns, curSmp);
-	
+
 	// ...until here
 	tracker.screen->pauseUpdate(false);
 
@@ -933,9 +933,9 @@ void SectionHDRecorder::showResamplerMessageBox()
 		dialog = NULL;
 	}
 
-	dialog = new DialogListBox(tracker.screen, 
-													 responder, 
-													 RESPONDMESSAGEBOX_SELECTRESAMPLER, 
+	dialog = new DialogListBox(tracker.screen,
+													 responder,
+													 RESPONDMESSAGEBOX_SELECTRESAMPLER,
 													 "Select Resampler",
 													 true);
 	PPListBox* listBox = static_cast<DialogListBox*>(dialog)->getListBox();
@@ -943,11 +943,11 @@ void SectionHDRecorder::showResamplerMessageBox()
 	ResamplerHelper resamplerHelper;
 
 	for (pp_uint32 i = 0; i < resamplerHelper.getNumResamplers(); i++)
-		listBox->addItem(resamplerHelper.getResamplerName(i));	
+		listBox->addItem(resamplerHelper.getResamplerName(i));
 
 	listBox->setSelectedIndex(resampler, false);
 
-	dialog->show();	
+	dialog->show();
 }
 
 void SectionHDRecorder::storeResampler(pp_uint32 resampler)

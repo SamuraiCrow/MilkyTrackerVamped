@@ -25,8 +25,8 @@
 #include "Filter.h"
 #include "Texture.h"
 
-#define PRGB2SHORT(r,g,b) ((((r))<<11)+(((g))<<5)+((b))) 
-#define RGB2SHORT(r,g,b) ((((r>>3))<<11)+(((g>>2))<<5)+((b>>3))) 
+#define PRGB2SHORT(r,g,b) ((((r))<<11)+(((g))<<5)+((b)))
+#define RGB2SHORT(r,g,b) ((((r>>3))<<11)+(((g>>2))<<5)+((b>>3)))
 
 #define TEXTURESIZE 256
 
@@ -53,7 +53,7 @@ TexturedGrid::TexturedGrid(int width, int height, int gridshift)
 
 	// for debugging, load texture
 	int i;
-	
+
 	/*unsigned char *texture = new unsigned char[TEXTURESIZE*TEXTURESIZE*3];
 
     //FILE* f = fopen("/demo/t2new.tga","rb");
@@ -77,12 +77,12 @@ TexturedGrid::TexturedGrid(int width, int height, int gridshift)
 	texture = new unsigned short[256*256];
 
 	Texture::createSplineTexture(rgbTex);
-	
+
 	/*Texture::createPlasmaTexture(rgbTex2, 256, 3, 255, 255, 255);
 
 	for (i = 0; i < 256*256; i++)
 	{
-		int r = (rgbTex2[i*3]>>0) - (rgbTex[i*3]>>0) + 63*2; 
+		int r = (rgbTex2[i*3]>>0) - (rgbTex[i*3]>>0) + 63*2;
 		int g = (rgbTex2[i*3+1]>>0) - (rgbTex[i*3+1]>>0) + 31*2;
 		int b = (rgbTex2[i*3+2]>>0) - (rgbTex[i*3+2]>>0) + 9*2;
 
@@ -94,7 +94,7 @@ TexturedGrid::TexturedGrid(int width, int height, int gridshift)
 		rgbTex[i*3+1] = g;
 		rgbTex[i*3+2] = b;
 	}*/
-	
+
 	Texture::convert24to16(texture, rgbTex, 256*256, 1);
 
 	delete[] rgbTex;
@@ -136,7 +136,7 @@ void TexturedGrid::update(float syncFrac)
 
 	VectorFP* gridPt = grid;
 
-	float phi = ::PPGetTickCount()*0.001f*0.5f;;
+	float phi = ::PPGetTickCount()*0.001f*0.5f;
 
 	blobs[0].x = (int)(sin(phi*4.0f)*8.0f*65536.0f);
 	blobs[0].y = (int)(cos(phi*4.0f)*8.0f*65536.0f);
@@ -168,7 +168,7 @@ void TexturedGrid::update(float syncFrac)
 			p.z = 0;
 
 			p = m*p;
-			
+
 			int xOffset = /*0*/sintab[((p.x>>11)+phiFP)&1023]*32;
 			int yOffset = /*0*/sintab[((p.y>>11)+phiFP)&1023]*32;
 
@@ -193,13 +193,13 @@ void TexturedGrid::update(float syncFrac)
 				int dx = fpmul((blobs[j].x-p.x),blobs[j].strength);
 				int dy = fpmul((blobs[j].y-p.y),blobs[j].strength);
 				int dz = fpmul((blobs[j].z-p.z),blobs[j].strength);
-				
+
 				int sd = fpmul(dx,dx)+fpmul(dy,dy)+fpmul(dz,dz);
-				
+
 				if (sd<(0.707f*0.707f*65536))
 					scale += (fpmul(sd,sd)-sd+16384)*4;
 			}
-			
+
 			if (scale>=MAXCLAMP) scale = MAXCLAMP;
 			scale = fpmul(scale,scale);
 			scale = fpmul(scale,scale);
@@ -249,12 +249,12 @@ void TexturedGrid::update(float syncFrac)
 			//////////////////////////////////////////////////////////////////////
 			/*int cx = 0;//blobs[0].x;
 			int cy = 0;//blobs[0].y;
-			
+
 			int dx = cx - p.x;
 			int dy = cy - p.y;
-			
+
 			int len = fpsqrt(fpmul(dx,dx)+fpmul(dy,dy));
-			
+
 			if (len)
 			{
 				dx = fpdiv(dx, len);
@@ -287,7 +287,7 @@ void TexturedGrid::render(unsigned short* vscreen, unsigned int pitch)
 
 	int x,y;
 
-	unsigned short* tex = texture;			
+	unsigned short* tex = texture;
 
 	int GRIDSIZE = gridsize;
 	int GRIDSHIFT = gridshift;
@@ -296,36 +296,36 @@ void TexturedGrid::render(unsigned short* vscreen, unsigned int pitch)
 	int gridSizeX = gridWidth-1;
 	int gridSizeY = gridHeight-1;
 
-	for (y=0;y<gridSizeY;y++) 
+	for (y=0;y<gridSizeY;y++)
 	{
-        for (x=0;x<gridSizeX;x++) 
+        for (x=0;x<gridSizeX;x++)
 		{
 
 			VectorFP *gridul = grid+(y*(gridSizeX+1)+x);
 			VectorFP *gridur = gridul+1;
 			VectorFP *gridll = gridul+(gridSizeX+1);
 			VectorFP *gridlr = gridul+(gridSizeX+2);
-			
-			unsigned short *vscreenPtr = vscreen+((y*GRIDSIZE)*PITCH+(x*GRIDSIZE));                    
+
+			unsigned short *vscreenPtr = vscreen+((y*GRIDSIZE)*PITCH+(x*GRIDSIZE));
 
 			int su1 = gridul->x;
 			int sv1 = gridul->y;
 			int si1 = gridul->z;
-			
+
 			int su2 = gridur->x;
 			int sv2 = gridur->y;
 			int si2 = gridur->z;
-			
+
 			int du1 = (gridll->x-gridul->x)>>GRIDSHIFT;
 			int dv1 = (gridll->y-gridul->y)>>GRIDSHIFT;
 			int di1 = (gridll->z-gridul->z)>>GRIDSHIFT;
-			
+
 			int du2 = (gridlr->x-gridur->x)>>GRIDSHIFT;
 			int dv2 = (gridlr->y-gridur->y)>>GRIDSHIFT;
 			int di2 = (gridlr->z-gridur->z)>>GRIDSHIFT;
-			
+
 			int y2,x2;
-			for (y2=0;y2<GRIDSIZE;y2++) 
+			for (y2=0;y2<GRIDSIZE;y2++)
 			{
 				int fu = (su2-su1)>>GRIDSHIFT;
 				int su = su1;
@@ -333,22 +333,22 @@ void TexturedGrid::render(unsigned short* vscreen, unsigned int pitch)
 				int sv = sv1;
 				int fi = (si2-si1)>>GRIDSHIFT;
 				int si = si1;
-				
-				for (x2=0;x2<GRIDSIZE;x2++) 
+
+				for (x2=0;x2<GRIDSIZE;x2++)
 				{
 					//int ofs = ((((sv>>8)&0xff00)+((su>>16)&0xff)));
 					//unsigned int rgb = tex[ofs];
-					
+
 					//int r = ((rgb>>11)*si)>>24;
 					//int g = (((rgb>>5)&0x3f)*si)>>24;
 					//int b = ((rgb&0x1f)*si)>>24;
-					
+
 					//*vscreenPtr = PRGB2Short(r,g,b);
-					
+
 					//if (si <= 256*65536)
 					//{
 						unsigned int wRGB = tex[((((sv>>8)&0xff00)+((su>>16)&0xff)))];
-						unsigned int lTemp = (((wRGB&(REDMASK|BLUEMASK))<<11)|((wRGB & GREENMASK) >> 5))*(si>>19);	  
+						unsigned int lTemp = (((wRGB&(REDMASK|BLUEMASK))<<11)|((wRGB & GREENMASK) >> 5))*(si>>19);
 						*vscreenPtr = ((lTemp >> (11 + 5)) & (REDMASK | BLUEMASK))|(lTemp & GREENMASK);
 					/*}
 					else
@@ -357,26 +357,26 @@ void TexturedGrid::render(unsigned short* vscreen, unsigned int pitch)
 
 						unsigned int rgb16_1 = tex[((((sv>>8)&0xff00)+((su>>16)&0xff)))];
 						unsigned int rgb16_2 = RGB2SHORT(shade,shade,shade);
-						
+
 						unsigned int result = (rgb16_1&0xF800)+(rgb16_2&0xF800);
 						if (result>0xF800) result = 0xF800;
 						unsigned int t = (rgb16_1&0x7E0)+(rgb16_2&0x7E0); if (t>0x7E0) t = 0x7E0; result|=t;
 						t = (rgb16_1&0x1F)+(rgb16_2&0x1F); if (t>0x1F) t = 0x1F; result|=t;
-						
+
 						*vscreenPtr = result;
 					}*/
 
 					//*vscreenPtr = tex[((((sv>>8)&0xff00)+((su>>16)&0xff)))];
-					
+
 					// enable for motion blur
 					/*unsigned int mask=0x07e0f81f;
-					
+
 					int texel = tex[((((sv>>8)&0xff00)+((su>>16)&0xff)))];
 					int pixel = *vscreenPtr;
 
 					texel = ((texel<<16) | texel)&mask;
 					pixel = ((pixel<<16) | pixel)&mask;
-					
+
 					int mix =((((texel-pixel)*(10))>>5)+pixel)&mask;
 					*vscreenPtr = (mix | (mix>>16))&0xffff;*/
 
@@ -385,19 +385,19 @@ void TexturedGrid::render(unsigned short* vscreen, unsigned int pitch)
 					si+=fi;
 					vscreenPtr++;
 				}
-				
+
 				su1+=du1;
 				su2+=du2;
 				sv1+=dv1;
-				sv2+=dv2;				
+				sv2+=dv2;
 				si1+=di1;
 				si2+=di2;
 				vscreenPtr+=(PITCH-GRIDSIZE);
-				
+
 			}
-			
+
 		}
-			
+
 	}
 
 	/*double phi = GetTickCount()*0.01f;
@@ -411,7 +411,7 @@ void TexturedGrid::render(unsigned short* vscreen, unsigned int pitch)
 
 	int cx = (int)(sin(-phi)*(width*(1.0/3.0f))+(width*(1.0/2.0f)));
 	int cy = (int)(cos(-phi)*(height*(1.0/3.0f))+(height*(1.0/2.0f)));
-	
+
 	//int radius = sin(phi)*2048 + 2048;
 	int radius = 2048;
 
