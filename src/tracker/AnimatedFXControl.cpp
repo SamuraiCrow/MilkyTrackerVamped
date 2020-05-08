@@ -111,11 +111,11 @@ void AnimatedFXControl::createFX()
 #endif
 }
 
-AnimatedFXControl::AnimatedFXControl(pp_int32 id, 
-									 PPScreen* parentScreen, 
-									 EventListenerInterface* eventListener, 
-									 const PPPoint& location, 
-									 const PPSize& size, 
+AnimatedFXControl::AnimatedFXControl(pp_int32 id,
+									 PPScreen* parentScreen,
+									 EventListenerInterface* eventListener,
+									 const PPPoint& location,
+									 const PPSize& size,
 									 bool border/*= true*/) :
 	PPControl(id, parentScreen, eventListener, location, size),
 	borderColor(&ourOwnBorderColor),
@@ -130,15 +130,15 @@ AnimatedFXControl::AnimatedFXControl(pp_int32 id,
 
 	visibleWidth = size.width - 2;
 	visibleHeight = size.height - 2;
-	
+
 #ifndef __SIMPLEFX__
 	createFX();
 #endif
-	
+
 	xPos = visibleWidth << 8;
-	
+
 	font = PPFont::getFont(PPFont::FONT_SYSTEM);
-	
+
 	textBufferMaxChars = visibleWidth*2 / font->getCharWidth();
 	textBuffer = new char[textBufferMaxChars + 1];
 
@@ -151,9 +151,9 @@ AnimatedFXControl::AnimatedFXControl(pp_int32 id,
 		textBuffer[i] = text[j];
 		j++;
 	}
-	
+
 	lastTime = 0;
-	
+
 	milkyVersionString[0] = 'v';
 	PPTools::convertToHex(milkyVersionString+1, (MILKYTRACKER_VERSION>>16)&0xF, 1);
 	milkyVersionString[2] = '.';
@@ -188,18 +188,18 @@ void AnimatedFXControl::paint(PPGraphicsAbstract* g)
 	}
 
 	g->setRect(location.x + 1, location.y + 1, location.x + size.width - 2, location.y + size.height - 2);
-	
+
 	fx->render(vscreen);
-	
+
 	pp_uint8* vptr = vscreen;
 	const pp_uint8* iptr = LogoSmall::rawData;
-	
+
 	PPPoint p = location;
 	p.x+=xOffset; p.y+=yOffset;
 	PPSize s;
 	s.width = visibleWidth-2;
 	s.height = visibleHeight-2;
-	
+
 	for (pp_int32 i = 0; i < visibleHeight-2; i++)
 		for (pp_int32 j = 0; j < visibleWidth-2; j++)
 		{
@@ -217,13 +217,13 @@ void AnimatedFXControl::paint(PPGraphicsAbstract* g)
 				*(vptr+1) = (a*(*(iptr+1))+(255-a)*(*(vptr+1)))>>8;
 				*(vptr+2) = (a*(*iptr)+(255-a)*(*(vptr+2)))>>8;
 			}
-						
+
 			vptr+=3;
 			iptr+=4;
 		}
-		
+
 	g->blit(vscreen, p, s, visibleWidth*3, 3);
-	
+
 	g->setRect(location.x+2, location.y+2, location.x + size.width-2, location.y + size.height-2);
 
 	// Printf version string
@@ -231,19 +231,19 @@ void AnimatedFXControl::paint(PPGraphicsAbstract* g)
 	g->drawString(milkyVersionString, location.x + 4 + 1, location.y + 4 + 1);
 	g->setColor(255, 255, 255);
 	g->drawString(milkyVersionString, location.x + 4, location.y + 4);
-	
+
 	g->setColor(0, 0, 0);
 	g->drawString(textBuffer, location.x + (xPos>>8) + 1, location.y + visibleHeight - 10 + 1);
 	g->setColor(255, 255, 255);
 	g->drawString(textBuffer, location.x + (xPos>>8), location.y + visibleHeight - 10);
 
-	pp_uint32 currentTime = ::PPGetTickCount(); 
+	pp_uint32 currentTime = ::PPGetTickCount();
 	pp_uint32 dTime;
 	if (lastTime)
 		dTime = currentTime - lastTime;
 	else
 		dTime = 40;
-	
+
 	xPos-=dTime*8;
 	if (xPos < -(signed)(font->getCharWidth()<<8))
 	{
@@ -260,16 +260,16 @@ void AnimatedFXControl::paint(PPGraphicsAbstract* g)
 			textBuffer[i] = text[j];
 			j++;
 		}
-			
+
 	}
 
 	fx->update(dTime<<11);
-	
+
 	lastTime = currentTime;
 }
 
 pp_int32 AnimatedFXControl::dispatchEvent(PPEvent* event)
-{ 
+{
 	if (eventListener == NULL)
 		return -1;
 
@@ -283,12 +283,12 @@ pp_int32 AnimatedFXControl::dispatchEvent(PPEvent* event)
 				parentScreen->paintControl(this);
 			fxTicker++;
  			break;
-	
+
 		case eLMouseUp:
 		case eRMouseUp:
 		{
 			PPEvent e(eCommand);
-			eventListener->handleEvent(reinterpret_cast<PPObject*>(this), &e); 
+			eventListener->handleEvent(reinterpret_cast<PPObject*>(this), &e);
 			break;
 		}
 
@@ -303,7 +303,7 @@ void AnimatedFXControl::show(bool bShow)
 	PPControl::show(bShow);
 	if (!bShow)
 	{
-#if defined(FXTOGGLE) || defined(__LOWRES__) 
+#if defined(FXTOGGLE) || defined(__LOWRES__)
 		delete fx;
 		fx = NULL;
 		delete[] vscreen;
@@ -313,7 +313,7 @@ void AnimatedFXControl::show(bool bShow)
 	}
 	else
 	{
-#if defined(FXTOGGLE) || defined(__LOWRES__) 
+#if defined(FXTOGGLE) || defined(__LOWRES__)
 		createFX();
 #endif
 	}

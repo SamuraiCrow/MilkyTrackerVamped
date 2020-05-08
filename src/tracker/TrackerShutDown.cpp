@@ -65,20 +65,20 @@ bool Tracker::checkForChanges(ModuleEditor* moduleEditor/* = NULL*/)
 	// save current file?
 	if (moduleEditor->hasChanged())
 	{
-		
+
 		PPQuitSaveAlert quitSaveAlertDialog(screen);
 		PPQuitSaveAlert::ReturnCodes err = quitSaveAlertDialog.runModal();
-		
+
 		if (err == PPQuitSaveAlert::ReturnCodeOK)
 		{
-			
+
 			PPSavePanel savePanel(screen, "Save Extended Module", moduleEditor->getModuleFileName());
 			savePanel.addExtension("xm","Fasttracker 2 Module");
 			err = savePanel.runModal();
 			if (err == PPSavePanel::ReturnCodeOK)
 			{
 				const SYSCHAR* file = savePanel.getFileName();
-				
+
 				if (file)
 				{
 					moduleEditor->saveSong(file);
@@ -88,15 +88,15 @@ bool Tracker::checkForChanges(ModuleEditor* moduleEditor/* = NULL*/)
 			{
 				return false;
 			}
-			
+
 		}
 		else if (err == PPSavePanel::ReturnCodeCANCEL)
 		{
 			return false;
 		}
-		
+
 	}
-	
+
 	return true;
 }
 
@@ -104,10 +104,10 @@ bool Tracker::checkForChangesOpenModule()
 {
 	bool openTab = (settingsDatabase->restore("TABS_LOADMODULEINNEWTAB")->getBoolValue() &&
 					(moduleEditor->hasChanged() || !moduleEditor->isEmpty()));
-	
+
 	if (openTab)
 		return true;
-	
+
 	return checkForChanges();
 }
 
@@ -166,7 +166,7 @@ bool Tracker::shutDown()
 		settingsDatabase->store("LIVESWITCH", playerLogic->getLiveSwitch() ? 1 : 0);
 
 		// Disk Operations
-		settingsDatabase->store("INTERNALDISKBROWSERSETTINGS", sectionDiskMenu->getConfigUInt32());	
+		settingsDatabase->store("INTERNALDISKBROWSERSETTINGS", sectionDiskMenu->getConfigUInt32());
 		settingsDatabase->store("INTERNALDISKBROWSERLASTPATH", sectionDiskMenu->getCurrentPathASCII());
 
 		// HD recorder
@@ -208,7 +208,7 @@ bool Tracker::shutDown()
 		TColorPalette palette;
 		palette.numColors = GlobalColorConfig::ColorLast;
 		for (i = 0; i < palette.numColors; i++)
-			palette.colors[i] = GlobalColorConfig::getInstance()->getColor((GlobalColorConfig::GlobalColors)i);	
+			palette.colors[i] = GlobalColorConfig::getInstance()->getColor((GlobalColorConfig::GlobalColors)i);
 
 		settingsDatabase->store("ACTIVECOLORS", ColorPaletteContainer::encodePalette(palette));
 
@@ -221,7 +221,7 @@ bool Tracker::shutDown()
 
 		for (i = 0; i < sectionInstruments->getNumPredefinedEnvelopes(); i++)
 		{
-			sprintf(buffer, "PREDEFENVELOPEPANNING_%i",i);		
+			sprintf(buffer, "PREDEFENVELOPEPANNING_%i",i);
 			settingsDatabase->store(buffer, sectionInstruments->getEncodedEnvelope(SectionInstruments::EnvelopeTypePanning, i));
 		}
 
@@ -240,7 +240,7 @@ bool Tracker::shutDown()
 
 		for (i = 0; i < sectionSettings->getNumPredefinedColorPalettes(); i++)
 		{
-			sprintf(buffer, "PREDEFCOLORPALETTE_%i",i);		
+			sprintf(buffer, "PREDEFCOLORPALETTE_%i",i);
 			settingsDatabase->store(buffer, sectionSettings->getEncodedPalette(i));
 		}
 

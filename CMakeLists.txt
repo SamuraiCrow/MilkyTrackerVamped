@@ -51,13 +51,13 @@ string(TOLOWER ${CMAKE_SYSTEM_NAME} SYSTEM_NAME_LOWER)
 list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 
 # Version number in format X.YY.ZZ
-set(VER_X  1)
-set(VER_YY 02)
+set(VER_X  7)
+set(VER_YY 17)
 set(VER_ZZ 00)
 set(VER_FULL "${VER_X}.${VER_YY}.${VER_ZZ}")
 
 # Final build filename, for example "milkytracker-1.02.00-win32.zip"
-set(BUILD_FILENAME "milkytracker-${VER_FULL}-${SYSTEM_NAME_LOWER}")
+set(BUILD_FILENAME "milkymagic-${VER_FULL}-${SYSTEM_NAME_LOWER}")
 
 # Generate version header from the above
 configure_file(
@@ -83,8 +83,8 @@ else()
     set(CPACK_GENERATOR TGZ)
 endif()
 set(CPACK_PACKAGE_NAME ${PROJECT_NAME_LOWER})
-set(CPACK_PACKAGE_VENDOR "MilkyTracker Team")
-set(CPACK_PACKAGE_CONTACT "support@milkytracker.org")
+set(CPACK_PACKAGE_VENDOR "MilkyMagic Team")
+set(CPACK_PACKAGE_CONTACT "neoman@titandemo.org")
 set(CPACK_PACKAGE_FILE_NAME ${BUILD_FILENAME})
 set(CPACK_PACKAGE_VERSION_MAJOR ${VER_X})
 set(CPACK_PACKAGE_VERSION_MINOR ${VER_YY})
