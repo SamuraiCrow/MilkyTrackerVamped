@@ -46,7 +46,7 @@ struct Mixable
 	{
 	}
 
-	virtual void mix(mp_sint32* buffer, mp_uint32 numSamples) = 0;			
+	virtual void mix(mp_sint32* buffer, mp_uint32 numSamples, mp_uint32 numChannels = 0, mp_sbyte** buffers = 0) = 0;
 };
 
 #endif

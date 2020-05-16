@@ -101,8 +101,8 @@ AudioDriverManager::AudioDriverManager() :
 	// On Windows Vista we set the DS driver to be the default
 	if (IsWindowsVistaOrGreater())
 		defaultDriverIndex = i-2;
-#endif	
-	
+#endif
+
 #endif
 #if !defined(_WIN32_WCE) && defined(__WASAPI__)
 	driverList[i++] = new AudioDriver_PORTAUDIO();
@@ -121,7 +121,7 @@ AudioDriverManager::AudioDriverManager() :
 	mp_uint32 deviceCount = 0;
 	AudioObjectID* deviceIDs = NULL;
 	OSStatus err = AudioDriver_COREAUDIO::getAudioDevices(deviceCount, deviceIDs);
-	
+
 	if (err)
 		fprintf(stderr, "Core Audio: Error while enumerating devices (%d)\n", err);
 
@@ -129,14 +129,14 @@ AudioDriverManager::AudioDriverManager() :
 
 	// First device: system default output
 	driverList[0] = new AudioDriver_COREAUDIO();
-	
+
 	// List all output devices
 	int i;
 	for (i = 0; i < deviceCount; i++)
 	{
 		driverList[i + 1] = new AudioDriver_COREAUDIO(deviceIDs[i]);
 	}
-		
+
 	if (deviceIDs)
 		delete[] deviceIDs;
 }
@@ -180,12 +180,14 @@ AudioDriverManager::AudioDriverManager() :
 //					 	SDL implementation
 //////////////////////////////////////////////////////////////////
 #include "AudioDriver_SDL.h"
+#include "AudioDriver_SAGA.h"
 
 AudioDriverManager::AudioDriverManager() :
 	defaultDriverIndex(0)
 {
-	ALLOC_DRIVERLIST(1);
+	ALLOC_DRIVERLIST(2);
 	driverList[0] = new AudioDriver_SDL();
+	driverList[1] = new AudioDriver_SAGA();
 }
 
 #elif defined(DRIVER_PSP)
