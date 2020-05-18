@@ -180,14 +180,12 @@ AudioDriverManager::AudioDriverManager() :
 //					 	SDL implementation
 //////////////////////////////////////////////////////////////////
 #include "AudioDriver_SDL.h"
-#include "AudioDriver_SAGA.h"
 
 AudioDriverManager::AudioDriverManager() :
 	defaultDriverIndex(0)
 {
-	ALLOC_DRIVERLIST(2);
+	ALLOC_DRIVERLIST(1);
 	driverList[0] = new AudioDriver_SDL();
-	driverList[1] = new AudioDriver_SAGA();
 }
 
 #elif defined(DRIVER_PSP)
@@ -215,6 +213,20 @@ AudioDriverManager::AudioDriverManager() :
 	ALLOC_DRIVERLIST(1);
 	driverList[0] = new AudioDriver_Haiku();
 }
+
+#elif defined(DRIVER_PAMELA)
+//////////////////////////////////////////////////////////////////
+//					Pamela implementation
+//////////////////////////////////////////////////////////////////
+#include "AudioDriver_Pamela.h"
+
+AudioDriverManager::AudioDriverManager() :
+	defaultDriverIndex(0)
+{
+	ALLOC_DRIVERLIST(1);
+	driverList[0] = new AudioDriver_Pamela();
+}
+
 
 #endif
 

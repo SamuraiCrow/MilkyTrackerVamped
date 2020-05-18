@@ -40,13 +40,15 @@
 
 #include "MilkyPlayTypes.h"
 
+#define MAX_DIRECTOUT_CHANNELS 8
+
 struct Mixable
 {
 	virtual ~Mixable()
 	{
 	}
 
-	virtual void mix(mp_sint32* buffer, mp_uint32 numSamples, mp_uint32 numChannels = 0, mp_sbyte** buffers = 0) = 0;
+	virtual void mix(mp_sint32* buffer, mp_uint32 numSamples, mp_uint32 numChannels = 0, mp_sword** buffers = 0) = 0;
 };
 
 #endif

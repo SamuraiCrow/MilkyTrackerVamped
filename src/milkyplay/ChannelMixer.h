@@ -110,8 +110,7 @@ public:
 	enum
 	{
 		// pretty large buffer for most systems
-		BUFFERSIZE_DEFAULT	   = 8192,
-		MAX_DIRECTOUT_CHANNELS = 8
+		BUFFERSIZE_DEFAULT	   = 8192
 	};
 };
 
@@ -301,7 +300,7 @@ public:
 
 		void addChannels(ChannelMixer* mixer, mp_uint32 numChannels, mp_sint32* buffer32,mp_sint32 beatNum, mp_sint32 beatlength);
 		void addChannel(TMixerChannel* chn, mp_sint32* buffer32, const mp_sint32 beatlength, const mp_sint32 beatSize);
-		void directOutChannel(ChannelMixer* mixer, mp_uint32 c, mp_sbyte* buffer, mp_sint32 beatNum, mp_sint32 beatlength);
+		void directOutChannel(ChannelMixer* mixer, mp_uint32 c, mp_sword* buffer, mp_sint32 beatNum, mp_sint32 beatlength);
 
 		// walk along the sample
 		// intpart is the 32 bit integer part of the position
@@ -337,7 +336,7 @@ public:
 		}
 
 		// see above for comments
-		virtual void directOutBlockFull(mp_sbyte* buffer, TMixerChannel* chn, mp_uint32 count)
+		virtual void directOutBlockFull(mp_sword* buffer, TMixerChannel* chn, mp_uint32 count)
 		{
 		}
 
@@ -359,7 +358,7 @@ private:
 	mp_uint32	rMixFrequency;				// 0x7FFFFFFF/mixFrequency
 
 	mp_sint32* 	mixbuffBeatPacket;
-	mp_sbyte** 	mixbuffBeatPackets;
+	mp_sword** 	mixbuffBeatPackets;
 	mp_uint32	mixBufferSize;				// this is the resulting buffer size in 16 bit words
 
 	mp_uint32	beatPacketSize;				// size of 1/250 of a second in samples
@@ -405,8 +404,8 @@ public:
 	virtual			~ChannelMixer();
 
 	mp_uint32		getMixBufferSize() const { return mixBufferSize; }
-	void			directOut(mp_uint32 numChannels, mp_sbyte** buffers);
-	void			mix(mp_sint32* buffer, mp_uint32 numSamples, mp_uint32 numChannels = 0, mp_sbyte** buffers = 0);
+	void			directOut(mp_uint32 numChannels, mp_sword** buffers);
+	void			mix(mp_sint32* buffer, mp_uint32 numSamples, mp_uint32 numChannels = 0, mp_sword** buffers = 0);
 	void			updateSampleCounter(mp_sint32 numSamples) { sampleCounter+=numSamples; }
 	void			resetSampleCounter() { sampleCounter=0; }
 

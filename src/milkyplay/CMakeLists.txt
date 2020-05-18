@@ -145,15 +145,15 @@ elseif(AROS OR AMIGA)
         PRIVATE
             # Sources
             drivers/sdl/AudioDriver_SDL.cpp
-            drivers/amiga/AudioDriver_SAGA.cpp
-            drivers/amiga/AudioDriver_SAGA.cpp
+            drivers/amiga/AudioDriver_Pamela.cpp
+            drivers/amiga/AudioDriver_Pamela.cpp
 
             # VASM
-            drivers/amiga/AudioDriver_SAGA.s
+            drivers/amiga/AudioDriver_Pamela.s
 
             # Headers
             drivers/sdl/AudioDriver_SDL.h
-            drivers/amiga/AudioDriver_SAGA.h
+            drivers/amiga/AudioDriver_Pamela.h
         )
     target_include_directories(milkyplay PRIVATE
             drivers/sdl
@@ -163,7 +163,7 @@ elseif(AROS OR AMIGA)
     target_link_libraries(milkyplay PUBLIC ${SDL_LIBRARY})
 
     message(STATUS "Enabled AHI")
-    message(STATUS "Enabled SAGA")
+    message(STATUS "Enabled Pamela")
 elseif(WIN32)
     # Basic WaveOut support
     target_sources(milkyplay

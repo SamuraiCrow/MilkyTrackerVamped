@@ -53,7 +53,7 @@ public:
 	virtual bool supportsFullChecking() { return true; }
 	virtual bool supportsNoChecking() { return false; }
 
-	virtual void directOutBlockFull(mp_sbyte* buffer, ChannelMixer::TMixerChannel* chn, mp_uint32 count)
+	virtual void directOutBlockFull(mp_sword* buffer, ChannelMixer::TMixerChannel* chn, mp_uint32 count)
 	{
 		mp_sint32 vol = 0;
 		switch (chn->index & 3)

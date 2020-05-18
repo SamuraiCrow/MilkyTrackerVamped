@@ -662,12 +662,12 @@ continueWithBiDir16_## LABELNO: \
 	/* 8 bit sample */ \
 	sd1 = ((mp_sbyte)sample[smppos])<<8; \
 	/* this is mono! */ \
-	(*buffer++) = ((sd1*(vol>>15))>>15) >> 8; \
+	(*buffer++) = (sd1*(vol>>15))>>15; \
 
 #define FULLDIRECTOUT_16BIT_NORMAL \
 	/* 16 bit sample */ \
 	sd1 = ((mp_sword*)(sample))[smppos]; \
 	/* this is mono */ \
-	(*buffer++) = ((sd1*(vol>>15))>>15) >> 8;
+	(*buffer++) = (sd1*(vol>>15))>>15;
 
 #endif

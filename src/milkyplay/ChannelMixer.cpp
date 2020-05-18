@@ -76,7 +76,7 @@ void ChannelMixer::panToVol (ChannelMixer::TMixerChannel *chn, mp_sint32 &volL, 
 		volL = volR = 0;
 }
 
-void ChannelMixer::ResamplerBase::directOutChannel(ChannelMixer* mixer, mp_uint32 c, mp_sbyte* buffer, mp_sint32 beatNum, mp_sint32 beatlength)
+void ChannelMixer::ResamplerBase::directOutChannel(ChannelMixer* mixer, mp_uint32 c, mp_sword* buffer, mp_sint32 beatNum, mp_sint32 beatlength)
 {
 	ChannelMixer::TMixerChannel* chn = &mixer->channel[c];
 	ChannelMixer::TMixerChannel* newChannel = mixer->newChannel;
@@ -547,7 +547,7 @@ void ChannelMixer::setFrequency(mp_sint32 frequency)
 	for(int i = 0; i < MAX_DIRECTOUT_CHANNELS; i++) {
 		if (mixbuffBeatPackets[i])
 			delete[] mixbuffBeatPackets[i];
-		mixbuffBeatPackets[i] = new mp_sbyte[beatPacketSize];
+		mixbuffBeatPackets[i] = new mp_sword[beatPacketSize];
 	}
 
 	// channels contain information based on beatPacketSize so this might
@@ -612,7 +612,7 @@ ChannelMixer::ChannelMixer(mp_uint32 numChannels,
 	memset(resamplerTable, 0, sizeof(resamplerTable));
 
 	// Helper structures for direct output
-	mixbuffBeatPackets = new mp_sbyte*[MAX_DIRECTOUT_CHANNELS];
+	mixbuffBeatPackets = new mp_sword*[MAX_DIRECTOUT_CHANNELS];
 
 	// Set initial frequency
 	setFrequency(frequency);
@@ -1013,7 +1013,7 @@ static inline void storeTimeRecordData(mp_sint32 nb, ChannelMixer::TMixerChannel
 	}
 }
 
-void ChannelMixer::directOut(mp_uint32 numChannels, mp_sbyte** buffers)
+void ChannelMixer::directOut(mp_uint32 numChannels, mp_sword** buffers)
 {
 	if (!paused)
 	{
@@ -1030,14 +1030,14 @@ void ChannelMixer::directOut(mp_uint32 numChannels, mp_sbyte** buffers)
 				todo = mixBufferSize;
 				mp_uint32 pos = beatLength - lastBeatRemainder;
 				for(c = 0; c < nChannels; c++) {
-					memcpy(buffers[c], mixbuffBeatPackets[c] + pos, todo);
+					memcpy(buffers[c], mixbuffBeatPackets[c] + pos, todo * sizeof(mp_sword));
 				}
 				done = mixBufferSize;
 				lastBeatRemainder -= done;
 			} else {
 				mp_uint32 pos = beatLength - lastBeatRemainder;
 				for(c = 0; c < nChannels; c++) {
-					memcpy(buffers[c], mixbuffBeatPackets[c] + pos, todo);
+					memcpy(buffers[c], mixbuffBeatPackets[c] + pos, todo * sizeof(mp_sword));
 					buffers[c] += lastBeatRemainder;
 				}
 				mixSize -= lastBeatRemainder;
@@ -1071,7 +1071,7 @@ void ChannelMixer::directOut(mp_uint32 numChannels, mp_sbyte** buffers)
 
 			if (done < (mp_sint32)mixBufferSize) {
 				for(c = 0; c < nChannels; c++) {
-					memset(mixbuffBeatPackets[c], 0, beatLength);
+					memset(mixbuffBeatPackets[c], 0, beatLength * sizeof(mp_sword));
 				}
 
 				timer(numbeats);
@@ -1088,7 +1088,7 @@ void ChannelMixer::directOut(mp_uint32 numChannels, mp_sbyte** buffers)
 				mp_sint32 todo = mixBufferSize - done;
 				if (todo) {
 					for(c = 0; c < nChannels; c++) {
-						memcpy(buffers[c], mixbuffBeatPackets[c], todo);
+						memcpy(buffers[c], mixbuffBeatPackets[c], todo * sizeof(mp_sword));
 					}
 					lastBeatRemainder = beatLength - todo;
 				}
@@ -1097,7 +1097,7 @@ void ChannelMixer::directOut(mp_uint32 numChannels, mp_sbyte** buffers)
 	}
 }
 
-void ChannelMixer::mix(mp_sint32* mixbuff32, mp_uint32 bufferSize, mp_uint32 numChannels /* = 0 */, mp_sbyte** buffers /* = 0 */)
+void ChannelMixer::mix(mp_sint32* mixbuff32, mp_uint32 bufferSize, mp_uint32 numChannels /* = 0 */, mp_sword** buffers /* = 0 */)
 {
 	updateSampleCounter(bufferSize);
 

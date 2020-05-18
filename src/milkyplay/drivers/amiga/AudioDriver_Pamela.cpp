@@ -4,7 +4,7 @@
 #include <hardware/intbits.h>
 #include <hardware/cia.h>
 
-#include "AudioDriver_SAGA.h"
+#include "AudioDriver_Pamela.h"
 #include "MasterMixer.h"
 
 extern volatile struct Custom   custom;
@@ -30,17 +30,23 @@ extern volatile struct Custom   custom;
 #define SAGA_AUDIO_VOLFAR(CH)   SAGA_AUDIO_REG(CH, 0x0c)
 #define SAGA_AUDIO_LENHI(CH)    SAGA_AUDIO_REG(CH, 0x0e)
 
-#define DEBUG_DRIVER    1
-#define MAX_BANKS       2
-#define MAX_CHANNELS    (MAX_BANKS << 2)
-#define MAX_VOLUME      0x40
-#define PI_F            3.14159265358979323846f
+#define SAGA_ADKCON2            (SAGA_REGBANK(1) + 0x9e)
 
-#define SAMPLES_CHUNK   512
-#define SAMPLES_RING    16384
-#define SAMPLES_FETCH   2048 // @todo fix make depedendant from requested format
+#define BD16B_AUD(CH)           (CH)
+#define BD16F_AUD(CH)           (1L << (BD16B_AUD(CH)))
+#define BD16F_ALL               0xff
 
-AudioDriver_SAGA::AudioDriver_SAGA()
+#define DEBUG_DRIVER            1
+#define MAX_VOLUME              0x40
+
+#define PI_F                    3.14159265358979323846f
+#define PAULA_CLK_PAL           3546895
+
+#define SAMPLES_CHUNK           512
+#define SAMPLES_RING            16384
+#define SAMPLES_FETCH           2048 // @todo fix make depedendant from requested format
+
+AudioDriver_Pamela::AudioDriver_Pamela()
 : AudioDriverBase()
 , irqAudioOld(NULL)
 , idxRead(0)
@@ -53,48 +59,53 @@ AudioDriver_SAGA::AudioDriver_SAGA()
     irqBufferAudio = AllocMem(sizeof(struct Interrupt), MEMF_PUBLIC | MEMF_CLEAR);
 
     if(!directOut) {
-        // Bounced buffer for 16-bit stereo (4 byte a sample)
-        samplesBounced = AllocMem(SAMPLES_FETCH << 2, MEMF_PUBLIC | MEMF_CLEAR);
+        // Fetch buffer for 16-bit stereo (4 byte a sample)
+        samplesFetched = AllocMem(SAMPLES_FETCH << 2, MEMF_PUBLIC | MEMF_CLEAR);
 
-        // Converted buffers for 8-bit mono (1 byte a sample)
-        samplesLeft = AllocMem(SAMPLES_RING, MEMF_CHIP | MEMF_CLEAR);
-        samplesRight = AllocMem(SAMPLES_RING, MEMF_CHIP | MEMF_CLEAR);
+        // Ring buffers for each side
+        samplesLeft = AllocMem(SAMPLES_RING * SAMPLE_SIZE, MEMF_CHIP | MEMF_CLEAR);
+        samplesRight = AllocMem(SAMPLES_RING * SAMPLE_SIZE, MEMF_CHIP | MEMF_CLEAR);
     } else {
         // Ring buffers for each channel
-        chanRing = AllocMem(MAX_CHANNELS * sizeof(mp_sbyte *), MEMF_PUBLIC | MEMF_CLEAR);
-        for(i = 0; i < MAX_CHANNELS; i++)
-            chanRing[i] = AllocMem(SAMPLES_RING, MEMF_CHIP | MEMF_CLEAR);
-        chanRingPtrs = AllocMem(MAX_CHANNELS * sizeof(mp_sbyte *), MEMF_PUBLIC | MEMF_CLEAR);
+        chanFetch = AllocMem(MAX_CHANNELS * sizeof(mp_sword *), MEMF_PUBLIC | MEMF_CLEAR);
+        chanRing = AllocMem(MAX_CHANNELS * sizeof(mp_smptype *), MEMF_PUBLIC | MEMF_CLEAR);
 
-        // Panning for each channel
-        chanPan = AllocMem(MAX_CHANNELS * sizeof(mp_sword), MEMF_PUBLIC | MEMF_CLEAR);
+        for(i = 0; i < MAX_CHANNELS; i++) {
+            chanFetch[i] = AllocMem(SAMPLES_FETCH * sizeof(mp_sword), MEMF_PUBLIC | MEMF_CLEAR);
+            chanRing[i] = AllocMem(SAMPLES_RING * SAMPLE_SIZE, MEMF_CHIP | MEMF_CLEAR);
+        }
+
+        chanRingPtrs = AllocMem(MAX_CHANNELS * sizeof(mp_smptype *), MEMF_PUBLIC | MEMF_CLEAR);
     }
 }
 
-AudioDriver_SAGA::~AudioDriver_SAGA()
+AudioDriver_Pamela::~AudioDriver_Pamela()
 {
     int i;
 
     if(!directOut) {
-        FreeMem(samplesRight, SAMPLES_RING);
-        FreeMem(samplesLeft, SAMPLES_RING);
+        FreeMem(samplesRight, SAMPLES_RING * SAMPLE_SIZE);
+        FreeMem(samplesLeft, SAMPLES_RING * SAMPLE_SIZE);
 
-        FreeMem(samplesBounced, SAMPLES_FETCH << 2);
-
-        FreeMem(irqBufferAudio, sizeof(struct Interrupt));
-        FreeMem(irqPlayAudio, sizeof(struct Interrupt));
+        FreeMem(samplesFetched, SAMPLES_FETCH << 2);
     } else {
-        FreeMem(chanPan, MAX_CHANNELS * sizeof(mp_sword));
+        FreeMem(chanRingPtrs, MAX_CHANNELS * sizeof(mp_smptype *));
 
-        for(i = 0; i < MAX_CHANNELS; i++)
-            FreeMem(chanRing[i], SAMPLES_RING);
-        FreeMem(chanRing, MAX_CHANNELS * sizeof(mp_sbyte *));
-        FreeMem(chanRingPtrs, MAX_CHANNELS * sizeof(mp_sbyte *));
+        for(i = 0; i < MAX_CHANNELS; i++) {
+            FreeMem(chanRing[i], SAMPLES_RING * SAMPLE_SIZE);
+            FreeMem(chanFetch[i], SAMPLES_FETCH * sizeof(mp_sword));
+        }
+
+        FreeMem(chanRing, MAX_CHANNELS * sizeof(mp_smptype *));
+        FreeMem(chanFetch, MAX_CHANNELS * sizeof(mp_sword *));
     }
+
+    FreeMem(irqBufferAudio, sizeof(struct Interrupt));
+    FreeMem(irqPlayAudio, sizeof(struct Interrupt));
 }
 
 void
-AudioDriver_SAGA::setGlobalVolume(mp_ubyte volume)
+AudioDriver_Pamela::setGlobalVolume(mp_ubyte volume)
 {
     int i;
 
@@ -105,7 +116,7 @@ AudioDriver_SAGA::setGlobalVolume(mp_ubyte volume)
 }
 
 void
-AudioDriver_SAGA::disableDMA()
+AudioDriver_Pamela::disableDMA()
 {
     int i;
 
@@ -119,7 +130,7 @@ AudioDriver_SAGA::disableDMA()
 }
 
 void
-AudioDriver_SAGA::enableDMA()
+AudioDriver_Pamela::enableDMA()
 {
     int i;
 
@@ -133,7 +144,7 @@ AudioDriver_SAGA::enableDMA()
 }
 
 void
-AudioDriver_SAGA::disableIRQ()
+AudioDriver_Pamela::disableIRQ()
 {
     custom.intena = INTF_AUD0;
 
@@ -145,7 +156,7 @@ AudioDriver_SAGA::disableIRQ()
 }
 
 void
-AudioDriver_SAGA::enableIRQ()
+AudioDriver_Pamela::enableIRQ()
 {
     if(irqAudioOld == NULL) {
         irqAudioOld = SetIntVector(INTB_AUD0, irqPlayAudio);
@@ -156,26 +167,26 @@ AudioDriver_SAGA::enableIRQ()
 }
 
 void
-AudioDriver_SAGA::playAudioService(register AudioDriver_SAGA * that __asm("a1"))
+AudioDriver_Pamela::playAudioService(register AudioDriver_Pamela * that __asm("a1"))
 {
     that->playAudio();
 }
 
 void
-AudioDriver_SAGA::playAudio()
+AudioDriver_Pamela::playAudio()
 {
     int i;
 
     if(!directOut) {
-        *((volatile mp_uint32 *) SAGA_AUDIO_LOCHI(0)) = (mp_uint32) samplesLeft + idxRead;
-        *((volatile mp_uword *) SAGA_AUDIO_LENLO(0)) = SAMPLES_CHUNK >> 1;
+        *((volatile mp_uint32 *) SAGA_AUDIO_LOCHI(0)) = (mp_uint32) (samplesLeft + idxRead);
+        *((volatile mp_uword *) SAGA_AUDIO_LENLO(0)) = SAMPLES_CHUNK >> SAMPLE_SIZE;
 
-        *((volatile mp_uint32 *) SAGA_AUDIO_LOCHI(1)) = (mp_uint32) samplesRight + idxRead;
-        *((volatile mp_uword *) SAGA_AUDIO_LENLO(1)) = SAMPLES_CHUNK >> 1;
+        *((volatile mp_uint32 *) SAGA_AUDIO_LOCHI(1)) = (mp_uint32) (samplesRight + idxRead);
+        *((volatile mp_uword *) SAGA_AUDIO_LENLO(1)) = SAMPLES_CHUNK >> SAMPLE_SIZE;
     } else {
         for(i = 0; i < MAX_CHANNELS; i++) {
-            *((volatile mp_uint32 *) SAGA_AUDIO_LOCHI(i)) = (mp_uint32) chanRing[i] + idxRead;
-            *((volatile mp_uword *) SAGA_AUDIO_LENLO(i)) = SAMPLES_CHUNK >> 1;
+            *((volatile mp_uint32 *) SAGA_AUDIO_LOCHI(i)) = (mp_uint32) (chanRing[i] + idxRead);
+            *((volatile mp_uword *) SAGA_AUDIO_LENLO(i)) = SAMPLES_CHUNK >> SAMPLE_SIZE;
         }
     }
 
@@ -187,15 +198,15 @@ AudioDriver_SAGA::playAudio()
 }
 
 mp_sint32
-AudioDriver_SAGA::bufferAudioService(register AudioDriver_SAGA * that __asm("a1"))
+AudioDriver_Pamela::bufferAudioService(register AudioDriver_Pamela * that __asm("a1"))
 {
     return that->bufferAudio();
 }
 
 mp_sint32
-AudioDriver_SAGA::bufferAudio()
+AudioDriver_Pamela::bufferAudio()
 {
-    int i;
+    int i, j;
 
     // Fetch only if we would not write into the block to read
     mp_sint32 idxDist;
@@ -208,30 +219,48 @@ AudioDriver_SAGA::bufferAudio()
 		MasterMixer* mixer = this->mixer;
 
         if(!directOut) {
-            mp_sword * b = samplesBounced;
-            mp_sbyte
+            mp_sword * f = samplesFetched;
+            mp_smptype
                 * l = samplesLeft + idxWrite,
                 * r = samplesRight + idxWrite;
 
             if (isMixerActive())
-                mixer->mixerHandler(b);
+                mixer->mixerHandler(f);
             else
-                memset(b, 0, SAMPLES_FETCH << 2);
+                memset(f, 0, SAMPLES_FETCH << 2);
 
-            // Deinterlave and scale down to 8-bit
+            // Deinterleave stereo
             for(i = 0; i < SAMPLES_FETCH; i++) {
-                *(l++) = *(b++) >> 8;
-                *(r++) = *(b++) >> 8;
+#ifdef PAULA
+                *(l++) = *(f++) >> 8;
+                *(r++) = *(f++) >> 8;
+#else
+                *(l++) = *(f++);
+                *(r++) = *(f++);
+#endif
             }
         } else {
             if (isMixerActive()) {
+#ifdef PAULA
+                mixer->mixerHandler(NULL, MAX_CHANNELS, chanFetch);
+
+                for(i = 0; i < MAX_CHANNELS; i++) {
+                    mp_sword * s = chanFetch[i];
+                    mp_smptype * d = chanRing[i] + idxWrite;
+
+                    for(j = 0; j < SAMPLES_FETCH; j++) {
+                        *(d++) = *(s++) >> 8;
+                    }
+                }
+#else
                 for(i = 0; i < MAX_CHANNELS; i++) {
                     chanRingPtrs[i] = chanRing[i] + idxWrite;
                 }
                 mixer->mixerHandler(NULL, MAX_CHANNELS, chanRingPtrs);
+#endif
             } else {
                 for(i = 0; i < MAX_CHANNELS; i++) {
-                    memset(chanRing[i] + idxWrite, 0, SAMPLES_FETCH);
+                    memset(chanRing[i] + idxWrite, 0, SAMPLES_FETCH * SAMPLE_SIZE);
                 }
             }
         }
@@ -246,14 +275,21 @@ AudioDriver_SAGA::bufferAudio()
 
 
 mp_sint32
-AudioDriver_SAGA::initDevice(mp_sint32 bufferSizeInWords, mp_uint32 mixFrequency, MasterMixer* mixer)
+AudioDriver_Pamela::initDevice(mp_sint32 bufferSizeInWords, mp_uint32 mixFrequency, MasterMixer* mixer)
 {
     int i;
 
 #if DEBUG_DRIVER
-    printf("AudioDriver_SAGA::initDevice(%ld, %ld, %lx)\n", bufferSizeInWords, mixFrequency, mixer);
+    printf("AudioDriver_Pamela::initDevice(%ld, %ld, %lx)\n", bufferSizeInWords, mixFrequency, mixer);
     printf("INTENAR: %lx DMACONR: %lx\n", custom.intenar, custom.dmaconr);
 #endif
+
+#ifdef PAULA
+    mixFrequency = 22050;
+#else
+    mixFrequency = 22050;
+#endif
+    printf("Forcing mix frequency to %ld hz\n", mixFrequency);
 
 	mp_sint32 res = AudioDriverBase::initDevice(bufferSizeInWords, mixFrequency, mixer);
 	if (res < 0) {
@@ -289,20 +325,27 @@ AudioDriver_SAGA::initDevice(mp_sint32 bufferSizeInWords, mp_uint32 mixFrequency
     *((volatile mp_ubyte *) CIAAPRA) |= CIAF_LED;
     custom.adkcon = 0xff;
 
+    // On Pamela we use 16-bit bit depth ;-)
+#ifndef PAULA
+    *((volatile mp_uword *) SAGA_ADKCON2) = 0x8000 | BD16F_ALL;
+#endif
+
     // Initialize audio hardware with default values
+    mp_uword period = PAULA_CLK_PAL / this->mixFrequency;
+
     if(!directOut) {
         *((volatile mp_uint32 *) SAGA_AUDIO_LOCHI(0)) = (mp_uint32) samplesLeft;
-        *((volatile mp_uword *) SAGA_AUDIO_LENLO(0)) = SAMPLES_CHUNK >> 1;
-        *((volatile mp_uword *) SAGA_AUDIO_PERIOD(0)) = 161; // 22030Hz
+        *((volatile mp_uword *) SAGA_AUDIO_LENLO(0)) = SAMPLES_CHUNK >> SAMPLE_SIZE;
+        *((volatile mp_uword *) SAGA_AUDIO_PERIOD(0)) = period;
 
         *((volatile mp_uint32 *) SAGA_AUDIO_LOCHI(1)) = (mp_uint32) samplesRight;
-        *((volatile mp_uword *) SAGA_AUDIO_LENLO(1)) = SAMPLES_CHUNK >> 1;
-        *((volatile mp_uword *) SAGA_AUDIO_PERIOD(1)) = 161; // 22030Hz
+        *((volatile mp_uword *) SAGA_AUDIO_LENLO(1)) = SAMPLES_CHUNK >> SAMPLE_SIZE;
+        *((volatile mp_uword *) SAGA_AUDIO_PERIOD(1)) = period;
     } else {
         for(i = 0; i < MAX_CHANNELS; i++) {
             *((volatile mp_uint32 *) SAGA_AUDIO_LOCHI(i)) = (mp_uint32) chanRing[i];
-            *((volatile mp_uword *) SAGA_AUDIO_LENLO(i)) = SAMPLES_CHUNK >> 1;
-            *((volatile mp_uword *) SAGA_AUDIO_PERIOD(i)) = 161; // 22030Hz
+            *((volatile mp_uword *) SAGA_AUDIO_LENLO(i)) = SAMPLES_CHUNK >> SAMPLE_SIZE;
+            *((volatile mp_uword *) SAGA_AUDIO_PERIOD(i)) = period;
         }
     }
 
@@ -311,10 +354,10 @@ AudioDriver_SAGA::initDevice(mp_sint32 bufferSizeInWords, mp_uint32 mixFrequency
 }
 
 mp_sint32
-AudioDriver_SAGA::closeDevice()
+AudioDriver_Pamela::closeDevice()
 {
 #if DEBUG_DRIVER
-    printf("AudioDriver_SAGA::closeDevice()\n");
+    printf("AudioDriver_Pamela::closeDevice()\n");
 #endif
     setGlobalVolume(0);
     disableDMA();
@@ -326,10 +369,10 @@ AudioDriver_SAGA::closeDevice()
 }
 
 mp_sint32
-AudioDriver_SAGA::start()
+AudioDriver_Pamela::start()
 {
 #if DEBUG_DRIVER
-    printf("AudioDriver_SAGA::start()\n");
+    printf("AudioDriver_Pamela::start()\n");
 #endif
     setGlobalVolume(MAX_VOLUME);
     enableDMA();
@@ -339,10 +382,10 @@ AudioDriver_SAGA::start()
 }
 
 mp_sint32
-AudioDriver_SAGA::stop()
+AudioDriver_Pamela::stop()
 {
 #if DEBUG_DRIVER
-    printf("AudioDriver_SAGA::stop()\n");
+    printf("AudioDriver_Pamela::stop()\n");
 #endif
     setGlobalVolume(0);
     disableDMA();
@@ -351,10 +394,10 @@ AudioDriver_SAGA::stop()
 }
 
 mp_sint32
-AudioDriver_SAGA::pause()
+AudioDriver_Pamela::pause()
 {
 #if DEBUG_DRIVER
-    printf("AudioDriver_SAGA::pause()\n");
+    printf("AudioDriver_Pamela::pause()\n");
 #endif
     disableDMA();
 
@@ -362,10 +405,10 @@ AudioDriver_SAGA::pause()
 }
 
 mp_sint32
-AudioDriver_SAGA::resume()
+AudioDriver_Pamela::resume()
 {
 #if DEBUG_DRIVER
-    printf("AudioDriver_SAGA::resume()\n");
+    printf("AudioDriver_Pamela::resume()\n");
 #endif
     enableDMA();
 
@@ -373,13 +416,14 @@ AudioDriver_SAGA::resume()
 }
 
 const char*
-AudioDriver_SAGA::getDriverID()
+AudioDriver_Pamela::getDriverID()
 {
-    return "SAGAAudio";
+    return "PamelaAudio";
 }
 
 mp_sint32
-AudioDriver_SAGA::getPreferredBufferSize() const
+AudioDriver_Pamela::getPreferredBufferSize() const
 {
-    return directOut ? SAMPLES_FETCH : SAMPLES_FETCH << 2;
+    // @fuckthat This is number of samples!!!!!!!!!! Do return sample buffer size here. Not BYTE buffer size!!!!!!!!!!!!!!!
+    return SAMPLES_FETCH;
 }

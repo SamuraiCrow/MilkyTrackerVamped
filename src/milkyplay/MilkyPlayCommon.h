@@ -100,8 +100,7 @@
 #elif defined(__HAIKU__) && !defined(__FORCE_SDL_AUDIO__)
 	#define DRIVER_HAIKU
 #elif defined(__AMIGA__) && !defined(__FORCE_SDL_AUDIO__)
-	#define DRIVER_SDL
-	#define DRIVER_SAGA
+	#define DRIVER_PAMELA
 #else
 	#define DRIVER_SDL
 #endif
