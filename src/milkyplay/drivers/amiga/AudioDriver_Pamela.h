@@ -20,18 +20,18 @@
 
 #include "AudioDriverBase.h"
 
-#define PAULA
+//#define PAULA
 
 #ifdef PAULA
 #   define MAX_BANKS 1
+#	define MAX_CHANNELS 4
 typedef mp_sbyte mp_smptype;
 #else
 #   define MAX_BANKS 2
+#	define MAX_CHANNELS 16
 typedef mp_sword mp_smptype;
 #endif
-#define SAMPLE_SIZE sizeof(mp_smptype)
-
-#define MAX_CHANNELS (MAX_BANKS << 2)
+#define SAMPLE_SIZE 2
 
 class AudioDriver_Pamela : public AudioDriverBase
 {

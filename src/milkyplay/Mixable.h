@@ -40,7 +40,7 @@
 
 #include "MilkyPlayTypes.h"
 
-#define MAX_DIRECTOUT_CHANNELS 8
+#define MAX_DIRECTOUT_CHANNELS 16
 
 struct Mixable
 {

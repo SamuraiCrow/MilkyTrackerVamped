@@ -389,7 +389,7 @@ void MasterMixer::mixerHandler(mp_sword* buffer, mp_uint32 numChannels /* = 0 */
 		} else {
 			for(int i = 0; i < numChannels; i++) {
 				bufferPtrs[i] = buffers[i];
-				memset(bufferPtrs[i], 0, bufferSize);
+				memset(bufferPtrs[i], 0, bufferSize * sizeof(mp_sword));
 			}
 		}
 	}
