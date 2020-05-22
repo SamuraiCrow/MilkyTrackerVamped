@@ -213,6 +213,9 @@ void Tracker::startUp(bool forceNoSplash/* = false*/)
 	// apply ALL settings, not just the different ones
 	applySettings(settingsDatabase, NULL, true, false);
 
+	// Application of settings could have changed palette, update it
+	updateDisplayPalette();
+
 	// update version information
 	settingsDatabase->store("VERSION", MILKYTRACKER_VERSION);
 

@@ -20,7 +20,7 @@
 
 #include "AudioDriverBase.h"
 
-//#define PAULA
+#define PAULA
 
 #ifdef PAULA
 #   define MAX_BANKS 1

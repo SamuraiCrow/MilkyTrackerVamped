@@ -43,6 +43,8 @@ private:
 	bool needsTemporaryBuffer;
 	pp_uint8* temporaryBuffer;
 	pp_uint32 temporaryBufferPitch, temporaryBufferBPP;
+	pp_int32 bpp;
+	SDL_Color palette[256];
 
 	// used for rotating coordinates etc.
 	void swap(const PPRect& r);
@@ -66,6 +68,7 @@ public:
 #if SDL_VERSION_ATLEAST(2, 0, 0)
 	virtual void setSize(const PPSize& size);
 #endif
+	virtual void setPalette(PPColor * palette);
 
 	virtual PPGraphicsAbstract* open();
 	virtual void close();

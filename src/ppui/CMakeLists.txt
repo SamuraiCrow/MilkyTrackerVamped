@@ -35,6 +35,7 @@ add_library(ppui STATIC
     DictionaryKey.cpp
     Event.cpp
     Font.cpp
+    Graphics_8BIT.cpp
     Graphics_15BIT.cpp
     Graphics_16BIT.cpp
     Graphics_24bpp_generic.cpp

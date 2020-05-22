@@ -20,7 +20,7 @@ extern volatile struct Custom   custom;
 
 #ifdef PAULA
 
-#   define AUDIO_REGBASE(CH)        (CUSTOM_REGBASE((CH) >> 2) + 0xa0 + (((CH) & 0x3) << 4))
+#   define AUDIO_REGBASE(CH)        (CUSTOM_REGBASE + 0xa0 + (((CH) & 0x3) << 4))
 #   define AUDIO_REG(CH, IDX)       (AUDIO_REGBASE(CH) + (IDX))
 
 #   define AUDIO_LOCHI(CH)          AUDIO_REG(CH, 0x00)
@@ -33,7 +33,7 @@ extern volatile struct Custom   custom;
 
 #else
 
-#   define AUDIO_REGBASE(CH)        (CUSTOM_REGBASE + 0x400 + ((CH) << 4))
+#   define AUDIO_REGBASE(CH)        (CUSTOM_REGBASE + 0x400 + ((CH & 0xf) << 4))
 #   define AUDIO_REG(CH, IDX)       (AUDIO_REGBASE(CH) + (IDX))
 
 #   define AUDIO_LOCHI(CH)          AUDIO_REG(CH, 0x00)
