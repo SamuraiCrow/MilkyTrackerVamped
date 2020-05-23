@@ -188,6 +188,8 @@ elseif(AROS)
     # AROS will provide the SDL dependency via makefile.
 elseif(AMIGA)
     find_package(SDL 1.2 REQUIRED)
+    add_definitions(-DAMIGA_DIRECTOUT)
+    # add_definitions(-DAMIGA_PAULA)
 else()
     # Workaround for SDL bug #3295, which occurs in SDL2 <2.0.5
     # https://bugzilla.libsdl.org/show_bug.cgi?id=3295

@@ -664,7 +664,7 @@ void initTracker(pp_uint32 bpp, PPDisplayDevice::Orientations orientation,
 		bool swapRedBlue, bool fullScreen, bool noSplash) {
 
 	if(bpp == -1)
-		bpp = 8;
+		bpp = 16;
 
 	SDL_EnableKeyRepeat(SDL_DEFAULT_REPEAT_DELAY,
 			SDL_DEFAULT_REPEAT_INTERVAL);

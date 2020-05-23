@@ -20,9 +20,7 @@
 
 #include "AudioDriverBase.h"
 
-#define PAULA
-
-#ifdef PAULA
+#ifdef AMIGA_PAULA
 #   define MAX_BANKS 1
 #	define MAX_CHANNELS 4
 typedef mp_sbyte mp_smptype;
@@ -31,14 +29,18 @@ typedef mp_sbyte mp_smptype;
 #	define MAX_CHANNELS 16
 typedef mp_sword mp_smptype;
 #endif
-#define SAMPLE_SIZE 2
 
 class AudioDriver_Pamela : public AudioDriverBase
 {
 private:
 	mp_sint32   		idxRead, idxWrite;
+	mp_uint32           chunkSize, ringSize, fetchSize;
 	mp_uword    		intenaOld, dmaconOld;
-	bool      			directOut;
+	bool                allocated;
+	mp_sint32           statVerticalBlankMixMedian;
+	mp_sint32           statAudioBufferReset, statAudioBufferResetMedian;
+	mp_sint32           statRingBufferFull, statRingBufferFullMedian;
+	mp_sint32           statCountPerSecond;
 
 	mp_sword ** 		chanFetch;
 
@@ -60,6 +62,9 @@ private:
 	mp_sint32  			bufferAudio();
 	void 				playAudio();
 
+	mp_sint32			alloc(mp_sint32 bufferSize);
+	void 				dealloc();
+
 	void				setGlobalVolume(mp_ubyte volume);
 	void        		disableDMA();
 	void        		enableDMA();
@@ -80,6 +85,8 @@ public:
 
 	virtual				const char*	getDriverID();
 	virtual				mp_sint32	getPreferredBufferSize() const;
+
+	virtual             mp_sint32   getStatValue(mp_uint32 key);
 };
 
 #endif

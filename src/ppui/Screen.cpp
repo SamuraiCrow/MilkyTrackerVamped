@@ -258,6 +258,8 @@ void PPScreen::clear()
 
 void PPScreen::paint(bool update/*= true*/, bool clean/*=false*/)
 {
+	pp_int32 i;
+
 	if (displayDevice == NULL)
 		return;
 
@@ -265,47 +267,11 @@ void PPScreen::paint(bool update/*= true*/, bool clean/*=false*/)
 	if (!g)
 		return;
 
-	if (clean)
-	{
+	if (clean) {
 		g->setColor(0,0,0);
-
 		g->setRect(0, 0, g->getWidth(), g->getHeight());
-
 		g->fill();
 	}
-
-	/*g->setColor(255, 255, 255);
-
-	pp_int32 step = 0;
-	for (pp_int32 y = 0; y < sizeof(characters)/sizeof(pp_uint16); y++)
-	{
-
-		for (pp_int32 x = 0; x < 4; x++)
-		{
-
-			if ((characters[y]>>((3-x)<<2))&1)
-			{
-				g->setPixel(x+32,y+32+step);
-			}
-
-		}
-
-		step += ((y%5)==4)*2;
-
-	}*/
-
-	//g->setFont(PPFont::getFont(PPFont::FONT_SYSTEM));
-	//g->setColor(255, 255, 255);
-	//g->drawChar('A',0,0);
-
-	pp_int32 i;
-
-	/*for (i = 0; i < controls.size(); i++)
-	{
-		PPControl* control = controls.get(i);
-		if (control->isVisible())
-			controls.get(i)->paint(g);
-	}*/
 
 	// modal control overlapping everything
 	if (!(modalControl && modalControl->isVisible() &&

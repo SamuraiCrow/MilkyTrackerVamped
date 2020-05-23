@@ -299,9 +299,7 @@ void PPDisplayDeviceFB::update()
 		return;
 
 	if (theSurface->locked)
-	{
 		return;
-	}
 
 	PPRect r(0, 0, getSize().width, getSize().height);
 	swap(r);
@@ -323,9 +321,7 @@ void PPDisplayDeviceFB::update(const PPRect& r)
 		return;
 
 	if (theSurface->locked)
-	{
 		return;
-	}
 
 #if SDL_VERSION_ATLEAST(2, 0, 0)
 	swap(r);

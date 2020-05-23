@@ -464,7 +464,6 @@ public:
 
 	void sendNoteDown(pp_int32 note, pp_int32 volume = -1);
 	void sendNoteUp(pp_int32 note);
-
 private:
 	void switchEditMode(EditModes mode);
 

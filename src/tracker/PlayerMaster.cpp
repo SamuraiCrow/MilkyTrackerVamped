@@ -369,6 +369,11 @@ const char* PlayerMaster::getNextDriverName() const
 	return mixer->getAudioDriverManager()->getNextDriverName();
 }
 
+const AudioDriverInterface * PlayerMaster::getCurrentDriver() const
+{
+	return mixer->getAudioDriver();
+}
+
 const char* PlayerMaster::getCurrentDriverName() const
 {
 	return mixer->getCurrentAudioDriverName();
