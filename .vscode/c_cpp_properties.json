@@ -4,6 +4,7 @@
             "name": "Amiga",
             "includePath": [
                 "${workspaceFolder}/**",
+                "${workspaceFolder}/include/amiga",
                 "C:/Development/pussygon/build/gcc6/include/SDL",
                 "C:/Development/pussygon/build/gcc6/m68k-amigaos/include",
                 "C:/Development/pussygon/build/gcc6/m68k-amigaos/ndk-include"
@@ -12,7 +13,9 @@
                 "_DEBUG",
                 "UNICODE",
                 "_UNICODE",
-                "AMIGA"
+                "AMIGA",
+                "__AMIGA__",
+                "AMIGA_SAGA_PIP"
             ],
             "windowsSdkVersion": "8.1",
             "compilerPath": "C:/Development/pussygon/build/gcc6/bin/m68k-amigaos-g++.exe",

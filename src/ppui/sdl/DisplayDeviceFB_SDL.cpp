@@ -31,22 +31,39 @@
 #include "DisplayDeviceFB_SDL.h"
 #include "Graphics.h"
 
+#include <unistd.h>
+
+#if defined(AMIGA_SAGA_PIP)
+#	include <exec/exec.h>
+#	include <intuition/intuitionbase.h>
+#	include <vampire/saga.h>
+#	include <vampire/vampire.h>
+#	include <proto/exec.h>
+#	include <proto/intuition.h>
+#	include <proto/vampire.h>
+
+extern struct ExecBase *SysBase;
+extern struct IntuitionBase* IntuitionBase;
+
+struct Library* VampireBase = NULL;
+#endif
+
 PPDisplayDeviceFB::PPDisplayDeviceFB(
 #if !SDL_VERSION_ATLEAST(2, 0, 0)
-									 SDL_Surface*& screen,
+	SDL_Surface*& screen,
 #endif
-									 pp_int32 width,
-									 pp_int32 height,
-									 pp_int32 scaleFactor,
-									 pp_int32 bpp,
-									 bool fullScreen,
-									 Orientations theOrientation/* = ORIENTATION_NORMAL*/,
-									 bool swapRedBlue/* = false*/) :
+	pp_int32 width,
+	pp_int32 height,
+	pp_int32 scaleFactor,
+	pp_int32 bpp,
+	bool fullScreen,
+	Orientations theOrientation/* = ORIENTATION_NORMAL*/,
+	bool swapRedBlue/* = false*/) :
 	PPDisplayDevice(
 #if !SDL_VERSION_ATLEAST(2, 0, 0)
-screen,
+	screen,
 #endif
-width, height, scaleFactor, bpp, fullScreen, theOrientation),
+	width, height, scaleFactor, bpp, fullScreen, theOrientation),
 	needsTemporaryBuffer((orientation != ORIENTATION_NORMAL) || (scaleFactor != 1)),
 	temporaryBuffer(NULL)
 {
@@ -122,8 +139,7 @@ width, height, scaleFactor, bpp, fullScreen, theOrientation),
 
 	/* Some SDL to get display format */
 	videoinfo = SDL_GetVideoInfo();
-	if (bpp == -1)
-	{
+	if (bpp == -1) {
 		bpp = videoinfo->vfmt->BitsPerPixel > 15 ? videoinfo->vfmt->BitsPerPixel : 15;
 	}
 	this->bpp = bpp;
@@ -136,7 +152,53 @@ width, height, scaleFactor, bpp, fullScreen, theOrientation),
 		fprintf(stderr, "Could not set video mode: %s\n", SDL_GetError());
 		exit(2);
 	}
+
+	// Now we know the final BPP, init SAGA PiP
+#	if defined(AMIGA_SAGA_PIP)
+	if(bpp == 16) {
+		struct Screen* screen = NULL;
+
+		if (!(SysBase->AttnFlags & (1 << 10))) {
+			fprintf(stderr, "No AC68080 processor!");
+			exit(1);
+		}
+
+		if (!(VampireBase = OpenResource(V_VAMPIRENAME))) {
+			fprintf(stderr, "Could not find vampire.resource!\n");
+			exit(2);
+		}
+
+		if (VampireBase->lib_Version < 45) {
+			fprintf(stderr, "Vampire.resource version needs to be 45 or higher!\n");
+			exit(3);
+		}
+
+		if (V_EnableAMMX(V_AMMX_V2) == VRES_ERROR) {
+			fprintf(stderr, "Cannot enable AMMX V2+!\n");
+			exit(4);
+		}
+
+		if (screen = LockPubScreen(NULL)) {
+			APTR allocator;
+
+			if (allocator = V_AllocExpansionPort(V_PIP, "MilkyTracker")) {
+				fprintf(stderr, "SAGA PiP already in use! (by: %s)\n", allocator);
+				exit(6);
+			}
+			fprintf(stdout, "Initialized SAGA PiP with %ld bpp\n", bpp);
+
+			this->pubScreen = screen;
+
+			UnlockPubScreen(NULL, screen);
+		}
+	} else {
+		fprintf(stderr, "Could not initialize SAGA PiP: Only 16 bpp are supported\n");
+		exit(7);
+	}
+#	endif
+
 #endif
+
 	// Create a PPGraphics context based on bpp
 	switch (bpp)
 	{
@@ -234,14 +296,62 @@ width, height, scaleFactor, bpp, fullScreen, theOrientation),
 
 PPDisplayDeviceFB::~PPDisplayDeviceFB()
 {
-#if SDL_VERSION_ATLEAST(2, 0, 0)
 	SDL_FreeSurface(theSurface);
+
+#if defined(AMIGA_SAGA_PIP)
+	WRITE16(SAGA_PIP_PIXFMT,   0); // DMA OFF
+	WRITE16(SAGA_PIP_X0,       0);
+	WRITE16(SAGA_PIP_Y0,       0);
+	WRITE16(SAGA_PIP_X1,       0);
+	WRITE16(SAGA_PIP_Y1,       0);
+	WRITE16(SAGA_PIP_COLORKEY, 0);
+	WRITE32(SAGA_PIP_BPLPTR,   0);
+
+	V_FreeExpansionPort(V_PIP);
+#endif
+
+#if SDL_VERSION_ATLEAST(2, 0, 0)
 	SDL_DestroyRenderer(theRenderer);
 	SDL_DestroyWindow(theWindow);
 #endif
+
 	delete[] temporaryBuffer;
 	// base class is responsible for deleting currentGraphics
 }
+
+#if defined(AMIGA_SAGA_PIP)
+struct Window * SDL_AmigaWindowAddr(void);
+
+void PPDisplayDeviceFB::setSAGAPiPSize()
+{
+	ULONG x0 = 0, y0 = 0;
+	ULONG x1 = 0, y1 = 0;
+
+	struct Window * window = SDL_AmigaWindowAddr();
+
+	if (window && pubScreen == IntuitionBase->FirstScreen) {
+		x0 = SAGA_PIP_DELTAX + window->LeftEdge + pubScreen->LeftEdge + 2;
+		y0 = SAGA_PIP_DELTAY + window->BorderTop + window->TopEdge + pubScreen->TopEdge + 0;
+
+		if ((x0 + window->GZZWidth - 16 - 64) < pubScreen->Width) {
+			x1 = x0 + window->GZZWidth;
+			y1 = y0 + window->GZZHeight;
+		} else {
+			x0 = 0;
+			y0 = 0;
+		}
+	}
+
+	WRITE16(SAGA_PIP_X0, x0);
+	WRITE16(SAGA_PIP_Y0, y0);
+	WRITE16(SAGA_PIP_X1, x1);
+	WRITE16(SAGA_PIP_Y1, y1);
+
+	WRITE16(SAGA_PIP_COLORKEY, 0);
+	WRITE16(SAGA_PIP_PIXFMT, SAGAF_RGB16);
+	WRITE32(SAGA_PIP_BPLPTR, (ULONG) theSurface->pixels);
+}
+#endif
 
 PPGraphicsAbstract* PPDisplayDeviceFB::open()
 {
@@ -295,6 +405,10 @@ void PPDisplayDeviceFB::setPalette(PPColor * pppal)
 
 void PPDisplayDeviceFB::update()
 {
+#if defined(AMIGA_SAGA_PIP)
+	return;
+#endif
+
 	if (!isUpdateAllowed() || !isEnabled())
 		return;
 
@@ -302,7 +416,7 @@ void PPDisplayDeviceFB::update()
 		return;
 
 	PPRect r(0, 0, getSize().width, getSize().height);
-	swap(r);
+	postProcess(r);
 
 #if SDL_VERSION_ATLEAST(2, 0, 0)
 	// Update entire texture and copy to renderer
@@ -317,6 +431,10 @@ void PPDisplayDeviceFB::update()
 
 void PPDisplayDeviceFB::update(const PPRect& r)
 {
+#if defined(AMIGA_SAGA_PIP)
+	return;
+#endif
+
 	if (!isUpdateAllowed() || !isEnabled())
 		return;
 
@@ -324,7 +442,7 @@ void PPDisplayDeviceFB::update(const PPRect& r)
 		return;
 
 #if SDL_VERSION_ATLEAST(2, 0, 0)
-	swap(r);
+	postProcess(r);
 
 	PPRect r2(r);
 	r2.scale(scaleFactor);
@@ -343,7 +461,7 @@ void PPDisplayDeviceFB::update(const PPRect& r)
 	SDL_RenderPresent(theRenderer);
 #else
 	PPRect r2(r);
-	swap(r2);
+	postProcess(r2);
 
 	PPRect r3(r);
 	r3.scale(scaleFactor);
@@ -354,7 +472,7 @@ void PPDisplayDeviceFB::update(const PPRect& r)
 #endif
 }
 
-void PPDisplayDeviceFB::swap(const PPRect& r2)
+void PPDisplayDeviceFB::postProcess(const PPRect& r2)
 {
 	PPRect r(r2);
 	pp_int32 h;

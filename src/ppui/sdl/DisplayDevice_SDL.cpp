@@ -96,7 +96,7 @@ SDL_Surface* PPDisplayDevice::CreateScreen(pp_int32& w, pp_int32& h, pp_int32& b
 {
 	SDL_Surface *screen;
 
-	//printf("%s: %ld %ld %ld %lx\n", __PRETTY_FUNCTION__ , w, h, bpp, flags);
+	printf("%ld %ld %ld %ld\n", w, h, bpp, flags);
 
 	/* Set the video mode */
 	screen = SDL_SetVideoMode(w, h, bpp, flags);

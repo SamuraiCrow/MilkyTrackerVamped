@@ -37,6 +37,10 @@
 #define EXIT_FAILURE 2
 #endif
 
+#if defined(AMIGA_SAGA_PIP)
+struct Screen;
+#endif
+
 class PPDisplayDeviceFB : public PPDisplayDevice
 {
 private:
@@ -46,8 +50,12 @@ private:
 	pp_int32 bpp;
 	SDL_Color palette[256];
 
+#if defined(AMIGA_SAGA_PIP)
+	struct Screen * pubScreen;
+#endif
+
 	// used for rotating coordinates etc.
-	void swap(const PPRect& r);
+	void postProcess(const PPRect& r);
 
 public:
 	PPDisplayDeviceFB(
@@ -69,6 +77,9 @@ public:
 	virtual void setSize(const PPSize& size);
 #endif
 	virtual void setPalette(PPColor * palette);
+#if defined(AMIGA_SAGA_PIP)
+	virtual void setSAGAPiPSize();
+#endif
 
 	virtual PPGraphicsAbstract* open();
 	virtual void close();

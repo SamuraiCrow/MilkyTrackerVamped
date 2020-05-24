@@ -156,6 +156,10 @@ else()
                 sdl
                 ${SDL_INCLUDE_DIR}
         )
+        target_include_directories(ppui
+            PRIVATE
+                ${PROJECT_SOURCE_DIR}/include/amiga
+        )
     else()
         target_include_directories(ppui PUBLIC sdl ${SDL2_INCLUDE_DIRS})
     endif()

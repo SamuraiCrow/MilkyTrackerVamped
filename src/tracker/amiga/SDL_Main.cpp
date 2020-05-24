@@ -29,22 +29,22 @@
  */
 
 #ifdef HAVE_CONFIG_H
-#include "config.h"
+#	include "config.h"
 #endif
 #if defined(__AMIGA__) || defined(__amigaos4__)
-#include <exec/exec.h>
-#ifndef AFB_68080
-#define AFB_68080 10
-#endif
-#ifndef AFF_68080
-#define AFF_68080 (1<<AFB_68080)
-#endif
-#if defined(WARPOS) && !defined(AFF68060)
-#define AFF_68060 1
-#endif
+#	include <exec/exec.h>
+#	ifndef AFB_68080
+#		define AFB_68080 10
+#	endif
+#	ifndef AFF_68080
+#		define AFF_68080 (1<<AFB_68080)
+#	endif
+#	if defined(WARPOS) && !defined(AFF68060)
+#		define AFF_68060 1
+#	endif
 #endif
 #if defined(__AMIGA__) || defined(WARPUP) || defined(__WARPOS__) || defined(AROS) || defined(__amigaos4__) || defined(__morphos__)
-#include "amigaversion.h"
+#	include "amigaversion.h"
 #endif
 #include <stdio.h>
 #include <stdlib.h>
@@ -74,8 +74,9 @@
 
 // Amiga specifics
 extern struct ExecBase *SysBase;
-int isRTG;
-int cpu_type;
+
+static int cpuType;
+static bool hasFPU = false;
 
 // SDL surface screen
 SDL_Surface* screen = NULL;
@@ -153,6 +154,9 @@ enum SDLUserEvents {
 	SDLUserEventRMouseRepeat,
 	SDLUserEventMidiKeyDown,
 	SDLUserEventMidiKeyUp,
+#if defined(AMIGA_SAGA_PIP)
+	SDLUserRefreshSAGAPiP
+#endif
 };
 
 static SDLCALL Uint32 timerCallback(Uint32 interval) {
@@ -169,6 +173,11 @@ static SDLCALL Uint32 timerCallback(Uint32 interval) {
 	if (!(timerTicker % 1)) {
 		ev.code = SDLUserEventTimer;
 		SDL_PushEvent((SDL_Event*) & ev);
+
+#if defined(AMIGA_SAGA_PIP)
+		ev.code = SDLUserRefreshSAGAPiP;
+		SDL_PushEvent((SDL_Event*) & ev);
+#endif
 
 		//PPEvent myEvent(eTimer);
 		//RaiseEventSerialized(&myEvent);
@@ -582,6 +591,14 @@ void processSDLUserEvents(const SDL_UserEvent& event) {
 			break;
 		}
 
+#if defined(AMIGA_SAGA_PIP)
+		case SDLUserRefreshSAGAPiP:
+		{
+			myDisplayDevice->setSAGAPiPSize();
+			break;
+		}
+#endif
+
 		case SDLUserEventLMouseRepeat:
 		{
 			PPPoint p;
@@ -663,9 +680,6 @@ void crashHandler(int signum) {
 void initTracker(pp_uint32 bpp, PPDisplayDevice::Orientations orientation,
 		bool swapRedBlue, bool fullScreen, bool noSplash) {
 
-	if(bpp == -1)
-		bpp = 16;
-
 	SDL_EnableKeyRepeat(SDL_DEFAULT_REPEAT_DELAY,
 			SDL_DEFAULT_REPEAT_INTERVAL);
 
@@ -688,10 +702,13 @@ void initTracker(pp_uint32 bpp, PPDisplayDevice::Orientations orientation,
 	sigaction(SIGSEGV, &act, &oldAct);
 #endif
 
+	printf("init1\n");
+
 	SDL_WM_SetCaption("Loading MilkyTracker...", "MilkyTracker");
 	// ------------ initialise tracker ---------------
 	myTracker = new Tracker();
 
+	printf("init2\n");
 	PPSize windowSize = myTracker->getWindowSizeFromDatabase();
 	if (!fullScreen)
 		fullScreen = myTracker->getFullScreenFlagFromDatabase();
@@ -705,11 +722,16 @@ void initTracker(pp_uint32 bpp, PPDisplayDevice::Orientations orientation,
 #ifdef __OPENGL__
 	myDisplayDevice = new PPDisplayDeviceOGL(screen, windowSize.width, windowSize.height, 1, bpp, fullScreen, orientation, swapRedBlue);
 #else
+	printf("init3\n");
 	myDisplayDevice = new PPDisplayDeviceFB(screen, windowSize.width, windowSize.height, scaleFactor,
 			bpp, fullScreen, orientation, swapRedBlue);
+	printf("init4\n");
 #endif
 
+	printf("init5\n");
 	myDisplayDevice->init();
+
+	printf("init6\n");
 
 	myTrackerScreen = new PPScreen(myDisplayDevice, myTracker);
 	myTracker->setScreen(myTrackerScreen);
@@ -721,8 +743,10 @@ void initTracker(pp_uint32 bpp, PPDisplayDevice::Orientations orientation,
 	InitMidi();
 #endif
 
+	printf("init7\n");
 	// try to create timer
 	SDL_SetTimer(20, timerCallback);
+	printf("init8\n");
 
 	timerMutex->lock();
 	ticking = true;
@@ -761,43 +785,33 @@ void SendFile(char *file) {
 #if defined(__PSP__)
 extern "C" int SDL_main(int argc, char *argv[])
 #else
-
-//int ammx = 0;
-//char ammxon = "Off";
-const char* has_fpu = "No";
-
 int main(int argc, char *argv[])
 #endif
 {
-//	ammx = Apollo_EnableAMMX();
-
-//	if (ammx == 1)
-//		ammxon = "On";
 
 #if !defined(__amigaos4__) && !defined(MORPHOS) && !defined(WARPOS) && defined(__AMIGA__)
+
 	// find out what type of CPU we have
 	if ((SysBase->AttnFlags & AFF_68080) != 0)
-		cpu_type = 68080;
+		cpuType = 68080;
 	else if ((SysBase->AttnFlags & AFF_68060) != 0)
-		cpu_type = 68060;
+		cpuType = 68060;
 	else if ((SysBase->AttnFlags & AFF_68040) != 0)
-		cpu_type = 68040;
+		cpuType = 68040;
 	else if ((SysBase->AttnFlags & AFF_68030) != 0)
-		cpu_type = 68030;
+		cpuType = 68030;
 	else if ((SysBase->AttnFlags & AFF_68020) != 0)
-		cpu_type = 68020;
+		cpuType = 68020;
 	else if ((SysBase->AttnFlags & AFF_68010) != 0)
-		cpu_type = 68010;
+		cpuType = 68010;
 	else
-		cpu_type = 68000;
+		cpuType = 68000;
 
 	if ((SysBase->AttnFlags & AFF_FPU40) != 0)
-		has_fpu = "Yes";
+		hasFPU = 1;
 
-	printf("Your CPU is a %i. Has FPU? %s\n", cpu_type, has_fpu);
-
-	if (has_fpu != "Yes")
-	{
+	printf("Your CPU is a %i. Has FPU? %s\n", cpuType, hasFPU ? "Yes" : "No");
+	if (!hasFPU) {
 		fprintf(stderr, "Sorry, you need minimum a 68040 processor with FPU to run this application!\n");
 		exit(1);
 	}
