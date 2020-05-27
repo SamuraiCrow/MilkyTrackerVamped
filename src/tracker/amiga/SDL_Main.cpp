@@ -174,14 +174,14 @@ static SDLCALL Uint32 timerCallback(Uint32 interval) {
 		ev.code = SDLUserEventTimer;
 		SDL_PushEvent((SDL_Event*) & ev);
 
-#if defined(AMIGA_SAGA_PIP)
-		ev.code = SDLUserRefreshSAGAPiP;
-		SDL_PushEvent((SDL_Event*) & ev);
-#endif
-
 		//PPEvent myEvent(eTimer);
 		//RaiseEventSerialized(&myEvent);
 	}
+
+#if defined(AMIGA_SAGA_PIP)
+	ev.code = SDLUserRefreshSAGAPiP;
+	SDL_PushEvent((SDL_Event*) & ev);
+#endif
 
 	timerTicker++;
 

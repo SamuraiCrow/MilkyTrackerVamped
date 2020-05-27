@@ -39,6 +39,8 @@
 
 #if defined(AMIGA_SAGA_PIP)
 struct Screen;
+
+#define SAGA_PAGES 3
 #endif
 
 class PPDisplayDeviceFB : public PPDisplayDevice
@@ -51,7 +53,10 @@ private:
 	SDL_Color palette[256];
 
 #if defined(AMIGA_SAGA_PIP)
-	struct Screen * pubScreen;
+	struct Screen * 	pubScreen;
+	void * 				unalignedSAGABuffers[3];
+	void * 				alignedSAGABuffers[3];
+	pp_uint32 			currentSAGAPage;
 #endif
 
 	// used for rotating coordinates etc.

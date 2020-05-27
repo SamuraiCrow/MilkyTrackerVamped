@@ -38,9 +38,15 @@
 #	include <intuition/intuitionbase.h>
 #	include <vampire/saga.h>
 #	include <vampire/vampire.h>
+
 #	include <proto/exec.h>
 #	include <proto/intuition.h>
 #	include <proto/vampire.h>
+
+#	include <hardware/custom.h>
+#	include <hardware/dmabits.h>
+#	include <hardware/intbits.h>
+#	include <hardware/cia.h>
 
 extern struct ExecBase *SysBase;
 extern struct IntuitionBase* IntuitionBase;
@@ -180,6 +186,7 @@ PPDisplayDeviceFB::PPDisplayDeviceFB(
 
 		if (screen = LockPubScreen(NULL)) {
 			APTR allocator;
+			pp_uint32 i;
 
 			if (allocator = V_AllocExpansionPort(V_PIP, "MilkyTracker")) {
 				fprintf(stderr, "SAGA PiP already in use! (by: %s)\n", allocator);
@@ -187,7 +194,29 @@ PPDisplayDeviceFB::PPDisplayDeviceFB(
 			}
 			fprintf(stdout, "Initialized SAGA PiP with %ld bpp\n", bpp);
 
-			this->pubScreen = screen;
+			pubScreen = screen;
+
+			// Allocate screen buffers for SAGA PiP pages
+			for(i = 0; i < SAGA_PAGES; i++) {
+				void * b = (void *) malloc((theSurface->pitch * getSize().height * 2) + 16);
+				if(!b) {
+					fprintf(stderr, "Could not allocate enough memory for SAGA buffer %ld\n", i);
+					exit(8);
+				}
+
+				unalignedSAGABuffers[i] = b;
+
+				// And align
+				b = (void *) (((pp_uint32) b + 15) & ~ (pp_uint32) 0xf);
+				memset(b, 0, theSurface->pitch * getSize().height * 2);
+				alignedSAGABuffers[i] = b;
+			}
+
+			// Initialize PIP output
+			currentSAGAPage = 0;
+			WRITE16(SAGA_PIP_COLORKEY, 0);
+			WRITE16(SAGA_PIP_PIXFMT, SAGAF_RGB16);
+			WRITE32(SAGA_PIP_BPLPTR, (ULONG) alignedSAGABuffers[SAGA_PAGES - 1]);
 
 			UnlockPubScreen(NULL, screen);
 		}
@@ -296,6 +325,8 @@ PPDisplayDeviceFB::PPDisplayDeviceFB(
 
 PPDisplayDeviceFB::~PPDisplayDeviceFB()
 {
+	pp_uint32 i;
+
 	SDL_FreeSurface(theSurface);
 
 #if defined(AMIGA_SAGA_PIP)
@@ -308,6 +339,10 @@ PPDisplayDeviceFB::~PPDisplayDeviceFB()
 	WRITE32(SAGA_PIP_BPLPTR,   0);
 
 	V_FreeExpansionPort(V_PIP);
+
+	for(i = 0; i < SAGA_PAGES; i++) {
+		free(unalignedSAGABuffers[i]);
+	}
 #endif
 
 #if SDL_VERSION_ATLEAST(2, 0, 0)
@@ -347,9 +382,20 @@ void PPDisplayDeviceFB::setSAGAPiPSize()
 	WRITE16(SAGA_PIP_X1, x1);
 	WRITE16(SAGA_PIP_Y1, y1);
 
-	WRITE16(SAGA_PIP_COLORKEY, 0);
-	WRITE16(SAGA_PIP_PIXFMT, SAGAF_RGB16);
-	WRITE32(SAGA_PIP_BPLPTR, (ULONG) theSurface->pixels);
+	// Only do that if we're not writing
+	if(currentGraphics->lock) {
+		// Display new page
+		WRITE32(SAGA_PIP_BPLPTR, (ULONG) alignedSAGABuffers[currentSAGAPage]);
+
+		// Select new page
+		pp_uint32 nextSAGAPage = currentSAGAPage + 1;
+		if(nextSAGAPage == SAGA_PAGES)
+			nextSAGAPage = 0;
+
+		// And copy over data
+		memcpy(alignedSAGABuffers[nextSAGAPage], alignedSAGABuffers[currentSAGAPage], theSurface->pitch * getSize().height * 2);
+		currentSAGAPage = nextSAGAPage;
+	}
 }
 #endif
 
@@ -365,10 +411,15 @@ PPGraphicsAbstract* PPDisplayDeviceFB::open()
 
 		currentGraphics->lock = false;
 
-		if (needsTemporaryBuffer)
+		if (needsTemporaryBuffer) {
 			static_cast<PPGraphicsFrameBuffer*>(currentGraphics)->setBufferProperties(temporaryBufferPitch, (pp_uint8*)temporaryBuffer);
-		else
-			static_cast<PPGraphicsFrameBuffer*>(currentGraphics)->setBufferProperties(theSurface->pitch, (pp_uint8*)theSurface->pixels);
+		} else {
+#if defined(AMIGA_SAGA_PIP)
+			static_cast<PPGraphicsFrameBuffer*>(currentGraphics)->setBufferProperties(theSurface->pitch, (pp_uint8 *) alignedSAGABuffers[currentSAGAPage]);
+#else
+			static_cast<PPGraphicsFrameBuffer*>(currentGraphics)->setBufferProperties(theSurface->pitch, (pp_uint8 *)theSurface->pixels);
+#endif
+		}
 
 		return currentGraphics;
 	}
