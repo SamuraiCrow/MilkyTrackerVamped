@@ -214,17 +214,19 @@ AudioDriverManager::AudioDriverManager() :
 	driverList[0] = new AudioDriver_Haiku();
 }
 
-#elif defined(DRIVER_PAMELA)
+#elif defined(DRIVER_AMIGA)
 //////////////////////////////////////////////////////////////////
-//					Pamela implementation
+//					Amiga implementations
 //////////////////////////////////////////////////////////////////
+#include "AudioDriver_Paula.h"
 #include "AudioDriver_Pamela.h"
 
 AudioDriverManager::AudioDriverManager() :
 	defaultDriverIndex(0)
 {
-	ALLOC_DRIVERLIST(1);
-	driverList[0] = new AudioDriver_Pamela();
+	ALLOC_DRIVERLIST(2);
+	driverList[0] = new AudioDriver_Paula();
+	driverList[1] = new AudioDriver_Pamela();
 }
 
 

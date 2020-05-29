@@ -15,7 +15,8 @@
                 "_UNICODE",
                 "AMIGA",
                 "__AMIGA__",
-                "AMIGA_SAGA_PIP"
+                "AMIGA_SAGA_PIP",
+                "_NO_INLINE"
             ],
             "windowsSdkVersion": "8.1",
             "compilerPath": "C:/Development/pussygon/build/gcc6/bin/m68k-amigaos-g++.exe",

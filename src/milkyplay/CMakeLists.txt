@@ -145,15 +145,18 @@ elseif(AROS OR AMIGA)
         PRIVATE
             # Sources
             drivers/sdl/AudioDriver_SDL.cpp
+            drivers/amiga/AudioDriver_Amiga.cpp
             drivers/amiga/AudioDriver_Pamela.cpp
-            drivers/amiga/AudioDriver_Pamela.cpp
+            drivers/amiga/AudioDriver_Paula.cpp
 
             # VASM
             drivers/amiga/AudioDriver_Pamela.s
 
             # Headers
             drivers/sdl/AudioDriver_SDL.h
+            drivers/amiga/AudioDriver_Amiga.h
             drivers/amiga/AudioDriver_Pamela.h
+            drivers/amiga/AudioDriver_Paula.h
         )
     target_include_directories(milkyplay PRIVATE
             drivers/sdl
