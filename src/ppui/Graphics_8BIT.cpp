@@ -24,8 +24,6 @@
 #include "Font.h"
 #include "fastfill.h"
 
-#include <SDL.h>
-
 PPGraphics_8BIT::PPGraphics_8BIT(pp_int32 w, pp_int32 h, pp_int32 p, void* buff)
 : PPGraphicsFrameBuffer(w, h, p, buff)
 {

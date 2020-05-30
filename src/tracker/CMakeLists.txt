@@ -282,11 +282,11 @@ elseif(WIN32)
 elseif(AROS OR AMIGA)
     target_sources(tracker PRIVATE
         # Sources
-        amiga/SDL_KeyTranslation.cpp
-        amiga/SDL_Main.cpp
+        amiga/Amiga_KeyTranslation.cpp
+        amiga/Amiga_Main.cpp
 
         # Headers
-        amiga/SDL_KeyTranslation.h
+        amiga/Amiga_KeyTranslation.h
     )
 
     target_include_directories(tracker PRIVATE

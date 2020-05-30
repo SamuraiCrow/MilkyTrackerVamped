@@ -137,6 +137,25 @@ elseif(WIN32)
         PUBLIC
             win32
     )
+elseif(AROS OR AMIGA)
+    target_sources(ppui
+        PRIVATE
+            # Sources
+            amiga/DisplayDevice_Amiga.cpp
+
+            # Headers
+            amiga/DisplayDevice_Amiga.h
+    )
+    target_include_directories(ppui
+        PUBLIC
+            osinterface/amiga
+            osinterface/posix
+            amiga
+    )
+    target_include_directories(ppui
+        PRIVATE
+            ${PROJECT_SOURCE_DIR}/include/amiga
+    )
 else()
     target_sources(ppui
         PRIVATE
@@ -148,21 +167,11 @@ else()
             sdl/DisplayDeviceFB_SDL.h
             sdl/DisplayDevice_SDL.h
     )
-    if(AROS OR AMIGA)
-        target_include_directories(ppui
-            PUBLIC
-                osinterface/amiga
-                osinterface/posix
-                sdl
-                ${SDL_INCLUDE_DIR}
-        )
-        target_include_directories(ppui
-            PRIVATE
-                ${PROJECT_SOURCE_DIR}/include/amiga
-        )
-    else()
-        target_include_directories(ppui PUBLIC sdl ${SDL2_INCLUDE_DIRS})
-    endif()
+    target_include_directories(ppui
+        PUBLIC
+            sdl
+            ${SDL2_INCLUDE_DIRS}
+    )
 endif()
 
 if(APPLE)

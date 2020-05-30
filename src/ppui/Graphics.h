@@ -30,8 +30,6 @@
 
 #include "GraphicsAbstract.h"
 
-#include <SDL.h>
-
 class PPGraphicsFrameBuffer : public PPGraphicsAbstract
 {
 protected:

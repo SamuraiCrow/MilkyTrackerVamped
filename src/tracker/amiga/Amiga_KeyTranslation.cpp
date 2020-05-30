@@ -31,6 +31,8 @@
  *    Small fix in toSC
  *    Various keys added to toVK - rewritten to use array instead of select
  */
+
+#if 0
 #include "SDL_KeyTranslation.h"
 
 bool isX11 = false;
@@ -475,3 +477,4 @@ pp_uint16 toSC(const SDL_keysym& keysym)
 
 	return keycode;
 }
+#endif

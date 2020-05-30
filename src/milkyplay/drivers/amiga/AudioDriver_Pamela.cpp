@@ -114,11 +114,11 @@ AudioDriver_Pamela::initHardware()
     switch(outputMode) {
     case Mix:
         *((volatile mp_uint32 *) AUDIO_LOCHI(0)) = (mp_uint32) samplesLeft;
-        *((volatile mp_uword *) AUDIO_LENLO(0)) = chunkSize >> 1;
+        *((volatile mp_uint32 *) AUDIO_LENHI(0)) = chunkSize >> 1;
         *((volatile mp_uword *) AUDIO_PERIOD(0)) = period;
 
         *((volatile mp_uint32 *) AUDIO_LOCHI(1)) = (mp_uint32) samplesRight;
-        *((volatile mp_uword *) AUDIO_LENLO(1)) = chunkSize >> 1;
+        *((volatile mp_uint32 *) AUDIO_LENHI(1)) = chunkSize >> 1;
         *((volatile mp_uword *) AUDIO_PERIOD(1)) = period;
 
         break;
@@ -126,7 +126,7 @@ AudioDriver_Pamela::initHardware()
     case DirectOut:
         for(i = 0; i < MAX_CHANNELS; i++) {
             *((volatile mp_uint32 *) AUDIO_LOCHI(i)) = (mp_uint32) chanRing[i];
-            *((volatile mp_uword *) AUDIO_LENLO(i)) = chunkSize >> 1;
+            *((volatile mp_uint32 *) AUDIO_LENHI(i)) = chunkSize >> 1;
             *((volatile mp_uword *) AUDIO_PERIOD(i)) = period;
             *((volatile mp_uword *) AUDIO_MODE(i)) = AUDIO_MODEF_16;
         }
@@ -143,17 +143,17 @@ AudioDriver_Pamela::playAudioImpl()
     switch(outputMode) {
     case Mix:
         *((volatile mp_uint32 *) AUDIO_LOCHI(0)) = (mp_uint32) (samplesLeft + idxRead);
-        *((volatile mp_uword *) AUDIO_LENLO(0)) = chunkSize >> 1;
+        *((volatile mp_uint32 *) AUDIO_LENHI(0)) = chunkSize >> 1;
 
         *((volatile mp_uint32 *) AUDIO_LOCHI(1)) = (mp_uint32) (samplesRight + idxRead);
-        *((volatile mp_uword *) AUDIO_LENLO(1)) = chunkSize >> 1;
+        *((volatile mp_uint32 *) AUDIO_LENHI(1)) = chunkSize >> 1;
 
         break;
     default:
     case DirectOut:
         for(i = 0; i < MAX_CHANNELS; i++) {
             *((volatile mp_uint32 *) AUDIO_LOCHI(i)) = (mp_uint32) (chanRing[i] + idxRead);
-            *((volatile mp_uword *) AUDIO_LENLO(i)) = chunkSize >> 1;
+            *((volatile mp_uint32 *) AUDIO_LENHI(i)) = chunkSize >> 1;
         }
 
         break;

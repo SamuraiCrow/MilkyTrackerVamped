@@ -55,12 +55,11 @@
 #include <unistd.h>
 #include <sys/types.h>
 
-#include <SDL.h>
-#include "SDL_KeyTranslation.h"
+//#include <SDL.h>
+//#include "SDL_KeyTranslation.h"
 // ---------------------------- Tracker includes ----------------------------
 #include "PPUI.h"
-#include "DisplayDevice_SDL.h"
-#include "DisplayDeviceFB_SDL.h"
+#include "DisplayDevice_Amiga.h"
 #include "Screen.h"
 #include "Tracker.h"
 #include "PPMutex.h"
@@ -75,13 +74,12 @@ static int cpuType;
 static bool hasFPU = false;
 
 // SDL surface screen
-SDL_Surface* screen = NULL;
-SDL_TimerID timer;
+//SDL_TimerID timer;
 
 // Tracker globals
 static PPScreen* myTrackerScreen = NULL;
 static Tracker* myTracker = NULL;
-static PPDisplayDevice* myDisplayDevice = NULL;
+static DisplayDevice_Amiga * myDisplayDevice = NULL;
 
 // Okay what else do we need?
 PPMutex* globalMutex = NULL;
@@ -109,11 +107,14 @@ static PPPoint p;
 static bool exitDone;
 
 pp_uint32 PPGetTickCount() {
-	return SDL_GetTicks();
+	// @todo
+	//return SDL_GetTicks();
+	return 0;
 }
 
 void QueryKeyModifiers() {
-	pp_uint32 mod = SDL_GetModState();
+	// @todo
+	/*pp_uint32 mod = SDL_GetModState();
 
 	if ((mod & KMOD_LSHIFT) || (mod & KMOD_RSHIFT))
 		setKeyModifier(KeyModifierSHIFT);
@@ -128,7 +129,7 @@ void QueryKeyModifiers() {
 	if ((mod & KMOD_LALT) || (mod & KMOD_RALT))
 		setKeyModifier(KeyModifierALT);
 	else
-		clearKeyModifier(KeyModifierALT);
+		clearKeyModifier(KeyModifierALT);*/
 }
 
 static void RaiseEventSerialized(PPEvent* event) {
@@ -139,66 +140,60 @@ static void RaiseEventSerialized(PPEvent* event) {
 	}
 }
 
+/*
 enum SDLUserEvents {
 	SDLUserEventTimer,
 	SDLUserEventLMouseRepeat,
 	SDLUserEventRMouseRepeat,
-	SDLUserEventMidiKeyDown,
-	SDLUserEventMidiKeyUp,
 #if defined(AMIGA_SAGA_PIP)
 	SDLUserRefreshSAGAPiP
 #endif
 };
 
-static SDLCALL Uint32 timerCallback(Uint32 interval) {
+static Uint32 timerCallback(Uint32 interval) {
 	timerMutex->lock();
 
-	if (!myTrackerScreen || !myTracker || !ticking) {
-		timerMutex->unlock();
-		return interval;
-	}
+	if (myTrackerScreen && myTracker && ticking) {
+		SDL_UserEvent ev;
+		ev.type = SDL_USEREVENT;
 
-	SDL_UserEvent ev;
-	ev.type = SDL_USEREVENT;
-
-	if (!(timerTicker % 1)) {
-		ev.code = SDLUserEventTimer;
-		SDL_PushEvent((SDL_Event*) & ev);
-	}
+		if (!(timerTicker % 1)) {
+			ev.code = SDLUserEventTimer;
+			SDL_PushEvent((SDL_Event*) & ev);
+		}
 
 #if defined(AMIGA_SAGA_PIP)
-	ev.code = SDLUserRefreshSAGAPiP;
-	SDL_PushEvent((SDL_Event*) & ev);
+		ev.code = SDLUserRefreshSAGAPiP;
+		SDL_PushEvent((SDL_Event*) & ev);
 #endif
 
-	timerTicker++;
+		timerTicker++;
 
-	if (lMouseDown && (timerTicker - lButtonDownStartTime) > 25) {
-		ev.code = SDLUserEventLMouseRepeat;
-		ev.data1 = (void*) p.x;
-		ev.data2 = (void*) p.y;
-		SDL_PushEvent((SDL_Event*) & ev);
-	}
+		if (lMouseDown && (timerTicker - lButtonDownStartTime) > 25) {
+			ev.code = SDLUserEventLMouseRepeat;
+			ev.data1 = (void*) p.x;
+			ev.data2 = (void*) p.y;
+			SDL_PushEvent((SDL_Event*) & ev);
+		}
 
-	if (rMouseDown && (timerTicker - rButtonDownStartTime) > 25) {
-		ev.code = SDLUserEventRMouseRepeat;
-		ev.data1 = (void*) p.x;
-		ev.data2 = (void*) p.y;
-		SDL_PushEvent((SDL_Event*) & ev);
+		if (rMouseDown && (timerTicker - rButtonDownStartTime) > 25) {
+			ev.code = SDLUserEventRMouseRepeat;
+			ev.data1 = (void*) p.x;
+			ev.data2 = (void*) p.y;
+			SDL_PushEvent((SDL_Event*) & ev);
+		}
 	}
 
 	timerMutex->unlock();
 
 	return interval;
-}
+}*/
 
 static void translateMouseDownEvent(pp_int32 mouseButton, pp_int32 localMouseX, pp_int32 localMouseY) {
 	if (mouseButton > 2 || !mouseButton)
 		return;
 
 	// -----------------------------
-	myDisplayDevice->transform(localMouseX, localMouseY);
-
 	p.x = localMouseX;
 	p.y = localMouseY;
 
@@ -255,8 +250,8 @@ static void translateMouseDownEvent(pp_int32 mouseButton, pp_int32 localMouseX, 
 }
 
 static void translateMouseUpEvent(pp_int32 mouseButton, pp_int32 localMouseX, pp_int32 localMouseY) {
-	myDisplayDevice->transform(localMouseX, localMouseY);
-
+	// @todo
+	/*
 	if (mouseButton == SDL_BUTTON_WHEELDOWN) {
 		TMouseWheelEventParams mouseWheelParams;
 		mouseWheelParams.pos.x = localMouseX;
@@ -277,6 +272,7 @@ static void translateMouseUpEvent(pp_int32 mouseButton, pp_int32 localMouseX, pp
 		RaiseEventSerialized(&myEvent);
 	} else if (mouseButton > 2 || !mouseButton)
 		return;
+	*/
 
 	// -----------------------------
 	if (mouseButton == 1) {
@@ -331,8 +327,6 @@ static void translateMouseUpEvent(pp_int32 mouseButton, pp_int32 localMouseX, pp
 }
 
 static void translateMouseMoveEvent(pp_int32 mouseButton, pp_int32 localMouseX, pp_int32 localMouseY) {
-	myDisplayDevice->transform(localMouseX, localMouseY);
-
 	if (mouseButton == 0) {
 		p.x = localMouseX;
 		p.y = localMouseY;
@@ -354,49 +348,7 @@ static void translateMouseMoveEvent(pp_int32 mouseButton, pp_int32 localMouseX, 
 	}
 }
 
-static void preTranslateKey(SDL_keysym& keysym) {
-	// Rotate cursor keys if necessary
-	switch (myDisplayDevice->getOrientation()) {
-		case PPDisplayDevice::ORIENTATION_ROTATE90CW:
-			switch (keysym.sym) {
-				case SDLK_UP:
-					keysym.sym = SDLK_LEFT;
-					break;
-				case SDLK_DOWN:
-					keysym.sym = SDLK_RIGHT;
-					break;
-				case SDLK_LEFT:
-					keysym.sym = SDLK_DOWN;
-					break;
-				case SDLK_RIGHT:
-					keysym.sym = SDLK_UP;
-					break;
-			}
-
-			break;
-
-		case PPDisplayDevice::ORIENTATION_ROTATE90CCW:
-			switch (keysym.sym) {
-				case SDLK_DOWN:
-					keysym.sym = SDLK_LEFT;
-					break;
-				case SDLK_UP:
-					keysym.sym = SDLK_RIGHT;
-					break;
-				case SDLK_RIGHT:
-					keysym.sym = SDLK_DOWN;
-					break;
-				case SDLK_LEFT:
-					keysym.sym = SDLK_UP;
-					break;
-			}
-
-			break;
-	}
-
-}
-
-static void translateKeyDownEvent(const SDL_Event& event) {
+/*static void translateKeyDownEvent(const SDL_Event& event) {
 	SDL_keysym keysym = event.key.keysym;
 
 	// ALT+RETURN = Fullscreen toggle
@@ -405,8 +357,6 @@ static void translateKeyDownEvent(const SDL_Event& event) {
 		RaiseEventSerialized(&myEvent);
 		return;
 	}
-
-	preTranslateKey(keysym);
 
 	pp_uint16 character = event.key.keysym.unicode;
 
@@ -431,12 +381,10 @@ static void translateKeyDownEvent(const SDL_Event& event) {
 		PPEvent myEvent2(eKeyChar, &character, sizeof (character));
 		RaiseEventSerialized(&myEvent2);
 	}
-}
+}*/
 
-static void translateKeyUpEvent(const SDL_Event& event) {
+/*static void translateKeyUpEvent(const SDL_Event& event) {
 	SDL_keysym keysym = event.key.keysym;
-
-	preTranslateKey(keysym);
 
 	pp_uint16 character = event.key.keysym.unicode;
 
@@ -453,9 +401,9 @@ static void translateKeyUpEvent(const SDL_Event& event) {
 
 	PPEvent myEvent(eKeyUp, &chr, sizeof (chr));
 	RaiseEventSerialized(&myEvent);
-}
+}*/
 
-void processSDLEvents(const SDL_Event& event) {
+/*void processSDLEvents(const SDL_Event& event) {
 	pp_uint32 mouseButton = 0;
 
 	switch (event.type) {
@@ -485,9 +433,9 @@ void processSDLEvents(const SDL_Event& event) {
 			translateKeyUpEvent(event);
 			break;
 	}
-}
+}*/
 
-void processSDLUserEvents(const SDL_UserEvent& event) {
+/*void processSDLUserEvents(const SDL_UserEvent& event) {
 
 	union {
 		void *ptr;
@@ -532,35 +480,15 @@ void processSDLUserEvents(const SDL_UserEvent& event) {
 			break;
 		}
 
-		case SDLUserEventMidiKeyDown:
-		{
-			pp_int32 note = data1.i32;
-			pp_int32 volume = data2.i32;
-			globalMutex->lock();
-			myTracker->sendNoteDown(note, volume);
-			globalMutex->unlock();
-			break;
-		}
-
-		case SDLUserEventMidiKeyUp:
-		{
-			pp_int32 note = data1.i32;
-			globalMutex->lock();
-			myTracker->sendNoteUp(note);
-			globalMutex->unlock();
-			break;
-		}
-
 	}
-}
+}*/
 
-static void initTracker(pp_uint32 bpp, PPDisplayDevice::Orientations orientation,
-		bool swapRedBlue, bool fullScreen, bool noSplash) {
+static void initTracker(pp_uint32 bpp, bool fullScreen, bool noSplash) {
 
-	SDL_EnableKeyRepeat(SDL_DEFAULT_REPEAT_DELAY, SDL_DEFAULT_REPEAT_INTERVAL);
-	SDL_EnableUNICODE(1);
+	//SDL_EnableKeyRepeat(SDL_DEFAULT_REPEAT_DELAY, SDL_DEFAULT_REPEAT_INTERVAL);
+	//SDL_EnableUNICODE(1);
 
-	SDL_WM_SetCaption("Loading MilkyTracker...", "MilkyTracker");
+	//SDL_WM_SetCaption("Loading MilkyTracker...", "MilkyTracker");
 
 	// ------------ initialise tracker ---------------
 	myTracker = new Tracker();
@@ -575,8 +503,7 @@ static void initTracker(pp_uint32 bpp, PPDisplayDevice::Orientations orientation
 	windowSize.height = DISPLAYDEVICE_HEIGHT;
 #endif
 
-	myDisplayDevice = new PPDisplayDeviceFB(screen, windowSize.width, windowSize.height, scaleFactor,
-			bpp, fullScreen, orientation, swapRedBlue);
+	myDisplayDevice = new DisplayDevice_Amiga(windowSize.width, windowSize.height, scaleFactor, bpp, fullScreen);
 	myDisplayDevice->init();
 
 	myTrackerScreen = new PPScreen(myDisplayDevice, myTracker);
@@ -586,14 +513,16 @@ static void initTracker(pp_uint32 bpp, PPDisplayDevice::Orientations orientation
 	myTracker->startUp(noSplash);
 
 	// try to create timer
-	SDL_SetTimer(20, timerCallback);
+	// @todo
+	//SDL_SetTimer(20, timerCallback);
 
 	timerMutex->lock();
 	ticking = true;
 	timerMutex->unlock();
 }
 
-void exitSDLEventLoop(bool serializedEventInvoked/* = true*/) {
+/*
+void exitSDLEventLoop(bool serializedEventInvoked) {
 	PPEvent event(eAppQuit);
 	RaiseEventSerialized(&event);
 
@@ -610,7 +539,7 @@ void exitSDLEventLoop(bool serializedEventInvoked/* = true*/) {
 
 	if (res)
 		exitDone = 1;
-}
+}*/
 
 static void SendFile(char *file) {
 	PPSystemString finalFile(file);
@@ -650,14 +579,11 @@ int main(int argc, char *argv[])
 	}
 #endif
 
-	Uint32 videoflags;
-	SDL_Event event;
+	//SDL_Event event;
 	char *loadFile = 0;
 
 	pp_int32 defaultBPP = -1;
-	PPDisplayDevice::Orientations orientation = PPDisplayDevice::ORIENTATION_NORMAL;
-	bool swapRedBlue = false, fullScreen = false, noSplash = false;
-	bool recVelocity = false;
+	bool fullScreen = false, noSplash = false;
 
 	// Parse command line
 	while (argc > 1) {
@@ -667,29 +593,11 @@ int main(int argc, char *argv[])
 			--argc;
 		} else if (strcmp(argv[argc], "-nosplash") == 0) {
 			noSplash = true;
-		} else if (strcmp(argv[argc], "-swap") == 0) {
-			swapRedBlue = true;
 		} else if (strcmp(argv[argc], "-fullscreen") == 0) {
 			fullScreen = true;
-		} else if (strcmp(argv[argc - 1], "-orientation") == 0) {
-			if (strcmp(argv[argc], "NORMAL") == 0) {
-				orientation = PPDisplayDevice::ORIENTATION_NORMAL;
-			} else if (strcmp(argv[argc], "ROTATE90CCW") == 0) {
-				orientation = PPDisplayDevice::ORIENTATION_ROTATE90CCW;
-			} else if (strcmp(argv[argc], "ROTATE90CW") == 0) {
-				orientation = PPDisplayDevice::ORIENTATION_ROTATE90CW;
-			} else
-				goto unrecognizedCommandLineSwitch;
-			--argc;
-		} else if (strcmp(argv[argc], "-nonstdkb") == 0) {
-			stdKb = false;
-		} else if (strcmp(argv[argc], "-recvelocity") == 0) {
-			recVelocity = true;
 		} else {
-unrecognizedCommandLineSwitch:
 			if (argv[argc][0] == '-') {
-				fprintf(stderr,
-						"Usage: %s [-bpp N] [-swap] [-orientation NORMAL|ROTATE90CCW|ROTATE90CW] [-fullscreen] [-nosplash] [-nonstdkb] [-recvelocity]\n", argv[0]);
+				fprintf(stderr, "Usage: %s [-bpp N] [-fullscreen] [-nosplash] [-recvelocity]\n", argv[0]);
 				exit(1);
 			} else {
 				loadFile = argv[argc];
@@ -698,10 +606,10 @@ unrecognizedCommandLineSwitch:
 	}
 
 	/* Initialize SDL */
-	if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER | SDL_INIT_AUDIO) < 0) {
+	/*if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER | SDL_INIT_AUDIO) < 0) {
 		fprintf(stderr, "Couldn't initialize SDL: %s\n", SDL_GetError());
 		exit(1);
-	}
+	}*/
 
 	timerMutex = new PPMutex();
 	globalMutex = new PPMutex();
@@ -712,7 +620,7 @@ unrecognizedCommandLineSwitch:
 
 	globalMutex->lock();
 
-	initTracker(defaultBPP, orientation, swapRedBlue, fullScreen, noSplash);
+	initTracker(defaultBPP, fullScreen, noSplash);
 
 	globalMutex->unlock();
 
@@ -727,7 +635,7 @@ unrecognizedCommandLineSwitch:
 	}
 
 	/* Main event loop */
-	exitDone = 0;
+	/*exitDone = 0;
 	while (!exitDone && SDL_WaitEvent(&event)) {
 		switch (event.type) {
 			case SDL_QUIT:
@@ -755,13 +663,13 @@ unrecognizedCommandLineSwitch:
 				processSDLEvents(event);
 				break;
 		}
-	}
+	}*/
 
 	timerMutex->lock();
 	ticking = false;
 	timerMutex->unlock();
 
-	SDL_SetTimer(0, NULL);
+	//SDL_SetTimer(0, NULL);
 
 	timerMutex->lock();
 	globalMutex->lock();
@@ -777,7 +685,7 @@ unrecognizedCommandLineSwitch:
 	globalMutex->unlock();
 	timerMutex->unlock();
 
-	SDL_Quit();
+	//SDL_Quit();
 
 	delete globalMutex;
 	delete timerMutex;
