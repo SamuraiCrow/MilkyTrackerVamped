@@ -190,8 +190,7 @@ elseif(AMIGA)
     find_package(SDL 1.2 REQUIRED)
 
     add_definitions(-DAMIGA_DIRECTOUT)
-    # add_definitions(-DAMIGA_PAULA)
-    add_definitions(-DAMIGA_SAGA_PIP)
+    # add_definitions(-DAMIGA_SAGA_PIP)
     # add_definitions(-D__LOWRES__)
 else()
     # Workaround for SDL bug #3295, which occurs in SDL2 <2.0.5

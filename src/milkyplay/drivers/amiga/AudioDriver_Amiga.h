@@ -10,6 +10,17 @@
 
 #include "AudioDriverBase.h"
 
+#include <exec/exec.h>
+#include <clib/exec_protos.h>
+
+#include <hardware/custom.h>
+#include <hardware/dmabits.h>
+#include <hardware/intbits.h>
+#include <hardware/cia.h>
+
+#include <stdio.h>
+#include <string.h>
+
 #define DEBUG_DRIVER            1
 
 #define CIAAPRA                 0xbfe001
@@ -20,10 +31,9 @@
 
 #define MAX_VOLUME              0x40
 
-#define PAULA_CLK_PAL           3546895
-#define PAL_LINES               312
-
-struct Interrupt;
+#define PAULA_CLK           	3546895
+#define SCANLINES               312
+#define REFRESHRATE				50
 
 template<typename SampleType>
 class AudioDriver_Amiga : public AudioDriverBase
@@ -38,6 +48,8 @@ protected:
 	bool                allocated;
 
 	OutputMode          outputMode;
+
+	mp_uint32           nChannels, sampleSize;
 
 	mp_sint32   		idxRead, idxWrite;
 	mp_uint32           chunkSize, ringSize, fetchSize;
@@ -62,19 +74,11 @@ protected:
 	struct Interrupt *	irqAudioOld;
 	struct Interrupt *	irqBufferAudio;
 
-	static mp_sint32	bufferAudioService(register AudioDriver_Amiga<SampleType> * that __asm("a1"));
-	static void 		playAudioService(register AudioDriver_Amiga<SampleType> * that __asm("a1"));
+	virtual mp_sint32	alloc(mp_sint32 bufferSize);
+	virtual void 		dealloc();
 
-	mp_sint32			alloc(mp_sint32 bufferSize);
-	void 				dealloc();
-
-	mp_sint32  			bufferAudio();
-	void 				playAudio();
-
-	void      			disableIRQ();
-	void        		enableIRQ();
-
-	mp_sint32   		getStatValue(mp_uint32 key);
+	virtual void      	disableIRQ();
+	virtual void        enableIRQ();
 
 						AudioDriver_Amiga();
 	virtual				~AudioDriver_Amiga();
@@ -101,6 +105,12 @@ protected:
 
 	virtual	const char*	getDriverID() = 0;
 	virtual	mp_sint32	getPreferredBufferSize() const = 0;
+
+	virtual mp_sint32   getStatValue(mp_uint32 key);
+
+public:
+	void 				playAudio();
+	mp_sint32  			bufferAudio();
 };
 
 #endif

@@ -1,17 +1,6 @@
 #include "AudioDriver_Paula.h"
 #include "MasterMixer.h"
 
-#include <exec/exec.h>
-#include <proto/exec.h>
-#include <hardware/custom.h>
-#include <hardware/dmabits.h>
-#include <hardware/intbits.h>
-#include <hardware/cia.h>
-
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
 #define AUDIO_REGBASE(CH)       (CUSTOM_REGBASE + 0x0a0 + ((CH & 0x3) << 4))
 #define AUDIO_REG(CH, IDX)      (AUDIO_REGBASE(CH) + (IDX))
 
@@ -27,7 +16,6 @@
 
 
 AudioDriver_Paula::AudioDriver_Paula()
-: AudioDriver_Amiga()
 {
 }
 
@@ -105,7 +93,7 @@ AudioDriver_Paula::initHardware()
     int i;
 
     // Initialize audio hardware with default values
-    mp_uword period = PAULA_CLK_PAL / this->mixFrequency;
+    mp_uword period = PAULA_CLK / this->mixFrequency;
 
     switch(outputMode) {
     case Mix:
@@ -207,7 +195,7 @@ AudioDriver_Paula::bufferAudioImpl()
 const char*
 AudioDriver_Paula::getDriverID()
 {
-    return "Amiga Paula Audio Driver";
+    return "Commodore Paula Audio 4-ch";
 }
 
 mp_sint32

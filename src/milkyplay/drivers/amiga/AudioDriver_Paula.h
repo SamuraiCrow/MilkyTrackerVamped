@@ -10,8 +10,6 @@
 
 #include "AudioDriver_Amiga.h"
 
-extern template class AudioDriver_Amiga<mp_sbyte>;
-
 class AudioDriver_Paula : public AudioDriver_Amiga<mp_sbyte>
 {
 protected:

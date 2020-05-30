@@ -10,8 +10,6 @@
 
 #include "AudioDriver_Amiga.h"
 
-extern template class AudioDriver_Amiga<mp_sword>;
-
 class AudioDriver_Pamela : public AudioDriver_Amiga<mp_sword>
 {
 protected:

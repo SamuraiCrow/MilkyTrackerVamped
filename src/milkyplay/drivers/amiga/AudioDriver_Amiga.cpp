@@ -1,17 +1,6 @@
 #include "AudioDriver_Amiga.h"
 #include "MasterMixer.h"
 
-#include <exec/exec.h>
-#include <proto/exec.h>
-#include <hardware/custom.h>
-#include <hardware/dmabits.h>
-#include <hardware/intbits.h>
-#include <hardware/cia.h>
-
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
 extern volatile struct Custom custom;
 
 static mp_uint32
@@ -22,6 +11,21 @@ getVerticalBeamPosition() {
         mp_uint32 hpos:8;
     };
     return ((struct vpos*) 0xdff004)->vpos;
+}
+
+// @todo Find out why exactly this is working. Fucking meta-programming.
+static mp_sint32
+bufferAudioService(register AudioDriver_Amiga<void> * that __asm("a1"))
+{
+    return that->bufferAudio();
+}
+
+static void
+playAudioService(register AudioDriver_Amiga<void> * that __asm("a1"))
+{
+    that->playAudio();
+
+    custom.intreq = INTF_AUD0;
 }
 
 template<typename SampleType>
@@ -49,6 +53,7 @@ AudioDriver_Amiga<SampleType>::~AudioDriver_Amiga()
     FreeMem(irqBufferAudio, sizeof(struct Interrupt));
     FreeMem(irqPlayAudio, sizeof(struct Interrupt));
 }
+
 
 template<typename SampleType>
 mp_sint32
@@ -102,8 +107,9 @@ mp_sint32
 AudioDriver_Amiga<SampleType>::alloc(mp_sint32 bufferSize)
 {
     int i;
-    mp_uint32 sampleSize = getSampleSize();
-    mp_uint32 nChannels = getChannels();
+
+    sampleSize = getSampleSize();
+    nChannels = getChannels();
 
     dealloc();
 
@@ -175,8 +181,6 @@ void
 AudioDriver_Amiga<SampleType>::dealloc()
 {
     int i;
-    mp_uint32 sampleSize = getSampleSize();
-    mp_uint32 nChannels = getChannels();
 
     if(!allocated)
         return;
@@ -223,46 +227,16 @@ AudioDriver_Amiga<SampleType>::closeDevice()
 }
 
 template<typename SampleType>
-mp_sint32
-AudioDriver_Amiga<SampleType>::start()
-{
-#if DEBUG_DRIVER
-    printf("%s\n", __PRETTY_FUNCTION__);
-#endif
-    setGlobalVolume(MAX_VOLUME);
-    enableDMA();
-    enableIRQ();
-
-	return MP_OK;
-}
-
-template<typename SampleType>
-void
-AudioDriver_Amiga<SampleType>::playAudioService(register AudioDriver_Amiga<SampleType> * that __asm("a1"))
-{
-    that->playAudio();
-}
-
-template<typename SampleType>
 void
 AudioDriver_Amiga<SampleType>::playAudio()
 {
-    playAudioImpl();
+    this->playAudioImpl();
 
     idxRead += chunkSize;
     if(idxRead >= ringSize)
         idxRead = 0;
 
     statAudioBufferReset++;
-
-    custom.intreq = INTF_AUD0;
-}
-
-template<typename SampleType>
-mp_sint32
-AudioDriver_Amiga<SampleType>::bufferAudioService(register AudioDriver_Amiga<SampleType> * that __asm("a1"))
-{
-    return that->bufferAudio();
 }
 
 template<typename SampleType>
@@ -272,7 +246,7 @@ AudioDriver_Amiga<SampleType>::bufferAudio()
     int i, j;
 
     statCountPerSecond++;
-    if(statCountPerSecond == 50) {
+    if(statCountPerSecond == REFRESHRATE) {
         statCountPerSecond = 0;
 
         statAudioBufferResetMedian = (statAudioBufferResetMedian + statAudioBufferReset) >> 1;
@@ -298,7 +272,7 @@ AudioDriver_Amiga<SampleType>::bufferAudio()
         if(idxWrite >= ringSize)
             idxWrite = 0;
 
-        mp_uint32 mix = (((getVerticalBeamPosition() - vpos) * 1000000) / PAL_LINES) / 10000;
+        mp_uint32 mix = (((getVerticalBeamPosition() - vpos) * 1000000) / SCANLINES) / 10000;
         statVerticalBlankMixMedian = (statVerticalBlankMixMedian + mix) >> 1;
     } else {
         statRingBufferFull++;
@@ -330,6 +304,20 @@ AudioDriver_Amiga<SampleType>::enableIRQ()
     }
 
     custom.intena = INTF_SETCLR | INTF_AUD0;
+}
+
+template<typename SampleType>
+mp_sint32
+AudioDriver_Amiga<SampleType>::start()
+{
+#if DEBUG_DRIVER
+    printf("%s\n", __PRETTY_FUNCTION__);
+#endif
+    setGlobalVolume(MAX_VOLUME);
+    enableDMA();
+    enableIRQ();
+
+	return MP_OK;
 }
 
 template<typename SampleType>

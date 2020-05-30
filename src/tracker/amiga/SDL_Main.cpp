@@ -66,10 +66,6 @@
 #include "PPMutex.h"
 #include "PPSystem_POSIX.h"
 #include "PPPath_POSIX.h"
-
-#ifdef HAVE_LIBASOUND
-#include "../midi/posix/MidiReceiver_pthread.h"
-#endif
 // --------------------------------------------------------------------------
 
 // Amiga specifics
@@ -86,9 +82,6 @@ SDL_TimerID timer;
 static PPScreen* myTrackerScreen = NULL;
 static Tracker* myTracker = NULL;
 static PPDisplayDevice* myDisplayDevice = NULL;
-#ifdef HAVE_LIBASOUND
-static MidiReceiver* myMidiReceiver = NULL;
-#endif
 
 // Okay what else do we need?
 PPMutex* globalMutex = NULL;
@@ -113,13 +106,11 @@ static pp_uint32 timerTicker = 0;
 
 static PPPoint p;
 
-// This needs to be visible from outside
+static bool exitDone;
 
 pp_uint32 PPGetTickCount() {
 	return SDL_GetTicks();
 }
-
-// Same as above
 
 void QueryKeyModifiers() {
 	pp_uint32 mod = SDL_GetModState();
@@ -173,9 +164,6 @@ static SDLCALL Uint32 timerCallback(Uint32 interval) {
 	if (!(timerTicker % 1)) {
 		ev.code = SDLUserEventTimer;
 		SDL_PushEvent((SDL_Event*) & ev);
-
-		//PPEvent myEvent(eTimer);
-		//RaiseEventSerialized(&myEvent);
 	}
 
 #if defined(AMIGA_SAGA_PIP)
@@ -185,26 +173,18 @@ static SDLCALL Uint32 timerCallback(Uint32 interval) {
 
 	timerTicker++;
 
-	if (lMouseDown &&
-			(timerTicker - lButtonDownStartTime) > 25) {
+	if (lMouseDown && (timerTicker - lButtonDownStartTime) > 25) {
 		ev.code = SDLUserEventLMouseRepeat;
 		ev.data1 = (void*) p.x;
 		ev.data2 = (void*) p.y;
 		SDL_PushEvent((SDL_Event*) & ev);
-
-		//PPEvent myEvent(eLMouseRepeat, &p, sizeof(PPPoint));
-		//RaiseEventSerialized(&myEvent);
 	}
 
-	if (rMouseDown &&
-			(timerTicker - rButtonDownStartTime) > 25) {
+	if (rMouseDown && (timerTicker - rButtonDownStartTime) > 25) {
 		ev.code = SDLUserEventRMouseRepeat;
 		ev.data1 = (void*) p.x;
 		ev.data2 = (void*) p.y;
 		SDL_PushEvent((SDL_Event*) & ev);
-
-		//PPEvent myEvent(eRMouseRepeat, &p, sizeof(PPPoint));
-		//RaiseEventSerialized(&myEvent);
 	}
 
 	timerMutex->unlock();
@@ -212,63 +192,7 @@ static SDLCALL Uint32 timerCallback(Uint32 interval) {
 	return interval;
 }
 
-#ifdef HAVE_LIBASOUND
-
-class MidiEventHandler : public MidiReceiver::MidiEventHandler {
-public:
-
-	virtual void keyDown(int note, int volume) {
-		SDL_UserEvent ev;
-		ev.type = SDL_USEREVENT;
-		ev.code = SDLUserEventMidiKeyDown;
-		ev.data1 = (void*) note;
-		ev.data2 = (void*) volume;
-		SDL_PushEvent((SDL_Event*) & ev);
-
-		//globalMutex->lock();
-		//myTracker->sendNoteDown(note, volume);
-		//globalMutex->unlock();
-	}
-
-	virtual void keyUp(int note) {
-		SDL_UserEvent ev;
-		ev.type = SDL_USEREVENT;
-		ev.code = SDLUserEventMidiKeyUp;
-		ev.data1 = (void*) note;
-		SDL_PushEvent((SDL_Event*) & ev);
-
-		//globalMutex->lock();
-		//myTracker->sendNoteUp(note);
-		//globalMutex->unlock();
-	}
-} midiEventHandler;
-
-void StopMidiRecording() {
-	if (myMidiReceiver) {
-		myMidiReceiver->stopRecording();
-	}
-}
-
-void StartMidiRecording(unsigned int devID) {
-	if (devID == (unsigned) - 1)
-		return;
-
-	StopMidiRecording();
-
-	myMidiReceiver = new MidiReceiver(midiEventHandler);
-
-	if (!myMidiReceiver->startRecording(devID)) {
-		// Deal with error
-		fprintf(stderr, "Failed to initialise ALSA MIDI support.\n");
-	}
-}
-
-void InitMidi() {
-	StartMidiRecording(0);
-}
-#endif
-
-void translateMouseDownEvent(pp_int32 mouseButton, pp_int32 localMouseX, pp_int32 localMouseY) {
+static void translateMouseDownEvent(pp_int32 mouseButton, pp_int32 localMouseX, pp_int32 localMouseY) {
 	if (mouseButton > 2 || !mouseButton)
 		return;
 
@@ -330,7 +254,7 @@ void translateMouseDownEvent(pp_int32 mouseButton, pp_int32 localMouseX, pp_int3
 	}
 }
 
-void translateMouseUpEvent(pp_int32 mouseButton, pp_int32 localMouseX, pp_int32 localMouseY) {
+static void translateMouseUpEvent(pp_int32 mouseButton, pp_int32 localMouseX, pp_int32 localMouseY) {
 	myDisplayDevice->transform(localMouseX, localMouseY);
 
 	if (mouseButton == SDL_BUTTON_WHEELDOWN) {
@@ -406,7 +330,7 @@ void translateMouseUpEvent(pp_int32 mouseButton, pp_int32 localMouseX, pp_int32 
 	}
 }
 
-void translateMouseMoveEvent(pp_int32 mouseButton, pp_int32 localMouseX, pp_int32 localMouseY) {
+static void translateMouseMoveEvent(pp_int32 mouseButton, pp_int32 localMouseX, pp_int32 localMouseY) {
 	myDisplayDevice->transform(localMouseX, localMouseY);
 
 	if (mouseButton == 0) {
@@ -430,7 +354,7 @@ void translateMouseMoveEvent(pp_int32 mouseButton, pp_int32 localMouseX, pp_int3
 	}
 }
 
-void preTranslateKey(SDL_keysym& keysym) {
+static void preTranslateKey(SDL_keysym& keysym) {
 	// Rotate cursor keys if necessary
 	switch (myDisplayDevice->getOrientation()) {
 		case PPDisplayDevice::ORIENTATION_ROTATE90CW:
@@ -472,7 +396,7 @@ void preTranslateKey(SDL_keysym& keysym) {
 
 }
 
-void translateKeyDownEvent(const SDL_Event& event) {
+static void translateKeyDownEvent(const SDL_Event& event) {
 	SDL_keysym keysym = event.key.keysym;
 
 	// ALT+RETURN = Fullscreen toggle
@@ -509,7 +433,7 @@ void translateKeyDownEvent(const SDL_Event& event) {
 	}
 }
 
-void translateKeyUpEvent(const SDL_Event& event) {
+static void translateKeyUpEvent(const SDL_Event& event) {
 	SDL_keysym keysym = event.key.keysym;
 
 	preTranslateKey(keysym);
@@ -550,11 +474,7 @@ void processSDLEvents(const SDL_Event& event) {
 			break;
 
 		case SDL_MOUSEMOTION:
-#ifdef __GP2X__
-			translateMouseMoveEvent(mouse.button, event.motion.x, event.motion.y);
-#else
 			translateMouseMoveEvent(event.button.button, event.motion.x, event.motion.y);
-#endif
 			break;
 
 		case SDL_KEYDOWN:
@@ -564,13 +484,6 @@ void processSDLEvents(const SDL_Event& event) {
 		case SDL_KEYUP:
 			translateKeyUpEvent(event);
 			break;
-
-#ifdef __GP2X__
-		case SDL_JOYBUTTONDOWN:
-		case SDL_JOYBUTTONUP:
-			gp2xMouseEvent(event);
-			break;
-#endif
 	}
 }
 
@@ -641,74 +554,17 @@ void processSDLUserEvents(const SDL_UserEvent& event) {
 	}
 }
 
-#ifdef __unix__
-
-void crashHandler(int signum) {
-	// Save backup.xm
-	static char buffer[1024]; // Should be enough :p
-	strncpy(buffer, getenv("HOME"), 1010);
-	strcat(buffer, "/BACKUP00.XM");
-	struct stat statBuf;
-	int num = 1;
-	while (stat(buffer, &statBuf) == 0 && num <= 100)
-		snprintf(buffer, sizeof (buffer), "%s/BACKUP%02i.XM", getenv("HOME"), num++);
-
-	if (signum == 15) {
-		fprintf(stderr, "\nTERM signal received.\n");
-		SDL_Quit();
-		return;
-	} else {
-		fprintf(stderr, "\nCrashed with signal %i\n"
-				"Please submit a bug report stating exactly what you were doing "
-				"at the time of the crash, as well as the above signal number. "
-				"Also note if it is possible to reproduce this crash.\n", signum);
-	}
-
-	if (num != 100) {
-		if (myTracker->saveModule(buffer) == MP_DEVICE_ERROR) {
-			fprintf(stderr, "\nUnable to save backup (read-only filesystem?)\n\n");
-		} else {
-			fprintf(stderr, "\nA backup has been saved to %s\n\n", buffer);
-		}
-	}
-
-	// Try and quit SDL
-	SDL_Quit();
-}
-#endif
-
-void initTracker(pp_uint32 bpp, PPDisplayDevice::Orientations orientation,
+static void initTracker(pp_uint32 bpp, PPDisplayDevice::Orientations orientation,
 		bool swapRedBlue, bool fullScreen, bool noSplash) {
 
-	SDL_EnableKeyRepeat(SDL_DEFAULT_REPEAT_DELAY,
-			SDL_DEFAULT_REPEAT_INTERVAL);
-
+	SDL_EnableKeyRepeat(SDL_DEFAULT_REPEAT_DELAY, SDL_DEFAULT_REPEAT_INTERVAL);
 	SDL_EnableUNICODE(1);
 
-#if (defined(unix) || defined(__unix__) || defined(_AIX) || defined(__OpenBSD__)) && \
-    (!defined(__CYGWIN32__) && !defined(ENABLE_NANOX) && \
-     !defined(__QNXNTO__) && !defined(__AROS__))
-
-	// Initialise crash handler
-	struct sigaction act;
-	struct sigaction oldAct;
-	memset(&act, 0, sizeof (act));
-	act.sa_handler = crashHandler;
-	act.sa_flags = SA_RESETHAND;
-	sigaction(SIGTERM | SIGILL | SIGABRT | SIGFPE | SIGSEGV, &act, &oldAct);
-	sigaction(SIGILL, &act, &oldAct);
-	sigaction(SIGABRT, &act, &oldAct);
-	sigaction(SIGFPE, &act, &oldAct);
-	sigaction(SIGSEGV, &act, &oldAct);
-#endif
-
-	printf("init1\n");
-
 	SDL_WM_SetCaption("Loading MilkyTracker...", "MilkyTracker");
+
 	// ------------ initialise tracker ---------------
 	myTracker = new Tracker();
 
-	printf("init2\n");
 	PPSize windowSize = myTracker->getWindowSizeFromDatabase();
 	if (!fullScreen)
 		fullScreen = myTracker->getFullScreenFlagFromDatabase();
@@ -719,19 +575,9 @@ void initTracker(pp_uint32 bpp, PPDisplayDevice::Orientations orientation,
 	windowSize.height = DISPLAYDEVICE_HEIGHT;
 #endif
 
-#ifdef __OPENGL__
-	myDisplayDevice = new PPDisplayDeviceOGL(screen, windowSize.width, windowSize.height, 1, bpp, fullScreen, orientation, swapRedBlue);
-#else
-	printf("init3\n");
 	myDisplayDevice = new PPDisplayDeviceFB(screen, windowSize.width, windowSize.height, scaleFactor,
 			bpp, fullScreen, orientation, swapRedBlue);
-	printf("init4\n");
-#endif
-
-	printf("init5\n");
 	myDisplayDevice->init();
-
-	printf("init6\n");
 
 	myTrackerScreen = new PPScreen(myDisplayDevice, myTracker);
 	myTracker->setScreen(myTrackerScreen);
@@ -739,21 +585,13 @@ void initTracker(pp_uint32 bpp, PPDisplayDevice::Orientations orientation,
 	// Startup procedure
 	myTracker->startUp(noSplash);
 
-#ifdef HAVE_LIBASOUND
-	InitMidi();
-#endif
-
-	printf("init7\n");
 	// try to create timer
 	SDL_SetTimer(20, timerCallback);
-	printf("init8\n");
 
 	timerMutex->lock();
 	ticking = true;
 	timerMutex->unlock();
 }
-
-static bool done;
 
 void exitSDLEventLoop(bool serializedEventInvoked/* = true*/) {
 	PPEvent event(eAppQuit);
@@ -771,10 +609,10 @@ void exitSDLEventLoop(bool serializedEventInvoked/* = true*/) {
 		globalMutex->unlock();
 
 	if (res)
-		done = 1;
+		exitDone = 1;
 }
 
-void SendFile(char *file) {
+static void SendFile(char *file) {
 	PPSystemString finalFile(file);
 	PPSystemString* strPtr = &finalFile;
 
@@ -782,15 +620,10 @@ void SendFile(char *file) {
 	RaiseEventSerialized(&event);
 }
 
-#if defined(__PSP__)
-extern "C" int SDL_main(int argc, char *argv[])
-#else
 int main(int argc, char *argv[])
-#endif
 {
-
+	// @todo replace by __AMIGA_CLASSIC__ maybe?
 #if !defined(__amigaos4__) && !defined(MORPHOS) && !defined(WARPOS) && defined(__AMIGA__)
-
 	// find out what type of CPU we have
 	if ((SysBase->AttnFlags & AFF_68080) != 0)
 		cpuType = 68080;
@@ -863,17 +696,13 @@ unrecognizedCommandLineSwitch:
 			}
 		}
 	}
-#ifdef DEBUG
-	fprintf(stderr,"SDL_INIT");
-#endif
+
 	/* Initialize SDL */
 	if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER | SDL_INIT_AUDIO) < 0) {
 		fprintf(stderr, "Couldn't initialize SDL: %s\n", SDL_GetError());
 		exit(1);
 	}
-#ifdef DEBUG
-	fprintf(stderr,"SDL_INIT Done");
-#endif
+
 	timerMutex = new PPMutex();
 	globalMutex = new PPMutex();
 
@@ -882,21 +711,10 @@ unrecognizedCommandLineSwitch:
 	PPSystemString oldCwd = path.getCurrent();
 
 	globalMutex->lock();
-#ifdef DEBUG
-	fprintf(stderr,"InitTracker\n");
-#endif
+
 	initTracker(defaultBPP, orientation, swapRedBlue, fullScreen, noSplash);
-#ifdef DEBUG
-	fprintf(stderr,"InitTracker done\n");
-#endif
+
 	globalMutex->unlock();
-
-
-#ifdef HAVE_LIBASOUND
-	if (myMidiReceiver && recVelocity) {
-		myMidiReceiver->setRecordVelocity(true);
-	}
-#endif
 
 	if (loadFile) {
 		PPSystemString newCwd = path.getCurrent();
@@ -907,12 +725,10 @@ unrecognizedCommandLineSwitch:
 		PPEvent event(eKeyDown, &chr, sizeof (chr));
 		RaiseEventSerialized(&event);
 	}
-#ifdef DEBUG
-	fprintf(stderr,"loadfile done\n");
-#endif
+
 	/* Main event loop */
-	done = 0;
-	while (!done && SDL_WaitEvent(&event)) {
+	exitDone = 0;
+	while (!exitDone && SDL_WaitEvent(&event)) {
 		switch (event.type) {
 			case SDL_QUIT:
 				exitSDLEventLoop(false);
@@ -949,17 +765,20 @@ unrecognizedCommandLineSwitch:
 
 	timerMutex->lock();
 	globalMutex->lock();
-#ifdef HAVE_LIBASOUND
-	delete myMidiReceiver;
-#endif
+
 	delete myTracker;
 	myTracker = NULL;
+
 	delete myTrackerScreen;
 	myTrackerScreen = NULL;
+
 	delete myDisplayDevice;
+
 	globalMutex->unlock();
 	timerMutex->unlock();
+
 	SDL_Quit();
+
 	delete globalMutex;
 	delete timerMutex;
 

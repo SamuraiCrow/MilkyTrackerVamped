@@ -1,17 +1,6 @@
 #include "AudioDriver_Pamela.h"
 #include "MasterMixer.h"
 
-#include <exec/exec.h>
-#include <proto/exec.h>
-#include <hardware/custom.h>
-#include <hardware/dmabits.h>
-#include <hardware/intbits.h>
-#include <hardware/cia.h>
-
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
 #define CUSTOM_DMACON2          (CUSTOM_DMACON  + 0x200)
 #define CUSTOM_INTENA2          (CUSTOM_INTENA  + 0x200)
 
@@ -37,7 +26,6 @@
 
 
 AudioDriver_Pamela::AudioDriver_Pamela()
-: AudioDriver_Amiga()
 {
 }
 
@@ -121,7 +109,7 @@ AudioDriver_Pamela::initHardware()
     int i;
 
     // Initialize audio hardware with default values
-    mp_uword period = PAULA_CLK_PAL / this->mixFrequency;
+    mp_uword period = PAULA_CLK / this->mixFrequency;
 
     switch(outputMode) {
     case Mix:
@@ -218,7 +206,7 @@ AudioDriver_Pamela::bufferAudioImpl()
 const char*
 AudioDriver_Pamela::getDriverID()
 {
-    return "Apollo SAGA Pamela Audio Driver";
+    return "Apollo SAGA Pamela 16-ch";
 }
 
 mp_sint32
