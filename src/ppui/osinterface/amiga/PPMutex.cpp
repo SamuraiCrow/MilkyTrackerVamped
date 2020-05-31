@@ -22,18 +22,31 @@
 
 #include "PPMutex.h"
 
+#include <stdio.h>
+#include <string.h>
+
 PPMutex::PPMutex()
 {
+    semaphore = (struct SignalSemaphore *) AllocMem(sizeof(struct SignalSemaphore), MEMF_PUBLIC | MEMF_CLEAR);
+    InitSemaphore(semaphore);
 }
 
 PPMutex::~PPMutex()
 {
+    FreeMem(semaphore, sizeof(struct SignalSemaphore));
 }
 
 void PPMutex::lock()
 {
+    ObtainSemaphore(semaphore);
 }
 
 void PPMutex::unlock()
 {
+    if (!semaphore->ss_NestCount) {
+        printf("%s\n", __PRETTY_FUNCTION__);
+        printf("BUG! No other tasks waiting for semaphore %lx\n", this);
+        return;
+    }
+    ReleaseSemaphore(semaphore);
 }

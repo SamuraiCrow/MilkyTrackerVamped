@@ -32,7 +32,7 @@ typedef signed int		pp_int32;
 
 #include "ScanCodes.h"
 
-#if defined(WIN32) || defined(_WIN32_WCE) 
+#if defined(WIN32) || defined(_WIN32_WCE)
 	#include <windows.h>
 	#include <stdio.h>
 	#define VK_ALT        VK_MENU
@@ -71,7 +71,7 @@ typedef signed int		pp_int32;
 // Little helper macro
 #define PPSTR_PERIODS "\xef"
 
-// ------ This has to be defined somewhere ------ 
+// ------ This has to be defined somewhere ------
 pp_uint32 PPGetTickCount();
 
 struct PPPoint
@@ -81,8 +81,8 @@ struct PPPoint
 	PPPoint(pp_int32 theX, pp_int32 theY) :
 		x(theX), y(theY)
 	{}
-	
-	PPPoint() 
+
+	PPPoint()
 	{}
 };
 
@@ -93,20 +93,20 @@ struct PPSize
 	PPSize(pp_int32 theWidth, pp_int32 theHeight) :
 		width(theWidth), height(theHeight)
 	{}
-	
-	PPSize() 
+
+	PPSize()
 	{}
 
 	bool operator==(const PPSize& source) const
 	{
 		return (width == source.width && height == source.height);
 	}
-	
+
 	bool operator!=(const PPSize& source) const
 	{
 		return !(width == source.width && height == source.height);
 	}
-	
+
 	bool match(pp_int32 width, pp_int32 height) const
 	{
 		return (this->width == width && this->height == height);
@@ -126,7 +126,7 @@ struct PPRect
 
 	pp_int32 width() const { return x2-x1; }
 	pp_int32 height() const { return y2-y1; }
-	
+
 	void scale(pp_int32 scaleFactor)
 	{
 		x1 *= scaleFactor;
@@ -134,14 +134,14 @@ struct PPRect
 		x2 *= scaleFactor;
 		y2 *= scaleFactor;
 	}
-	
+
 	bool intersect(const PPRect& rc) const
 	{
 		pp_int32 left1, left2;
 		pp_int32 right1, right2;
 		pp_int32 top1, top2;
 		pp_int32 bottom1, bottom2;
-		
+
 		left1 = this->x1;
 		left2 = rc.x1;
 		right1 = this->x1 + this->width();
@@ -150,16 +150,16 @@ struct PPRect
 		top2 = rc.y1;
 		bottom1 = this->y1 + this->height();
 		bottom2 = rc.y1 + rc.height();
-		
+
 		if (bottom1 < top2) return false;
 		if (top1 > bottom2) return false;
-		
+
 		if (right1 < left2) return false;
 		if (left1 > right2) return false;
-		
+
 		return true;
-	} 
-	
+	}
+
 };
 
 struct PPColor
@@ -172,7 +172,7 @@ struct PPColor
 
 	PPColor()
 	{}
-	
+
 	void validate()
 	{
 		if (r > 255) r = 255;
@@ -180,7 +180,7 @@ struct PPColor
 		if (b > 255) b = 255;
 	}
 
-	void scale(float f) 
+	void scale(float f)
 	{
 		r = (pp_int32)((float)r*f);
 		g = (pp_int32)((float)g*f);
@@ -188,7 +188,7 @@ struct PPColor
 		validate();
 	}
 
-	void scale(float fr, float fg, float fb) 
+	void scale(float fr, float fg, float fb)
 	{
 		r = (pp_int32)((float)r*fr);
 		g = (pp_int32)((float)g*fg);
@@ -196,14 +196,14 @@ struct PPColor
 		validate();
 	}
 
-	void scaleFixed(pp_int32 f) 
+	void scaleFixed(pp_int32 f)
 	{
 		r = (r*f)>>16;
 		g = (g*f)>>16;
 		b = (b*f)>>16;
 		validate();
 	}
-	
+
 	void interpolateFixed(const PPColor& col, pp_int32 f)
 	{
 		r = (f*r + col.r*(65536-f)) >> 16;
@@ -222,7 +222,7 @@ struct PPColor
 	{
 		r = red; g = green; b = blue;
 	}
-	
+
 	void clamp()
 	{
 		if (r < 0) r = 0;
@@ -239,12 +239,12 @@ struct PPColor
 		b+=source.b;
 		validate();
 	}
-	
+
 	bool operator==(const PPColor& source) const
 	{
 		return (r == source.r && g == source.g && b == source.b);
 	}
-	
+
 	bool operator!=(const PPColor& source) const
 	{
 		return !(r == source.r && g == source.g && b == source.b);
@@ -284,7 +284,7 @@ public:
 		strBuffer(new char[8]),
 		allocatedSize(8)
 	{
-		*strBuffer = 0;		
+		*strBuffer = 0;
 	}
 
 	// String from single character
@@ -307,9 +307,9 @@ public:
 
 	PPString(const char* str) :
 		strBuffer(new char[strlen(str) + 1]),
-		allocatedSize((pp_uint32)strlen(str) + 1)		
+		allocatedSize((pp_uint32)strlen(str) + 1)
 	{
-		strcpy(strBuffer, str);		
+		strcpy(strBuffer, str);
 	}
 
 	PPString(const char* str, pp_uint32 length) :
@@ -349,13 +349,13 @@ public:
 			}
 			else
 			{
-				delete[] strBuffer;			
+				delete[] strBuffer;
 				strBuffer = new char[str.allocatedSize];
 				memcpy(strBuffer, str.strBuffer, str.allocatedSize);
 				allocatedSize = str.allocatedSize;
 			}
 		}
-	
+
 		return *this;
 	}
 
@@ -374,7 +374,7 @@ public:
 			strcpy(strBuffer, str);
 			allocatedSize = len;
 		}
-		
+
 		return *this;
 	}
 
@@ -403,14 +403,14 @@ public:
 	{
 		if (length() < str.length())
 			return false;
-			
+
 		for (pp_uint32 i = 0; i < str.length(); i++)
 			if (strBuffer[i] != str.strBuffer[i])
 				return false;
-				
+
 		return true;
 	}
-	
+
 	~PPString()
 	{
 		delete[] strBuffer;
@@ -425,7 +425,7 @@ public:
 	{
 		if (index < length())
 			return strBuffer[index];
-			
+
 		return 0;
 	}
 
@@ -439,7 +439,7 @@ public:
 		allocatedSize = length() + s.length() + 1;
 
 		char* newStr = new char[allocatedSize];
-		
+
 		memcpy(newStr, strBuffer, i);
 		memcpy(newStr + i, s.strBuffer, s.length());
 		memcpy(newStr + i + s.length(), strBuffer + i, length() - i);
@@ -473,7 +473,7 @@ public:
 		allocatedSize = length() - numChars + 1;
 
 		char* newStr = new char[allocatedSize];
-		
+
 		memcpy(newStr, strBuffer, i);
 		memcpy(newStr + i, strBuffer + i + numChars, length() - i - numChars);
 		newStr[length() - numChars] = 0;
@@ -488,7 +488,7 @@ public:
 		PPString newString;
 		for (pp_uint32 i = leftIndex; i < rightIndex && i < length(); i++)
 			newString.append(charAt(i));
-		
+
 		return newString;
 	}
 
@@ -502,11 +502,11 @@ public:
 
 	pp_int32 getIntValue() const
 	{
-		pp_uint32 v; 
+		pp_uint32 v;
 		sscanf(strBuffer, "%d", &v);
 		return v;
 	}
-	
+
 	pp_int32 countLines()
 	{
 		pp_int32 numLines = 1;
@@ -516,14 +516,14 @@ public:
 			if (strBuffer[i] == '\n' && i != len-1)
 				numLines++;
 		}
-		
+
 		return numLines;
 	}
 
 	void toUpper()
 	{
 		for (pp_uint32 i = 0; i < length(); i++)
-			if (strBuffer[i] >= 'a' && 
+			if (strBuffer[i] >= 'a' &&
 				strBuffer[i] <= 'z')
 				strBuffer[i] -= 'a'-'A';
 	}
@@ -531,13 +531,13 @@ public:
 	PPString stripPath() const
 	{
 		char* ptr = strBuffer+strlen(strBuffer);
-		
+
 		while (ptr > strBuffer && *ptr != '/' && *ptr != '\\')
 			ptr--;
-			
+
 		if (ptr != strBuffer)
 			ptr++;
-			
+
 		PPString str = ptr;
 		return str;
 	}
@@ -545,23 +545,23 @@ public:
 	PPString stripExtension() const
 	{
 		char* ptr = strBuffer+strlen(strBuffer);
-		
+
 		while (ptr > strBuffer && *ptr != '.' && *ptr != '/' && *ptr != '\\')
 			ptr--;
-		
+
 		if (*ptr == '/' || *ptr == '\\')
 			return strBuffer;
-			
+
 		if (ptr != strBuffer)
-		{	
+		{
 			PPString str;
-		
+
 			delete[] str.strBuffer;
 			str.allocatedSize = (pp_uint32)((ptr-strBuffer)+1);
 			str.strBuffer = new char[str.allocatedSize];
 			memcpy(str.strBuffer, strBuffer, (ptr-strBuffer));
 			str.strBuffer[(ptr-strBuffer)] = '\0';
-		
+
 			return str;
 		}
 		else
@@ -573,25 +573,25 @@ public:
 	PPString getExtension() const
 	{
 		char* ptr = strBuffer+strlen(strBuffer);
-		
+
 		while (ptr > strBuffer && *ptr != '.' && *ptr != '/' && *ptr != '\\')
 			ptr--;
-		
+
 		if (*ptr != '.')
 			return "";
-			
+
 		return ptr;
 	}
 
-	pp_int32 compareExtensions(const PPString& str) const	
+	pp_int32 compareExtensions(const PPString& str) const
 	{
 		char* ptrSrc = strBuffer+strlen(strBuffer);
-		
+
 		while (ptrSrc > strBuffer && *ptrSrc != '.' && *ptrSrc != '/')
 			ptrSrc--;
-		
+
 		bool noExt1 = false;
-		
+
 		if (*ptrSrc != '.')
 			noExt1 = true;
 
@@ -600,10 +600,10 @@ public:
 			noExt1 = true;
 
 		char* ptrDst = str.strBuffer+strlen(str.strBuffer);
-		
+
 		while (ptrDst > str.strBuffer && *ptrDst != '.' && *ptrDst != '/')
 			ptrDst--;
-		
+
 		if (*ptrDst != '.')
 			return noExt1 ? 0 : 1;
 
@@ -614,13 +614,13 @@ public:
 		return STRINGCOMPARE_NOCASE(ptrSrc, ptrDst);
 	}
 
-	bool compareToExtension(const PPString& extension) const	
+	bool compareToExtension(const PPString& extension) const
 	{
 		char* ptrSrc = strBuffer+strlen(strBuffer);
-		
+
 		while (ptrSrc > strBuffer && *ptrSrc != '.' && *ptrSrc != '/')
 			ptrSrc--;
-		
+
 		if (*ptrSrc != '.')
 			return false;
 
@@ -641,7 +641,7 @@ public:
 				append(chr);
 		}
 	}
-	
+
 	// Delete this pointer after usage
 	char* toASCIIZ() const
 	{
@@ -656,17 +656,17 @@ struct Descriptor
 {
 	PPString extension;
 	PPString description;
-	
+
 	Descriptor(const PPString& ext, const PPString& desc) :
 		extension(ext), description(desc)
 	{
 	}
-	
+
 	Descriptor(const Descriptor& source) :
 		extension(source.extension), description(source.description)
 	{
 	}
-	
+
 };
 
 

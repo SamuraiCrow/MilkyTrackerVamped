@@ -23,9 +23,14 @@
 #ifndef PPMUTEX__H
 #define PPMUTEX__H
 
+#include <exec/semaphores.h>
+#include <clib/exec_protos.h>
+
 class PPMutex
 {
 private:
+	struct SignalSemaphore * semaphore;
+
 public:
 	PPMutex();
 	~PPMutex();
