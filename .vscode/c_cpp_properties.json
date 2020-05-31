@@ -16,6 +16,7 @@
                 "AMIGA",
                 "__AMIGA__",
                 "AMIGA_SAGA_PIP",
+                "AMIGA_DIRECTOUT",
                 "_NO_INLINE"
             ],
             "windowsSdkVersion": "8.1",

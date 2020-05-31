@@ -197,7 +197,6 @@ mp_sint32 MasterMixer::resume()
 
 mp_sint32 MasterMixer::setBufferSize(mp_uint32 bufferSize)
 {
-	printf("%s\nSet buffer size: %ld\n", __PRETTY_FUNCTION__, bufferSize);
 	if (bufferSize != this->bufferSize)
 	{
 		mp_sint32 res = closeAudioDevice();

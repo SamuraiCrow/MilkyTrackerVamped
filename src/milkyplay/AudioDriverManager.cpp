@@ -218,7 +218,6 @@ AudioDriverManager::AudioDriverManager() :
 //////////////////////////////////////////////////////////////////
 //					Amiga implementations
 //////////////////////////////////////////////////////////////////
-#include "AudioDriver_Amiga.h"
 #include "AudioDriver_Paula.h"
 #include "AudioDriver_Pamela.h"
 #include <exec/exec.h>

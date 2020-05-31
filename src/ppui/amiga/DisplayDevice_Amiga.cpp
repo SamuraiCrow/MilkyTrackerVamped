@@ -4,7 +4,6 @@
 DisplayDevice_Amiga::DisplayDevice_Amiga(
     pp_int32 width,
     pp_int32 height,
-    pp_int32 scaleFactor,
     pp_int32 bpp,
     bool fullScreen)
 {
@@ -18,7 +17,7 @@ DisplayDevice_Amiga::~DisplayDevice_Amiga()
 PPGraphicsAbstract*
 DisplayDevice_Amiga::open()
 {
-
+    return NULL;
 }
 
 void

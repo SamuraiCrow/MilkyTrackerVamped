@@ -1355,7 +1355,6 @@ mp_sint32 ChannelMixer::setBufferSize(mp_uint32 bufferSize)
 		return MP_OK;
 
 	this->mixBufferSize = bufferSize;
-	printf("%s\nMix Buffer Size: %ld\n", __PRETTY_FUNCTION__, this->mixBufferSize);
 
 	// channels contain information depending up the buffer size
 	// update those too

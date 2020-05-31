@@ -90,10 +90,12 @@ elseif(AROS OR AMIGA)
     target_sources(osinterface
         PRIVATE
             # Sources
-            amiga/PPOpenPanel_Amiga.cpp
-            amiga/PPSavePanel_Amiga.cpp
             amiga/AslRequester.cpp
+            amiga/PPMessageBox_Amiga.cpp
             amiga/PPMutex.cpp
+            amiga/PPOpenPanel_Amiga.cpp
+            amiga/PPQuitSaveAlert_Amiga.cpp
+            amiga/PPSavePanel_Amiga.cpp
             posix/PPPath_POSIX.cpp
             posix/PPSystem_POSIX.cpp
 

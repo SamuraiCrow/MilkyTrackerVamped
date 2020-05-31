@@ -32,7 +32,11 @@
 #	include "config.h"
 #endif
 #if defined(__AMIGA__) || defined(__amigaos4__)
+
 #	include <exec/exec.h>
+#	include <clib/timer_protos.h>
+#	include <clib/exec_protos.h>
+
 #	ifndef AFB_68080
 #		define AFB_68080 10
 #	endif
@@ -73,6 +77,9 @@ extern struct ExecBase *SysBase;
 static int cpuType;
 static bool hasFPU = false;
 
+struct Device * TimerBase;
+static struct IORequest timereq;
+
 // SDL surface screen
 //SDL_TimerID timer;
 
@@ -106,10 +113,15 @@ static PPPoint p;
 
 static bool exitDone;
 
+static struct timeval startTime;
+
 pp_uint32 PPGetTickCount() {
-	// @todo
-	//return SDL_GetTicks();
-	return 0;
+    struct timeval endTime;
+
+	GetSysTime(&endTime);
+    SubTime(&endTime, &startTime);
+
+    return endTime.tv_secs * 1000 + endTime.tv_micro / 1000;
 }
 
 void QueryKeyModifiers() {
@@ -308,8 +320,7 @@ static void translateMouseUpEvent(pp_int32 mouseButton, pp_int32 localMouseX, pp
 			if (deltat < 500) {
 				p.x = localMouseX;
 				p.y = localMouseY;
-				if (abs(p.x - rlastClickPosition.x) < 4 &&
-						abs(p.y - rlastClickPosition.y) < 4) {
+				if (abs(p.x - rlastClickPosition.x) < 4 && abs(p.y - rlastClickPosition.y) < 4) {
 					PPEvent myEvent(eRMouseDoubleClick, &p, sizeof (PPPoint));
 					RaiseEventSerialized(&myEvent);
 				}
@@ -496,14 +507,13 @@ static void initTracker(pp_uint32 bpp, bool fullScreen, bool noSplash) {
 	PPSize windowSize = myTracker->getWindowSizeFromDatabase();
 	if (!fullScreen)
 		fullScreen = myTracker->getFullScreenFlagFromDatabase();
-	pp_int32 scaleFactor = myTracker->getScreenScaleFactorFromDatabase();
 
 #ifdef __LOWRES__
 	windowSize.width = DISPLAYDEVICE_WIDTH;
 	windowSize.height = DISPLAYDEVICE_HEIGHT;
 #endif
 
-	myDisplayDevice = new DisplayDevice_Amiga(windowSize.width, windowSize.height, scaleFactor, bpp, fullScreen);
+	myDisplayDevice = new DisplayDevice_Amiga(windowSize.width, windowSize.height, bpp, fullScreen);
 	myDisplayDevice->init();
 
 	myTrackerScreen = new PPScreen(myDisplayDevice, myTracker);
@@ -611,6 +621,11 @@ int main(int argc, char *argv[])
 		exit(1);
 	}*/
 
+	// Init timer
+	OpenDevice("timer.device", 0, &timereq, 0);
+	TimerBase = timereq.io_Device;
+	GetSysTime(&startTime);
+
 	timerMutex = new PPMutex();
 	globalMutex = new PPMutex();
 
@@ -689,6 +704,8 @@ int main(int argc, char *argv[])
 
 	delete globalMutex;
 	delete timerMutex;
+
+  	CloseDevice(&timereq);
 
 	return 0;
 }

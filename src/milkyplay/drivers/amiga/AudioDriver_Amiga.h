@@ -46,6 +46,7 @@ protected:
 	};
 
 	bool                allocated;
+	bool                irqEnabled;
 
 	OutputMode          outputMode;
 

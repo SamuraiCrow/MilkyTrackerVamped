@@ -29,7 +29,6 @@ public:
 	DisplayDevice_Amiga(
 		pp_int32 width,
 		pp_int32 height,
-		pp_int32 scaleFactor,
 		pp_int32 bpp,
 		bool fullScreen);
 	virtual ~DisplayDevice_Amiga();
