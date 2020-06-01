@@ -284,9 +284,11 @@ elseif(AROS OR AMIGA)
         # Sources
         amiga/Amiga_KeyTranslation.cpp
         amiga/Amiga_Main.cpp
+        amiga/AmigaApplication.cpp
 
         # Headers
         amiga/Amiga_KeyTranslation.h
+        amiga/AmigaApplication.h
     )
 
     target_include_directories(tracker PRIVATE

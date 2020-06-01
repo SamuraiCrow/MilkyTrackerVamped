@@ -1,11 +1,9 @@
 #include "DisplayDevice_Amiga.h"
+#include "../../tracker/amiga/AmigaApplication.h"
 #include "Graphics.h"
 
-DisplayDevice_Amiga::DisplayDevice_Amiga(
-    pp_int32 width,
-    pp_int32 height,
-    pp_int32 bpp,
-    bool fullScreen)
+DisplayDevice_Amiga::DisplayDevice_Amiga(AmigaApplication * app)
+: app(app)
 {
 }
 
@@ -47,7 +45,7 @@ DisplayDevice_Amiga::setSize(const PPSize& size)
 void
 DisplayDevice_Amiga::setTitle(const PPSystemString& title)
 {
-
+    app->setWindowTitle(title.getStrBuffer());
 }
 
 bool

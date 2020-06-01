@@ -23,17 +23,17 @@
 #include "BasicTypes.h"
 #include "DisplayDeviceBase.h"
 
+class AmigaApplication;
+
 class DisplayDevice_Amiga : public PPDisplayDeviceBase
 {
+private:
+	AmigaApplication * app;
+
 public:
-	DisplayDevice_Amiga(
-		pp_int32 width,
-		pp_int32 height,
-		pp_int32 bpp,
-		bool fullScreen);
+	DisplayDevice_Amiga(AmigaApplication * app);
 	virtual ~DisplayDevice_Amiga();
 
-private:
 	// --- PPDisplayDeviceBase ------------------------------------------------
 public:
 	virtual	PPGraphicsAbstract*	open();

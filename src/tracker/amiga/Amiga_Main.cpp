@@ -36,6 +36,7 @@
 #	include <exec/exec.h>
 #	include <clib/timer_protos.h>
 #	include <clib/exec_protos.h>
+#	include <clib/picasso96_protos.h>
 
 #	ifndef AFB_68080
 #		define AFB_68080 10
@@ -61,6 +62,7 @@
 
 //#include <SDL.h>
 //#include "SDL_KeyTranslation.h"
+#include "AmigaApplication.h"
 // ---------------------------- Tracker includes ----------------------------
 #include "PPUI.h"
 #include "DisplayDevice_Amiga.h"
@@ -72,25 +74,25 @@
 // --------------------------------------------------------------------------
 
 // Amiga specifics
-extern struct ExecBase *SysBase;
+extern struct ExecBase * SysBase;
 
-static int cpuType;
-static bool hasFPU = false;
+struct Library * IntuitionBase = NULL;
+struct Library * GfxBase = NULL;
+struct Library * P96Base = NULL;
 
-struct Device * TimerBase;
+int	cpuType = 0;
+bool hasFPU = false;
+
+struct Device * TimerBase = NULL;
 static struct IORequest timereq;
 
 // SDL surface screen
 //SDL_TimerID timer;
 
-// Tracker globals
-static PPScreen* myTrackerScreen = NULL;
-static Tracker* myTracker = NULL;
-static DisplayDevice_Amiga * myDisplayDevice = NULL;
-
 // Okay what else do we need?
-PPMutex* globalMutex = NULL;
 static PPMutex* timerMutex = NULL;
+
+
 static bool ticking = false;
 
 static pp_uint32 lmyTime;
@@ -144,14 +146,6 @@ void QueryKeyModifiers() {
 		clearKeyModifier(KeyModifierALT);*/
 }
 
-static void RaiseEventSerialized(PPEvent* event) {
-	if (myTrackerScreen && myTracker) {
-		globalMutex->lock();
-		myTrackerScreen->raiseEvent(event);
-		globalMutex->unlock();
-	}
-}
-
 /*
 enum SDLUserEvents {
 	SDLUserEventTimer,
@@ -199,7 +193,7 @@ static Uint32 timerCallback(Uint32 interval) {
 	timerMutex->unlock();
 
 	return interval;
-}*/
+}
 
 static void translateMouseDownEvent(pp_int32 mouseButton, pp_int32 localMouseX, pp_int32 localMouseY) {
 	if (mouseButton > 2 || !mouseButton)
@@ -263,7 +257,6 @@ static void translateMouseDownEvent(pp_int32 mouseButton, pp_int32 localMouseX, 
 
 static void translateMouseUpEvent(pp_int32 mouseButton, pp_int32 localMouseX, pp_int32 localMouseY) {
 	// @todo
-	/*
 	if (mouseButton == SDL_BUTTON_WHEELDOWN) {
 		TMouseWheelEventParams mouseWheelParams;
 		mouseWheelParams.pos.x = localMouseX;
@@ -284,7 +277,6 @@ static void translateMouseUpEvent(pp_int32 mouseButton, pp_int32 localMouseX, pp
 		RaiseEventSerialized(&myEvent);
 	} else if (mouseButton > 2 || !mouseButton)
 		return;
-	*/
 
 	// -----------------------------
 	if (mouseButton == 1) {
@@ -359,7 +351,7 @@ static void translateMouseMoveEvent(pp_int32 mouseButton, pp_int32 localMouseX, 
 	}
 }
 
-/*static void translateKeyDownEvent(const SDL_Event& event) {
+static void translateKeyDownEvent(const SDL_Event& event) {
 	SDL_keysym keysym = event.key.keysym;
 
 	// ALT+RETURN = Fullscreen toggle
@@ -392,9 +384,9 @@ static void translateMouseMoveEvent(pp_int32 mouseButton, pp_int32 localMouseX, 
 		PPEvent myEvent2(eKeyChar, &character, sizeof (character));
 		RaiseEventSerialized(&myEvent2);
 	}
-}*/
+}
 
-/*static void translateKeyUpEvent(const SDL_Event& event) {
+static void translateKeyUpEvent(const SDL_Event& event) {
 	SDL_keysym keysym = event.key.keysym;
 
 	pp_uint16 character = event.key.keysym.unicode;
@@ -412,9 +404,9 @@ static void translateMouseMoveEvent(pp_int32 mouseButton, pp_int32 localMouseX, 
 
 	PPEvent myEvent(eKeyUp, &chr, sizeof (chr));
 	RaiseEventSerialized(&myEvent);
-}*/
+}
 
-/*void processSDLEvents(const SDL_Event& event) {
+void processSDLEvents(const SDL_Event& event) {
 	pp_uint32 mouseButton = 0;
 
 	switch (event.type) {
@@ -444,9 +436,9 @@ static void translateMouseMoveEvent(pp_int32 mouseButton, pp_int32 localMouseX, 
 			translateKeyUpEvent(event);
 			break;
 	}
-}*/
+}
 
-/*void processSDLUserEvents(const SDL_UserEvent& event) {
+void processSDLUserEvents(const SDL_UserEvent& event) {
 
 	union {
 		void *ptr;
@@ -494,42 +486,11 @@ static void translateMouseMoveEvent(pp_int32 mouseButton, pp_int32 localMouseX, 
 	}
 }*/
 
-static void initTracker(pp_uint32 bpp, bool fullScreen, bool noSplash) {
-
-	//SDL_EnableKeyRepeat(SDL_DEFAULT_REPEAT_DELAY, SDL_DEFAULT_REPEAT_INTERVAL);
-	//SDL_EnableUNICODE(1);
-
-	//SDL_WM_SetCaption("Loading MilkyTracker...", "MilkyTracker");
-
-	// ------------ initialise tracker ---------------
-	myTracker = new Tracker();
-
-	PPSize windowSize = myTracker->getWindowSizeFromDatabase();
-	if (!fullScreen)
-		fullScreen = myTracker->getFullScreenFlagFromDatabase();
-
-#ifdef __LOWRES__
-	windowSize.width = DISPLAYDEVICE_WIDTH;
-	windowSize.height = DISPLAYDEVICE_HEIGHT;
-#endif
-
-	myDisplayDevice = new DisplayDevice_Amiga(windowSize.width, windowSize.height, bpp, fullScreen);
-	myDisplayDevice->init();
-
-	myTrackerScreen = new PPScreen(myDisplayDevice, myTracker);
-	myTracker->setScreen(myTrackerScreen);
-
-	// Startup procedure
-	myTracker->startUp(noSplash);
-
-	// try to create timer
-	// @todo
-	//SDL_SetTimer(20, timerCallback);
-
+/*static void initTracker(pp_uint32 bpp, bool fullScreen, bool noSplash) {
 	timerMutex->lock();
 	ticking = true;
 	timerMutex->unlock();
-}
+}*/
 
 /*
 void exitSDLEventLoop(bool serializedEventInvoked) {
@@ -551,19 +512,9 @@ void exitSDLEventLoop(bool serializedEventInvoked) {
 		exitDone = 1;
 }*/
 
-static void SendFile(char *file) {
-	PPSystemString finalFile(file);
-	PPSystemString* strPtr = &finalFile;
-
-	PPEvent event(eFileDragDropped, &strPtr, sizeof (PPSystemString*));
-	RaiseEventSerialized(&event);
-}
-
-int main(int argc, char *argv[])
+static bool checkHardware()
 {
-	// @todo replace by __AMIGA_CLASSIC__ maybe?
 #if !defined(__amigaos4__) && !defined(MORPHOS) && !defined(WARPOS) && defined(__AMIGA__)
-	// find out what type of CPU we have
 	if ((SysBase->AttnFlags & AFF_68080) != 0)
 		cpuType = 68080;
 	else if ((SysBase->AttnFlags & AFF_68060) != 0)
@@ -580,76 +531,108 @@ int main(int argc, char *argv[])
 		cpuType = 68000;
 
 	if ((SysBase->AttnFlags & AFF_FPU40) != 0)
-		hasFPU = 1;
-
-	printf("Your CPU is a %i. Has FPU? %s\n", cpuType, hasFPU ? "Yes" : "No");
-	if (!hasFPU) {
-		fprintf(stderr, "Sorry, you need minimum a 68040 processor with FPU to run this application!\n");
-		exit(1);
-	}
+		hasFPU = true;
+#else
+	cpuType = 0;
+	hasFPU = true;
 #endif
 
-	//SDL_Event event;
-	char *loadFile = 0;
+	return hasFPU;
+}
 
-	pp_int32 defaultBPP = -1;
-	bool fullScreen = false, noSplash = false;
+static int boot(int argc, char * argv[])
+{
+	int ret;
+	AmigaApplication * app = new AmigaApplication();
 
-	// Parse command line
+	// Parse command line (@todo use ToolTypes)
 	while (argc > 1) {
 		--argc;
 		if (strcmp(argv[argc - 1], "-bpp") == 0) {
-			defaultBPP = atoi(argv[argc]);
+			app->setBpp(atoi(argv[argc]));
 			--argc;
 		} else if (strcmp(argv[argc], "-nosplash") == 0) {
-			noSplash = true;
+			app->setNoSplash(true);
 		} else if (strcmp(argv[argc], "-fullscreen") == 0) {
-			fullScreen = true;
+			app->setNoSplash(false);
 		} else {
 			if (argv[argc][0] == '-') {
 				fprintf(stderr, "Usage: %s [-bpp N] [-fullscreen] [-nosplash] [-recvelocity]\n", argv[0]);
-				exit(1);
+				return 1;
 			} else {
-				loadFile = argv[argc];
+				app->setLoadFile(argv[argc]);
 			}
 		}
 	}
 
+	// And start
+	if(ret = app->start()) {
+		fprintf(stderr, "Starting tracker failed! (ret = %ld)\n", ret);
+	} else {
+		app->loop();
+
+		if(ret = app->stop()) {
+			fprintf(stderr, "Stopping tracker failed! (ret = %ld)\n", ret);
+		}
+	}
+
+	delete app;
+
+	return ret;
+}
+
+int main(int argc, char * argv[])
+{
+	int ret = 0;
+
+	// Check hardware
+	if(!checkHardware()) {
+		return 1;
+	}
+
+	// Open libraries and boot application
+	if(IntuitionBase = OpenLibrary("intuition.library", 39)) {
+		if(GfxBase = OpenLibrary("graphics.library", 39)) {
+			if(P96Base = OpenLibrary(P96NAME, 2)) {
+				BYTE err = OpenDevice("timer.device", 0, &timereq, 0);
+				if(err == 0) {
+					TimerBase = timereq.io_Device;
+					GetSysTime(&startTime);
+
+					ret = boot(argc, argv);
+
+  					CloseDevice(&timereq);
+				} else {
+					fprintf(stderr, "Could not open timer.device! (err = %ld)\n", err);
+					ret = 1;
+				}
+				CloseLibrary(P96Base);
+			} else {
+				fprintf(stderr, "Could not open %s V2!\n", P96NAME);
+				ret = 1;
+			}
+			CloseLibrary(GfxBase);
+		} else {
+			fprintf(stderr, "Could not open graphics.library V39!\n");
+			ret = 1;
+		}
+		CloseLibrary(IntuitionBase);
+	}  else {
+		fprintf(stderr, "Could not open intuition.library V39!\n");
+		ret = 1;
+	}
+
+	return ret;
+
+
+	// ----------------
 	/* Initialize SDL */
 	/*if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER | SDL_INIT_AUDIO) < 0) {
 		fprintf(stderr, "Couldn't initialize SDL: %s\n", SDL_GetError());
 		exit(1);
 	}*/
 
-	// Init timer
-	OpenDevice("timer.device", 0, &timereq, 0);
-	TimerBase = timereq.io_Device;
-	GetSysTime(&startTime);
 
-	timerMutex = new PPMutex();
-	globalMutex = new PPMutex();
-
-	// Store current working path (init routine is likely to change it)
-	PPPath_POSIX path;
-	PPSystemString oldCwd = path.getCurrent();
-
-	globalMutex->lock();
-
-	initTracker(defaultBPP, fullScreen, noSplash);
-
-	globalMutex->unlock();
-
-	if (loadFile) {
-		PPSystemString newCwd = path.getCurrent();
-		path.change(oldCwd);
-		SendFile(loadFile);
-		path.change(newCwd);
-		pp_uint16 chr[3] = {VK_RETURN, 0, 0};
-		PPEvent event(eKeyDown, &chr, sizeof (chr));
-		RaiseEventSerialized(&event);
-	}
-
-	/* Main event loop */
 	/*exitDone = 0;
 	while (!exitDone && SDL_WaitEvent(&event)) {
 		switch (event.type) {
@@ -680,32 +663,9 @@ int main(int argc, char *argv[])
 		}
 	}*/
 
-	timerMutex->lock();
-	ticking = false;
-	timerMutex->unlock();
-
-	//SDL_SetTimer(0, NULL);
-
-	timerMutex->lock();
-	globalMutex->lock();
-
-	delete myTracker;
-	myTracker = NULL;
-
-	delete myTrackerScreen;
-	myTrackerScreen = NULL;
-
-	delete myDisplayDevice;
-
-	globalMutex->unlock();
-	timerMutex->unlock();
-
-	//SDL_Quit();
-
-	delete globalMutex;
-	delete timerMutex;
-
-  	CloseDevice(&timereq);
+//	timerMutex->lock();
+	//ticking = false;
+	//timerMutex->unlock();
 
 	return 0;
 }
