@@ -33,31 +33,41 @@ private:
     pp_uint32               bpp;
     bool                    noSplash;
     bool                    running;
+    bool                    fullScreen;
     char *                  loadFile;
+
     Tracker *               tracker;
     DisplayDevice_Amiga *   displayDevice;
     PPScreen *              screen;
     PPSize                  windowSize;
-    bool                    fullScreen;
     PPSystemString          oldCwd;
     char                    currentTitle[256];
 
     struct Window *         window;
     struct Screen *         pubScreen;
-    struct Interrupt *      irqVerticalBlank;
     struct Task *           task;
+
+    struct Interrupt *      irqVerticalBlank;
     pp_int32                vbSignal;
     pp_uint32               vbMask;
     pp_uint32               vbCount;
+
+    PPPoint                 mousePosition;
+
     pp_uint32               mouseLeftSeconds;
     pp_uint32               mouseLeftMicros;
+    bool                    mouseLeftDown;
+    pp_uint32               mouseLeftVBStart;
+
     pp_uint32               mouseRightSeconds;
     pp_uint32               mouseRightMicros;
+    bool                    mouseRightDown;
+    pp_uint32               mouseRightVBStart;
 
     int                     load(char * loadFile);
     void                    raiseEventSynchronized(PPEvent * event);
 
-    void                    transformMouseCoordinates(PPPoint& p);
+    void                    setMousePosition(pp_int32 x, pp_int32 y);
 
     static pp_int32         verticalBlankService(register AmigaApplication * that __asm("a1"));
     pp_int32                verticalBlank();

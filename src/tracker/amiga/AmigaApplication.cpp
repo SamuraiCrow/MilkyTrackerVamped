@@ -11,6 +11,16 @@
 
 PPMutex* globalMutex = NULL;
 
+static pp_uint32
+getVerticalBeamPosition() {
+    struct vpos {
+        pp_uint32 :13;
+        pp_uint32 vpos:11;
+        pp_uint32 hpos:8;
+    };
+    return ((struct vpos*) 0xdff004)->vpos;
+}
+
 AmigaApplication::AmigaApplication()
 : cpuType(0)
 , hasFPU(false)
@@ -26,8 +36,13 @@ AmigaApplication::AmigaApplication()
 , vbCount(0)
 , mouseLeftSeconds(0)
 , mouseLeftMicros(0)
+, mouseLeftDown(false)
+, mouseLeftVBStart(0)
 , mouseRightSeconds(0)
 , mouseRightMicros(0)
+, mouseRightDown(false)
+, mouseRightVBStart(0)
+, mousePosition(PPPoint(-1, -1))
 {
     strcpy(currentTitle, "");
     globalMutex = new PPMutex();
@@ -63,12 +78,12 @@ int AmigaApplication::load(char * loadFile)
     // "Drop" file to load onto MilkyTracker @todo
     PPSystemString finalFile(loadFile);
 	PPSystemString* strPtr = &finalFile;
-	PPEvent eventDrop(eFileDragDropped, &strPtr, sizeof (PPSystemString*));
+	PPEvent eventDrop(eFileDragDropped, &strPtr, sizeof(PPSystemString*));
 	raiseEventSynchronized(&eventDrop);
 
     // And confirm
     pp_uint16 chr[3] = {VK_RETURN, 0, 0};
-    PPEvent eventConfirm(eKeyDown, &chr, sizeof (chr));
+    PPEvent eventConfirm(eKeyDown, &chr, sizeof(chr));
     raiseEventSynchronized(&eventConfirm);
 
     // Restore path
@@ -106,17 +121,20 @@ int AmigaApplication::start()
                 fullScreen = tracker->getFullScreenFlagFromDatabase();
 
             window = OpenWindowTags(NULL,
-                WA_CustomScreen , (APTR) pubScreen,
-                WA_Left         , (pubScreen->Width - windowSize.width) / 2,
-                WA_Top          , (pubScreen->Height - windowSize.height) / 2,
-                WA_InnerWidth   , windowSize.width,
-                WA_InnerHeight  , windowSize.height,
-                WA_Title        , (APTR) "Loading MilkyTracker ...",
-                WA_DragBar      , TRUE,
-                WA_DepthGadget  , TRUE,
-                WA_CloseGadget  , TRUE,
-                WA_Activate     , TRUE,
-                WA_IDCMP        , IDCMP_CLOSEWINDOW | IDCMP_MOUSEBUTTONS | IDCMP_MOUSEMOVE | IDCMP_RAWKEY,
+                WA_CustomScreen  , (APTR) pubScreen,
+                WA_Left          , (pubScreen->Width - windowSize.width) / 2,
+                WA_Top           , (pubScreen->Height - windowSize.height) / 2,
+                WA_InnerWidth    , windowSize.width,
+                WA_InnerHeight   , windowSize.height,
+                WA_Title         , (APTR) "Loading MilkyTracker ...",
+                WA_DragBar       , TRUE,
+                WA_DepthGadget   , TRUE,
+                WA_CloseGadget   , TRUE,
+                WA_Activate      , TRUE,
+                WA_ReportMouse   , TRUE,
+                WA_NoCareRefresh , TRUE,
+                WA_RMBTrap       , TRUE,
+                WA_IDCMP         , IDCMP_CLOSEWINDOW | IDCMP_MOUSEBUTTONS | IDCMP_MOUSEMOVE | IDCMP_RAWKEY,
                 TAG_DONE);
 
             if(window) {
@@ -183,10 +201,10 @@ AmigaApplication::verticalBlank()
     return 0;
 }
 
-void AmigaApplication::transformMouseCoordinates(PPPoint& p)
+void AmigaApplication::setMousePosition(pp_int32 x, pp_int32 y)
 {
-    p.x -= window->BorderLeft;
-    p.y -= window->BorderTop;
+    mousePosition.x = x - window->BorderLeft;
+    mousePosition.y = y - window->BorderTop;
 }
 
 void AmigaApplication::loop()
@@ -204,6 +222,15 @@ void AmigaApplication::loop()
     while(running) {
 		ULONG signal = Wait(vbMask | portMask);
 
+        // Prebuffering audio has first priority
+        if(signal & vbMask) {
+            AudioDriverInterface_Amiga * driverInterface = (AudioDriverInterface_Amiga *) tracker->playerMaster->getCurrentDriver();
+            if(driverInterface) {
+                driverInterface->bufferAudio();
+            }
+        }
+
+        // After that handle Intuition messages
         if(signal & portMask) {
             while((msg = (struct IntuiMessage *) GetMsg(port))) {
                 switch(msg->Class) {
@@ -212,65 +239,75 @@ void AmigaApplication::loop()
                     break;
                 case IDCMP_MOUSEMOVE:
                     {
-                        PPPoint point(msg->MouseX, msg->MouseY);
-                        transformMouseCoordinates(point);
-                        PPEvent mouseMoveEvent(eMouseMoved, &point, sizeof(PPPoint));
-                        raiseEventSynchronized(&mouseMoveEvent);
+                        setMousePosition(msg->MouseX, msg->MouseY);
+
+                        if(mouseLeftDown) {
+                            PPEvent mouseDragEvent(eLMouseDrag, &mousePosition, sizeof(PPPoint));
+                            raiseEventSynchronized(&mouseDragEvent);
+                        } else if(mouseRightDown) {
+                            PPEvent mouseDragEvent(eRMouseDrag, &mousePosition, sizeof(PPPoint));
+                            raiseEventSynchronized(&mouseDragEvent);
+                        } else {
+                            PPEvent mouseMoveEvent(eMouseMoved, &mousePosition, sizeof(PPPoint));
+                            raiseEventSynchronized(&mouseMoveEvent);
+                        }
                     }
                     break;
                 case IDCMP_MOUSEBUTTONS:
+                    setMousePosition(msg->MouseX, msg->MouseY);
+
                     switch (msg->Code)
                     {
                     case IECODE_LBUTTON:
                         {
-                            PPPoint point(msg->MouseX, msg->MouseY);
-                            transformMouseCoordinates(point);
                             if(DoubleClick(mouseLeftSeconds, mouseLeftMicros, msg->Seconds, msg->Micros)) {
-                                PPEvent mouseDownEvent(eLMouseDoubleClick, &point, sizeof (PPPoint));
+                                PPEvent mouseDownEvent(eLMouseDoubleClick, &mousePosition, sizeof(PPPoint));
                                 raiseEventSynchronized(&mouseDownEvent);
                             } else {
-                                PPEvent mouseDownEvent(eLMouseDown, &point, sizeof (PPPoint));
+                                PPEvent mouseDownEvent(eLMouseDown, &mousePosition, sizeof(PPPoint));
                                 raiseEventSynchronized(&mouseDownEvent);
 
                                 mouseLeftSeconds  = msg->Seconds;
                                 mouseLeftMicros   = msg->Micros;
+                                mouseLeftDown     = true;
+                                mouseLeftVBStart  = vbCount;
                                 mouseRightSeconds = 0;
                                 mouseRightMicros  = 0;
+                                mouseRightDown    = false;
                             }
                         }
                         break;
                     case IECODE_LBUTTON | IECODE_UP_PREFIX:
                         {
-                            PPPoint point(msg->MouseX, msg->MouseY);
-                            transformMouseCoordinates(point);
-                            PPEvent mouseUpEvent(eLMouseUp, &point, sizeof (PPPoint));
+                            PPEvent mouseUpEvent(eLMouseUp, &mousePosition, sizeof(PPPoint));
                             raiseEventSynchronized(&mouseUpEvent);
+                            mouseLeftDown = false;
                         }
                         break;
                     case IECODE_RBUTTON:
                         {
-                            PPPoint point(msg->MouseX, msg->MouseY);
-                            transformMouseCoordinates(point);
                             if(DoubleClick(mouseRightSeconds, mouseRightMicros, msg->Seconds, msg->Micros)) {
-                                PPEvent mouseDownEvent(eRMouseDoubleClick, &point, sizeof (PPPoint));
+                                PPEvent mouseDownEvent(eRMouseDoubleClick, &mousePosition, sizeof(PPPoint));
                                 raiseEventSynchronized(&mouseDownEvent);
                             } else {
-                                PPEvent mouseDownEvent(eRMouseDown, &point, sizeof (PPPoint));
+                                PPEvent mouseDownEvent(eRMouseDown, &mousePosition, sizeof(PPPoint));
                                 raiseEventSynchronized(&mouseDownEvent);
 
                                 mouseLeftSeconds  = 0;
                                 mouseLeftMicros   = 0;
+                                mouseLeftDown     = false;
                                 mouseRightSeconds = msg->Seconds;
                                 mouseRightMicros  = msg->Micros;
+                                mouseRightDown    = true;
+                                mouseRightVBStart = vbCount;
                             }
                         }
                         break;
                     case IECODE_RBUTTON | IECODE_UP_PREFIX:
                         {
-                            PPPoint point(msg->MouseX, msg->MouseY);
-                            transformMouseCoordinates(point);
-                            PPEvent mouseUpEvent(eRMouseUp, &point, sizeof (PPPoint));
+                            PPEvent mouseUpEvent(eRMouseUp, &mousePosition, sizeof(PPPoint));
                             raiseEventSynchronized(&mouseUpEvent);
+                            mouseRightDown = false;
                         }
                         break;
                     }
@@ -283,17 +320,22 @@ void AmigaApplication::loop()
             displayDevice->setSize(windowSize);
         }
 
+
         if(signal & vbMask) {
             if(!(vbCount & 1)) {
                 PPEvent timerEvent(eTimer);
 			    raiseEventSynchronized(&timerEvent);
             }
 
-            AudioDriverInterface_Amiga * driverInterface = (AudioDriverInterface_Amiga *) tracker->playerMaster->getCurrentDriver();
-            if(driverInterface) {
-                driverInterface->bufferAudio();
+            if(mouseLeftDown && (vbCount - mouseLeftVBStart) > 25) {
+                PPEvent mouseRepeatEvent(eLMouseRepeat, &mousePosition, sizeof(PPPoint));
+                raiseEventSynchronized(&mouseRepeatEvent);
+            } else if(mouseRightDown && (vbCount - mouseRightVBStart) > 25) {
+                PPEvent mouseRepeatEvent(eRMouseRepeat, &mousePosition, sizeof(PPPoint));
+                raiseEventSynchronized(&mouseRepeatEvent);
             }
 
+            // And draw the screen at last (@todo check if we have enough VBTime left for that)
             displayDevice->flush();
         }
     }

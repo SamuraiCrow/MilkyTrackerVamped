@@ -133,114 +133,6 @@ void QueryKeyModifiers() {
 }
 
 /*
-enum SDLUserEvents {
-	SDLUserEventTimer,
-	SDLUserEventLMouseRepeat,
-	SDLUserEventRMouseRepeat,
-#if defined(AMIGA_SAGA_PIP)
-	SDLUserRefreshSAGAPiP
-#endif
-};
-
-static Uint32 timerCallback(Uint32 interval) {
-	timerMutex->lock();
-
-	if (myTrackerScreen && myTracker && ticking) {
-		SDL_UserEvent ev;
-		ev.type = SDL_USEREVENT;
-
-		if (!(timerTicker % 1)) {
-			ev.code = SDLUserEventTimer;
-			SDL_PushEvent((SDL_Event*) & ev);
-		}
-
-#if defined(AMIGA_SAGA_PIP)
-		ev.code = SDLUserRefreshSAGAPiP;
-		SDL_PushEvent((SDL_Event*) & ev);
-#endif
-
-		timerTicker++;
-
-		if (lMouseDown && (timerTicker - lButtonDownStartTime) > 25) {
-			ev.code = SDLUserEventLMouseRepeat;
-			ev.data1 = (void*) p.x;
-			ev.data2 = (void*) p.y;
-			SDL_PushEvent((SDL_Event*) & ev);
-		}
-
-		if (rMouseDown && (timerTicker - rButtonDownStartTime) > 25) {
-			ev.code = SDLUserEventRMouseRepeat;
-			ev.data1 = (void*) p.x;
-			ev.data2 = (void*) p.y;
-			SDL_PushEvent((SDL_Event*) & ev);
-		}
-	}
-
-	timerMutex->unlock();
-
-	return interval;
-}
-
-static void translateMouseDownEvent(pp_int32 mouseButton, pp_int32 localMouseX, pp_int32 localMouseY) {
-	if (mouseButton > 2 || !mouseButton)
-		return;
-
-	// -----------------------------
-	p.x = localMouseX;
-	p.y = localMouseY;
-
-	if (mouseButton == 1) {
-		PPEvent myEvent(eLMouseDown, &p, sizeof (PPPoint));
-
-		RaiseEventSerialized(&myEvent);
-
-		lMouseDown = true;
-		lButtonDownStartTime = timerTicker;
-
-		if (!lClickCount) {
-			lmyTime = PPGetTickCount();
-			llastClickPosition.x = localMouseX;
-			llastClickPosition.y = localMouseY;
-		} else if (lClickCount == 2) {
-			pp_uint32 deltat = PPGetTickCount() - lmyTime;
-
-			if (deltat > 500) {
-				lClickCount = 0;
-				lmyTime = PPGetTickCount();
-				llastClickPosition.x = localMouseX;
-				llastClickPosition.y = localMouseY;
-			}
-		}
-
-		lClickCount++;
-
-	} else if (mouseButton == 2) {
-		PPEvent myEvent(eRMouseDown, &p, sizeof (PPPoint));
-
-		RaiseEventSerialized(&myEvent);
-
-		rMouseDown = true;
-		rButtonDownStartTime = timerTicker;
-
-		if (!rClickCount) {
-			rmyTime = PPGetTickCount();
-			rlastClickPosition.x = localMouseX;
-			rlastClickPosition.y = localMouseY;
-		} else if (rClickCount == 2) {
-			pp_uint32 deltat = PPGetTickCount() - rmyTime;
-
-			if (deltat > 500) {
-				rClickCount = 0;
-				rmyTime = PPGetTickCount();
-				rlastClickPosition.x = localMouseX;
-				rlastClickPosition.y = localMouseY;
-			}
-		}
-
-		rClickCount++;
-	}
-}
-
 static void translateMouseUpEvent(pp_int32 mouseButton, pp_int32 localMouseX, pp_int32 localMouseY) {
 	// @todo
 	if (mouseButton == SDL_BUTTON_WHEELDOWN) {
@@ -315,28 +207,6 @@ static void translateMouseUpEvent(pp_int32 mouseButton, pp_int32 localMouseX, pp
 	}
 }
 
-static void translateMouseMoveEvent(pp_int32 mouseButton, pp_int32 localMouseX, pp_int32 localMouseY) {
-	if (mouseButton == 0) {
-		p.x = localMouseX;
-		p.y = localMouseY;
-		PPEvent myEvent(eMouseMoved, &p, sizeof (PPPoint));
-		RaiseEventSerialized(&myEvent);
-	} else {
-		if (mouseButton > 2 || !mouseButton)
-			return;
-
-		p.x = localMouseX;
-		p.y = localMouseY;
-		if (mouseButton == 1 && lMouseDown) {
-			PPEvent myEvent(eLMouseDrag, &p, sizeof (PPPoint));
-			RaiseEventSerialized(&myEvent);
-		} else if (rMouseDown) {
-			PPEvent myEvent(eRMouseDrag, &p, sizeof (PPPoint));
-			RaiseEventSerialized(&myEvent);
-		}
-	}
-}
-
 static void translateKeyDownEvent(const SDL_Event& event) {
 	SDL_keysym keysym = event.key.keysym;
 
@@ -396,24 +266,6 @@ void processSDLEvents(const SDL_Event& event) {
 	pp_uint32 mouseButton = 0;
 
 	switch (event.type) {
-		case SDL_MOUSEBUTTONDOWN:
-			mouseButton = event.button.button;
-			if (mouseButton > 1 && mouseButton <= 3)
-				mouseButton = 2;
-			translateMouseDownEvent(mouseButton, event.button.x, event.button.y);
-			break;
-
-		case SDL_MOUSEBUTTONUP:
-			mouseButton = event.button.button;
-			if (mouseButton > 1 && mouseButton <= 3)
-				mouseButton = 2;
-			translateMouseUpEvent(mouseButton, event.button.x, event.button.y);
-			break;
-
-		case SDL_MOUSEMOTION:
-			translateMouseMoveEvent(event.button.button, event.motion.x, event.motion.y);
-			break;
-
 		case SDL_KEYDOWN:
 			translateKeyDownEvent(event);
 			break;
@@ -423,60 +275,6 @@ void processSDLEvents(const SDL_Event& event) {
 			break;
 	}
 }
-
-void processSDLUserEvents(const SDL_UserEvent& event) {
-
-	union {
-		void *ptr;
-		pp_int32 i32;
-	} data1, data2;
-	data1.ptr = event.data1;
-	data2.ptr = event.data2;
-
-	switch (event.code) {
-		case SDLUserEventTimer:
-		{
-			PPEvent myEvent(eTimer);
-			RaiseEventSerialized(&myEvent);
-			break;
-		}
-
-#if defined(AMIGA_SAGA_PIP)
-		case SDLUserRefreshSAGAPiP:
-		{
-			myDisplayDevice->setSAGAPiPSize();
-			break;
-		}
-#endif
-
-		case SDLUserEventLMouseRepeat:
-		{
-			PPPoint p;
-			p.x = data1.i32;
-			p.y = data2.i32;
-			PPEvent myEvent(eLMouseRepeat, &p, sizeof (PPPoint));
-			RaiseEventSerialized(&myEvent);
-			break;
-		}
-
-		case SDLUserEventRMouseRepeat:
-		{
-			PPPoint p;
-			p.x = data1.i32;
-			p.y = data2.i32;
-			PPEvent myEvent(eRMouseRepeat, &p, sizeof (PPPoint));
-			RaiseEventSerialized(&myEvent);
-			break;
-		}
-
-	}
-}*/
-
-/*static void initTracker(pp_uint32 bpp, bool fullScreen, bool noSplash) {
-	timerMutex->lock();
-	ticking = true;
-	timerMutex->unlock();
-}*/
 
 /*
 void exitSDLEventLoop(bool serializedEventInvoked) {
