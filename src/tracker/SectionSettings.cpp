@@ -3461,7 +3461,6 @@ void SectionSettings::retrieveDisplayResolution()
 
 	if (size.width > 0 && size.height > 0)
 	{
-
 		if (size.width < MINWIDTH)
 			size.width = MINWIDTH;
 		if (size.height < MINHEIGHT)

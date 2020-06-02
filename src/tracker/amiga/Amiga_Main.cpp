@@ -32,12 +32,6 @@
 #	include "config.h"
 #endif
 #if defined(__AMIGA__) || defined(__amigaos4__)
-
-#	include <exec/exec.h>
-#	include <clib/timer_protos.h>
-#	include <clib/exec_protos.h>
-#	include <clib/picasso96_protos.h>
-
 #	ifndef AFB_68080
 #		define AFB_68080 10
 #	endif
@@ -79,9 +73,11 @@ extern struct ExecBase * SysBase;
 struct Library * IntuitionBase = NULL;
 struct Library * GfxBase = NULL;
 struct Library * P96Base = NULL;
+struct Library * VampireBase = NULL;
 
 int	cpuType = 0;
 bool hasFPU = false;
+bool hasAMMX = false;
 
 struct Device * TimerBase = NULL;
 static struct IORequest timereq;
@@ -91,7 +87,6 @@ static struct IORequest timereq;
 
 // Okay what else do we need?
 static PPMutex* timerMutex = NULL;
-
 
 static bool ticking = false;
 
@@ -116,15 +111,6 @@ static PPPoint p;
 static bool exitDone;
 
 static struct timeval startTime;
-
-pp_uint32 PPGetTickCount() {
-    struct timeval endTime;
-
-	GetSysTime(&endTime);
-    SubTime(&endTime, &startTime);
-
-    return endTime.tv_secs * 1000 + endTime.tv_micro / 1000;
-}
 
 void QueryKeyModifiers() {
 	// @todo
@@ -512,9 +498,23 @@ void exitSDLEventLoop(bool serializedEventInvoked) {
 		exitDone = 1;
 }*/
 
+pp_uint32 PPGetTickCount() {
+    struct timeval endTime;
+
+	GetSysTime(&endTime);
+    SubTime(&endTime, &startTime);
+
+    return endTime.tv_secs * 1000 + endTime.tv_micro / 1000;
+}
+
 static bool checkHardware()
 {
+	cpuType = 0;
+	hasFPU = true;
+	hasAMMX = false;
+
 #if !defined(__amigaos4__) && !defined(MORPHOS) && !defined(WARPOS) && defined(__AMIGA__)
+
 	if ((SysBase->AttnFlags & AFF_68080) != 0)
 		cpuType = 68080;
 	else if ((SysBase->AttnFlags & AFF_68060) != 0)
@@ -532,9 +532,8 @@ static bool checkHardware()
 
 	if ((SysBase->AttnFlags & AFF_FPU40) != 0)
 		hasFPU = true;
-#else
-	cpuType = 0;
-	hasFPU = true;
+	if (cpuType == 68080)
+		hasAMMX = true;
 #endif
 
 	return hasFPU;
@@ -544,6 +543,9 @@ static int boot(int argc, char * argv[])
 {
 	int ret;
 	AmigaApplication * app = new AmigaApplication();
+	app->setCpuType(cpuType);
+	app->setHasFPU(hasFPU);
+	app->setHasAMMX(hasAMMX);
 
 	// Parse command line (@todo use ToolTypes)
 	while (argc > 1) {
@@ -599,7 +601,22 @@ int main(int argc, char * argv[])
 					TimerBase = timereq.io_Device;
 					GetSysTime(&startTime);
 
-					ret = boot(argc, argv);
+					if(hasAMMX) {
+						if(!(VampireBase = (struct Library *) OpenResource(V_VAMPIRENAME))) {
+							fprintf(stderr, "Could not find vampire.resource!\n");
+							ret = 2;
+						} else if(VampireBase->lib_Version < 45) {
+							fprintf(stderr, "Vampire.resource version needs to be 45 or higher!\n");
+							ret = 2;
+						} else if(V_EnableAMMX(V_AMMX_V2) == VRES_ERROR) {
+							fprintf(stderr, "Cannot enable AMMX V2+!\n");
+							ret = 2;
+						}
+					}
+
+					if(!ret) {
+						ret = boot(argc, argv);
+					}
 
   					CloseDevice(&timereq);
 				} else {
@@ -623,15 +640,6 @@ int main(int argc, char * argv[])
 	}
 
 	return ret;
-
-
-	// ----------------
-	/* Initialize SDL */
-	/*if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER | SDL_INIT_AUDIO) < 0) {
-		fprintf(stderr, "Couldn't initialize SDL: %s\n", SDL_GetError());
-		exit(1);
-	}*/
-
 
 	/*exitDone = 0;
 	while (!exitDone && SDL_WaitEvent(&event)) {

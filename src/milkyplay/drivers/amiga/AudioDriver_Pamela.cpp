@@ -212,5 +212,5 @@ AudioDriver_Pamela::getDriverID()
 mp_sint32
 AudioDriver_Pamela::getPreferredBufferSize() const
 {
-    return 2048;
+    return 4096;
 }

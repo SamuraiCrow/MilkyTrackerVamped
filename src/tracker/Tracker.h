@@ -610,6 +610,8 @@ private:
 	friend class RecorderLogic;
 	friend class Zapper;
 	friend class SectionSwitcher;
+
+	friend class AmigaApplication;
 };
 
 #endif

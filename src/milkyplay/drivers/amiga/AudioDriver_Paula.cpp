@@ -201,5 +201,5 @@ AudioDriver_Paula::getDriverID()
 mp_sint32
 AudioDriver_Paula::getPreferredBufferSize() const
 {
-    return 2048;
+    return 8192;
 }

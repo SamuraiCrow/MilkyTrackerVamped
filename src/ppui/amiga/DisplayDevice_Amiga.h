@@ -23,14 +23,50 @@
 #include "BasicTypes.h"
 #include "DisplayDeviceBase.h"
 
+#include <vector>
+
 class AmigaApplication;
+class PPMutex;
 
 class DisplayDevice_Amiga : public PPDisplayDeviceBase
 {
+	enum ScreenMode
+	{
+		INVALID = 0,
+		AGA_C2P_8,
+		RTG_WINDOWED_8,
+		RTG_WINDOWED_16,
+		SAGA_PIP_8,
+		SAGA_PIP_16,
+		SAGA_DIRECT
+	};
 private:
-	AmigaApplication * app;
+	AmigaApplication * 	app;
+	bool                useRTGWindowed;
+	bool				useSAGAPiP;
+	pp_int32            width;
+	pp_int32            height;
+	pp_int32            pitch;
+	pp_uint32           dbPage;
+	ScreenMode          screenMode;
+	PPMutex *           drawMutex;
+	std::vector<PPRect> drawCommands;
+
+	struct RastPort * 	rastPort;
+	struct Window *   	window;
+	struct Screen * 	pubScreen;
+
+	void *              unalignedOffScreenBuffer;
+	void *              alignedOffScreenBuffer;
+
+	void *              unalignedScreenBuffer[2];
+	void *              alignedScreenBuffer[2];
+
+	void * 				allocMemAligned(pp_uint32 size, void ** aligned);
 
 public:
+	void                flush();
+
 	DisplayDevice_Amiga(AmigaApplication * app);
 	virtual ~DisplayDevice_Amiga();
 
@@ -48,11 +84,11 @@ public:
 
 	// --- ex. PPWindow -------------------------------------------------------
 public:
+	virtual bool 	init();
+
 	virtual	void	setTitle(const PPSystemString& title);
 
 	virtual	bool	goFullScreen(bool b);
-
-	virtual	PPSize	getDisplayResolution() const;
 
 	virtual	void	shutDown();
 	virtual	void	signalWaitState(bool b, const PPColor& color);

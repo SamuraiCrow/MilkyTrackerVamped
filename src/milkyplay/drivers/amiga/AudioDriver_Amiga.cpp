@@ -13,13 +13,6 @@ getVerticalBeamPosition() {
     return ((struct vpos*) 0xdff004)->vpos;
 }
 
-// @todo Find out why exactly this is working. Fucking meta-programming.
-static mp_sint32
-bufferAudioService(register AudioDriver_Amiga<void> * that __asm("a1"))
-{
-    return that->bufferAudio();
-}
-
 static void
 playAudioService(register AudioDriver_Amiga<void> * that __asm("a1"))
 {
@@ -30,7 +23,7 @@ playAudioService(register AudioDriver_Amiga<void> * that __asm("a1"))
 
 template<typename SampleType>
 AudioDriver_Amiga<SampleType>::AudioDriver_Amiga()
-: AudioDriverBase()
+: AudioDriverInterface_Amiga()
 , irqEnabled(false)
 , irqAudioOld(NULL)
 , allocated(false)
@@ -64,13 +57,6 @@ AudioDriver_Amiga<SampleType>::initDevice(mp_sint32 bufferSizeInWords, mp_uint32
     //            _BB__BDBCBSDAAAA
     // DMACON 23f0 010001111110000
     dmaconOld = custom.dmaconr;
-
-    // Create interrupt for buffering
-    irqBufferAudio = (struct Interrupt *) AllocMem(sizeof(struct Interrupt), MEMF_PUBLIC | MEMF_CLEAR);
-    irqBufferAudio->is_Node.ln_Type = NT_INTERRUPT;
-    irqBufferAudio->is_Node.ln_Name = (char *) "mt-saga-buf-irq";
-    irqBufferAudio->is_Data = this;
-    irqBufferAudio->is_Code = (void(*)()) bufferAudioService;
 
     // Create interrupt for playback
     irqPlayAudio = (struct Interrupt *) AllocMem(sizeof(struct Interrupt), MEMF_PUBLIC | MEMF_CLEAR);
@@ -220,7 +206,6 @@ AudioDriver_Amiga<SampleType>::closeDevice()
 
     dealloc();
 
-    FreeMem(irqBufferAudio, sizeof(struct Interrupt));
     FreeMem(irqPlayAudio, sizeof(struct Interrupt));
 
 	return MP_OK;
@@ -288,7 +273,6 @@ AudioDriver_Amiga<SampleType>::disableIRQ()
     custom.intena = INTF_AUD0;
 
     if(irqEnabled) {
-        RemIntServer(INTB_VERTB, irqBufferAudio);
         SetIntVector(INTB_AUD0, irqAudioOld);
         irqAudioOld = NULL;
         irqEnabled = false;
@@ -301,7 +285,6 @@ AudioDriver_Amiga<SampleType>::enableIRQ()
 {
     if(!irqEnabled) {
         irqAudioOld = SetIntVector(INTB_AUD0, irqPlayAudio);
-        AddIntServer(INTB_VERTB, irqBufferAudio);
         irqEnabled = true;
     }
 
