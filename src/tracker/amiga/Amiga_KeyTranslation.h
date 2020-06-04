@@ -1,7 +1,7 @@
 /*
- *  tracker/sdl/SDL_KeyTranslation.h
+ *  tracker/amiga/Amiga_KeyTranslation.h
  *
- *  Copyright 2009 Peter Barth
+ *  Copyright 2020 neoman
  *
  *  This file is part of Milkytracker.
  *
@@ -20,24 +20,17 @@
  *
  */
 
-/*
- *  KeyTranslation.h
- *  MilkyTracker
- *
- *  Created by Peter Barth on 19.11.05.
- *
- */
-
-#ifndef KEYTRANSLATION__H
-#define KEYTRANSLATION__H
+#ifndef TRACKER_AMIGA_KEYTRANSLATION_H
+#define TRACKER_AMIGA_KEYTRANSLATION_H
 
 #include "BasicTypes.h"
 
-// #define NOT_PC_KB	// Set this if you're using non-PC type keyboard
+struct AmigaKeyInputData {
+    pp_uint16 code;
+    pp_int16  sym;
+};
 
-//pp_uint16 toVK(const SDL_keysym& keysym);
-//pp_uint16 toSC(const SDL_keysym& keysym);
-extern bool isX11;
-extern bool stdKb;
+pp_uint16 toVK(const AmigaKeyInputData& key);
+pp_uint16 toSC(const AmigaKeyInputData& key);
 
 #endif

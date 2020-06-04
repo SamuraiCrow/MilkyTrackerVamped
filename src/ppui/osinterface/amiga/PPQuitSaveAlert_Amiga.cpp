@@ -1,7 +1,7 @@
 /*
  *  ppui/osinterface/amiga/PPQuitSaveAlert_Amiga.cpp
  *
- *  Copyright 2020 André Wösten
+ *  Copyright 2020 neoman
  *
  *  This file is part of Milkytracker.
  *

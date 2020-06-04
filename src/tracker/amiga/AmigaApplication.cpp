@@ -1,4 +1,5 @@
 #include "AmigaApplication.h"
+#include "Amiga_KeyTranslation.h"
 #include "PPUI.h"
 #include "DisplayDevice_Amiga.h"
 #include "Screen.h"
@@ -43,6 +44,9 @@ AmigaApplication::AmigaApplication()
 , mouseRightDown(false)
 , mouseRightVBStart(0)
 , mousePosition(PPPoint(-1, -1))
+, keyQualifierShiftPressed(false)
+, keyQualifierCtrlPressed(false)
+, keyQualifierAltPressed(false)
 {
     strcpy(currentTitle, "");
     globalMutex = new PPMutex();
@@ -209,9 +213,12 @@ void AmigaApplication::setMousePosition(pp_int32 x, pp_int32 y)
 
 void AmigaApplication::loop()
 {
-    struct IntuiMessage * msg;
     struct MsgPort * port = window->UserPort;
     ULONG portMask = 1L << port->mp_SigBit;
+    struct InputEvent ie = {0};
+
+    ie.ie_Class = IECLASS_RAWKEY;
+    ie.ie_SubClass = 0;
 
     running = true;
 
@@ -232,10 +239,38 @@ void AmigaApplication::loop()
 
         // After that handle Intuition messages
         if(signal & portMask) {
+            struct IntuiMessage * msg;
+
             while((msg = (struct IntuiMessage *) GetMsg(port))) {
                 switch(msg->Class) {
                 case IDCMP_CLOSEWINDOW:
                     running = false;
+                    break;
+                case IDCMP_RAWKEY:
+                    {
+                        UBYTE buffer[8];
+                        APTR eventptr;
+                        int actual;
+                        AmigaKeyInputData key;
+
+                        keyQualifierShiftPressed = (msg->Qualifier & (IEQUALIFIER_LSHIFT | IEQUALIFIER_RSHIFT)) ? true : false;
+                        keyQualifierCtrlPressed = (msg->Qualifier & IEQUALIFIER_CONTROL) ? true : false;
+                        keyQualifierAltPressed = (msg->Qualifier & (IEQUALIFIER_LALT | IEQUALIFIER_RALT)) ? true : false;
+
+                        ie.ie_Code = msg->Code;
+                        ie.ie_Qualifier = msg->Qualifier & ~(IEQUALIFIER_LSHIFT | IEQUALIFIER_RSHIFT | IEQUALIFIER_CAPSLOCK | IEQUALIFIER_CONTROL | IEQUALIFIER_LALT | IEQUALIFIER_RALT);
+                        ie.ie_EventAddress = (APTR *) *((ULONG *)msg->IAddress);
+
+                        key.code = msg->Code;
+                        key.sym = -1;
+
+                        actual = MapRawKey(&ie, (STRPTR) buffer, 8, NULL);
+                        if(actual == 1) {
+                            key.sym = *buffer;
+                        }
+
+                        printf("IDCMP:RAWKEY: code=$%04x qualifier=$%04lx sym=$%04x / %c\n", msg->Code, msg->Qualifier, key.sym, key.sym);
+                    }
                     break;
                 case IDCMP_MOUSEMOVE:
                     {

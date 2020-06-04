@@ -71,6 +71,7 @@
 extern struct ExecBase * SysBase;
 
 struct Library * IntuitionBase = NULL;
+struct Library * KeymapBase = NULL;
 struct Library * GfxBase = NULL;
 struct Library * P96Base = NULL;
 struct Library * VampireBase = NULL;
@@ -82,13 +83,7 @@ bool hasAMMX = false;
 struct Device * TimerBase = NULL;
 static struct IORequest timereq;
 
-// SDL surface screen
-//SDL_TimerID timer;
-
-// Okay what else do we need?
-static PPMutex* timerMutex = NULL;
-
-static bool ticking = false;
+static AmigaApplication * app = NULL;
 
 static pp_uint32 lmyTime;
 static PPPoint llastClickPosition = PPPoint(0, 0);
@@ -113,23 +108,23 @@ static bool exitDone;
 static struct timeval startTime;
 
 void QueryKeyModifiers() {
-	// @todo
-	/*pp_uint32 mod = SDL_GetModState();
+	if(!app)
+		return;
 
-	if ((mod & KMOD_LSHIFT) || (mod & KMOD_RSHIFT))
+	if(app->isShiftPressed())
 		setKeyModifier(KeyModifierSHIFT);
 	else
 		clearKeyModifier(KeyModifierSHIFT);
 
-	if ((mod & KMOD_LCTRL) || (mod & KMOD_RCTRL))
+	if(app->isCtrlPressed())
 		setKeyModifier(KeyModifierCTRL);
 	else
 		clearKeyModifier(KeyModifierCTRL);
 
-	if ((mod & KMOD_LALT) || (mod & KMOD_RALT))
+	if(app->isAltPressed())
 		setKeyModifier(KeyModifierALT);
 	else
-		clearKeyModifier(KeyModifierALT);*/
+		clearKeyModifier(KeyModifierALT);
 }
 
 /*
@@ -340,7 +335,8 @@ static bool checkHardware()
 static int boot(int argc, char * argv[])
 {
 	int ret;
-	AmigaApplication * app = new AmigaApplication();
+	app = new AmigaApplication();
+
 	app->setCpuType(cpuType);
 	app->setHasFPU(hasFPU);
 	app->setHasAMMX(hasAMMX);
@@ -391,87 +387,56 @@ int main(int argc, char * argv[])
 	}
 
 	// Open libraries and boot application
-	if(IntuitionBase = OpenLibrary("intuition.library", 39)) {
-		if(GfxBase = OpenLibrary("graphics.library", 39)) {
-			if(P96Base = OpenLibrary(P96NAME, 2)) {
-				BYTE err = OpenDevice("timer.device", 0, &timereq, 0);
-				if(err == 0) {
-					TimerBase = timereq.io_Device;
-					GetSysTime(&startTime);
+    if(KeymapBase = OpenLibrary("keymap.library", 39)) {
+		if(IntuitionBase = OpenLibrary("intuition.library", 39)) {
+			if(GfxBase = OpenLibrary("graphics.library", 39)) {
+				if(P96Base = OpenLibrary(P96NAME, 2)) {
+					BYTE err = OpenDevice("timer.device", 0, &timereq, 0);
+					if(err == 0) {
+						TimerBase = timereq.io_Device;
+						GetSysTime(&startTime);
 
-					if(hasAMMX) {
-						if(!(VampireBase = (struct Library *) OpenResource(V_VAMPIRENAME))) {
-							fprintf(stderr, "Could not find vampire.resource!\n");
-							ret = 2;
-						} else if(VampireBase->lib_Version < 45) {
-							fprintf(stderr, "Vampire.resource version needs to be 45 or higher!\n");
-							ret = 2;
-						} else if(V_EnableAMMX(V_AMMX_V2) == VRES_ERROR) {
-							fprintf(stderr, "Cannot enable AMMX V2+!\n");
-							ret = 2;
+						if(hasAMMX) {
+							if(!(VampireBase = (struct Library *) OpenResource(V_VAMPIRENAME))) {
+								fprintf(stderr, "Could not find vampire.resource!\n");
+								ret = 2;
+							} else if(VampireBase->lib_Version < 45) {
+								fprintf(stderr, "Vampire.resource version needs to be 45 or higher!\n");
+								ret = 2;
+							} else if(V_EnableAMMX(V_AMMX_V2) == VRES_ERROR) {
+								fprintf(stderr, "Cannot enable AMMX V2+!\n");
+								ret = 2;
+							}
 						}
-					}
 
-					if(!ret) {
-						ret = boot(argc, argv);
-					}
+						if(!ret) {
+							ret = boot(argc, argv);
+						}
 
-  					CloseDevice(&timereq);
+						CloseDevice(&timereq);
+					} else {
+						fprintf(stderr, "Could not open timer.device! (err = %ld)\n", err);
+						ret = 1;
+					}
+					CloseLibrary(P96Base);
 				} else {
-					fprintf(stderr, "Could not open timer.device! (err = %ld)\n", err);
+					fprintf(stderr, "Could not open %s V2!\n", P96NAME);
 					ret = 1;
 				}
-				CloseLibrary(P96Base);
+				CloseLibrary(GfxBase);
 			} else {
-				fprintf(stderr, "Could not open %s V2!\n", P96NAME);
+				fprintf(stderr, "Could not open graphics.library V39!\n");
 				ret = 1;
 			}
-			CloseLibrary(GfxBase);
-		} else {
-			fprintf(stderr, "Could not open graphics.library V39!\n");
+			CloseLibrary(IntuitionBase);
+		}  else {
+			fprintf(stderr, "Could not open intuition.library V39!\n");
 			ret = 1;
 		}
-		CloseLibrary(IntuitionBase);
-	}  else {
-		fprintf(stderr, "Could not open intuition.library V39!\n");
+	} else {
+		fprintf(stderr, "Could not open keymap.library V39!\n");
 		ret = 1;
 	}
 
 	return ret;
-
-	/*exitDone = 0;
-	while (!exitDone && SDL_WaitEvent(&event)) {
-		switch (event.type) {
-			case SDL_QUIT:
-				exitSDLEventLoop(false);
-				break;
-			case SDL_MOUSEMOTION:
-			{
-				// ignore old mouse motion events in the event queue
-				SDL_Event new_event;
-
-				if (SDL_PeepEvents(&new_event, 1, SDL_GETEVENT, SDL_EVENTMASK(SDL_MOUSEMOTION)) > 0) {
-					while (SDL_PeepEvents(&new_event, 1, SDL_GETEVENT, SDL_EVENTMASK(SDL_MOUSEMOTION)) > 0);
-					processSDLEvents(new_event);
-				} else {
-					processSDLEvents(event);
-				}
-				break;
-			}
-
-			case SDL_USEREVENT:
-				processSDLUserEvents((const SDL_UserEvent&) event);
-				break;
-
-			default:
-				processSDLEvents(event);
-				break;
-		}
-	}*/
-
-//	timerMutex->lock();
-	//ticking = false;
-	//timerMutex->unlock();
-
-	return 0;
 }
