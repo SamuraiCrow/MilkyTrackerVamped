@@ -258,40 +258,56 @@ void AmigaApplication::loop()
                         keyQualifierCtrlPressed = (msg->Qualifier & IEQUALIFIER_CONTROL) ? true : false;
                         keyQualifierAltPressed = (msg->Qualifier & (IEQUALIFIER_LALT | IEQUALIFIER_RALT)) ? true : false;
 
-                        ie.ie_Code = msg->Code;
-                        ie.ie_Qualifier = msg->Qualifier & ~(IEQUALIFIER_CONTROL | IEQUALIFIER_LALT | IEQUALIFIER_RALT);
-                        ie.ie_EventAddress = (APTR *) *((ULONG *)msg->IAddress);
+                        switch(msg->Code) {
+                        case 0x7a:
+                        case 0x7b:
+                            {
+                                TMouseWheelEventParams mouseWheelParams;
 
-                        key.code = msg->Code;
-                        key.qual = msg->Qualifier;
-                        key.sym = -1;
+                                mouseWheelParams.pos.x = mousePosition.x;
+                                mouseWheelParams.pos.y = mousePosition.y;
+                                mouseWheelParams.deltaX = msg->Code == 0x7a ? 1 : -1;
+                                mouseWheelParams.deltaY = msg->Code == 0x7a ? 1 : -1;
 
-                        actual = MapRawKey(&ie, (STRPTR) buffer, 8, NULL);
-                        if(actual == 1) {
-                            key.sym = *buffer;
-                        }
+                                PPEvent mouseWheelEvent(eMouseWheelMoved, &mouseWheelParams, sizeof (mouseWheelParams));
+		                        raiseEventSynchronized(&mouseWheelEvent);
+                            }
+                        default:
+                            key.code = msg->Code;
+                            key.qual = msg->Qualifier;
+                            key.sym = -1;
 
-                        printf("Raw key data: code=$%04x qualifier=$%04lx sym=$%04x / %c\n", msg->Code, msg->Qualifier, key.sym, key.sym);
+                            ie.ie_Code = msg->Code;
+                            ie.ie_Qualifier = msg->Qualifier & ~(IEQUALIFIER_CONTROL | IEQUALIFIER_LALT | IEQUALIFIER_RALT);
+                            ie.ie_EventAddress = (APTR *) *((ULONG *)msg->IAddress);
 
-                        keyUp = key.code >= 0x80;
-                        if(keyUp)
-                            key.code &= 0x80;
+                            actual = MapRawKey(&ie, (STRPTR) buffer, 8, NULL);
+                            if(actual == 1) {
+                                key.sym = *buffer;
+                            }
 
-                        pp_uint16 chr[3] = {toVK(key), toSC(key), key.sym == -1 ? 0 : key.sym};
+                            //printf("Raw key data: code=$%04x qualifier=$%04lx sym=$%04x / %c\n", msg->Code, msg->Qualifier, key.sym, key.sym);
 
-                        printf("Translated key data: vk=$%04x, sc=$%04x, chr=$%04x\n", chr[0], chr[1], chr[2]);
+                            keyUp = key.code >= 0x80;
+                            if(keyUp)
+                                key.code &= 0x80;
 
-                        if(keyUp) {
-                            PPEvent keyUpEvent(eKeyUp, &chr, sizeof(chr));
-                            raiseEventSynchronized(&keyUpEvent);
-                        } else {
-                            PPEvent keyDownEvent(eKeyDown, &chr, sizeof(chr));
-                            raiseEventSynchronized(&keyDownEvent);
+                            pp_uint16 chr[3] = {toVK(key), toSC(key), key.sym == -1 ? 0 : key.sym};
 
-                            if (key.sym >= 0x20 && key.sym <= 0x7f) {
-                                pp_uint8 character = (pp_uint8) key.sym;
-                                PPEvent keyCharEvent(eKeyChar, &character, sizeof(pp_uint8));
-                                raiseEventSynchronized(&keyCharEvent);
+                            //printf("Translated key data: vk=$%04x, sc=$%04x, chr=$%04x\n", chr[0], chr[1], chr[2]);
+
+                            if(keyUp) {
+                                PPEvent keyUpEvent(eKeyUp, &chr, sizeof(chr));
+                                raiseEventSynchronized(&keyUpEvent);
+                            } else {
+                                PPEvent keyDownEvent(eKeyDown, &chr, sizeof(chr));
+                                raiseEventSynchronized(&keyDownEvent);
+
+                                if (key.sym >= 0x20 && key.sym <= 0x7f) {
+                                    pp_uint8 character = (pp_uint8) key.sym;
+                                    PPEvent keyCharEvent(eKeyChar, &character, sizeof(pp_uint8));
+                                    raiseEventSynchronized(&keyCharEvent);
+                                }
                             }
                         }
                     }
