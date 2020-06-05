@@ -10,6 +10,9 @@
 #include "PlayerMaster.h"
 #include "../../milkyplay/drivers/amiga/AudioDriver_Amiga.h"
 
+#include <proto/picasso96.h>
+#include <clib/picasso96_protos.h>
+
 PPMutex* globalMutex = NULL;
 
 static pp_uint32
@@ -31,6 +34,7 @@ AmigaApplication::AmigaApplication()
 , running(false)
 , loadFile(NULL)
 , tracker(NULL)
+, trackerScreen(NULL)
 , displayDevice(NULL)
 , fullScreen(false)
 , vbSignal(-1)
@@ -47,26 +51,27 @@ AmigaApplication::AmigaApplication()
 , keyQualifierShiftPressed(false)
 , keyQualifierCtrlPressed(false)
 , keyQualifierAltPressed(false)
+, trackerStartUpFinished(false)
+, showAlert(false)
 {
     strcpy(currentTitle, "");
+    strcpy(currentAlert, "");
     globalMutex = new PPMutex();
-    irqVerticalBlank = (struct Interrupt *) AllocMem(sizeof(struct Interrupt), MEMF_PUBLIC | MEMF_CLEAR);
 }
 
 AmigaApplication::~AmigaApplication()
 {
-    FreeMem(irqVerticalBlank, sizeof(struct Interrupt));
     delete globalMutex;
 }
 
 void AmigaApplication::raiseEventSynchronized(PPEvent * event)
 {
-    if(!tracker || !screen)
+    if(!tracker || !trackerScreen)
         return;
 
     globalMutex->lock();
     {
-        screen->raiseEvent(event);
+        trackerScreen->raiseEvent(event);
     }
     globalMutex->unlock();
 }
@@ -96,8 +101,36 @@ int AmigaApplication::load(char * loadFile)
 
 void AmigaApplication::setWindowTitle(const char * title)
 {
-    strcpy(currentTitle, title);
-    SetWindowTitles(window, currentTitle, 0);
+    if(!fullScreen) {
+        strcpy(currentTitle, title);
+        SetWindowTitles(window, currentTitle, (CONST_STRPTR) (UBYTE *) ~0);
+    }
+}
+
+void AmigaApplication::resetScreenAlert()
+{
+    if(showAlert) {
+        if(fullScreen) {
+            ShowTitle(screen, FALSE);
+        } else {
+            SetWindowTitles(window, currentTitle, (CONST_STRPTR) (UBYTE *) ~0);
+        }
+        showAlert = false;
+    }
+}
+
+void AmigaApplication::setScreenAlert(const char * title)
+{
+    strcpy(currentAlert, title);
+    if(fullScreen) {
+        ShowTitle(screen, TRUE);
+        SetWindowTitles(window, (CONST_STRPTR) (UBYTE *) ~0, currentAlert);
+        DisplayBeep(screen);
+    } else {
+        SetWindowTitles(window, currentAlert, (CONST_STRPTR) (UBYTE *) ~0);
+        DisplayBeep(NULL);
+    }
+    showAlert = true;
 }
 
 int AmigaApplication::start()
@@ -108,82 +141,146 @@ int AmigaApplication::start()
     PPPath_POSIX path;
     oldCwd = path.getCurrent();
 
-    // Get public screen
-    if (!(pubScreen = LockPubScreen(NULL))) {
-        fprintf(stderr, "Could not get public screen!\n");
-        ret = 1;
-    }
+    // Startup tracker
+    globalMutex->lock();
+    {
+        tracker = new Tracker();
 
-    if(!ret) {
-        // Startup tracker
-        globalMutex->lock();
-        {
-            tracker = new Tracker();
+        windowSize = tracker->getWindowSizeFromDatabase();
+        if (!fullScreen)
+            fullScreen = tracker->getFullScreenFlagFromDatabase();
 
-            windowSize = tracker->getWindowSizeFromDatabase();
-            if (!fullScreen)
-                fullScreen = tracker->getFullScreenFlagFromDatabase();
-
-            window = OpenWindowTags(NULL,
-                WA_CustomScreen  , (APTR) pubScreen,
-                WA_Left          , (pubScreen->Width - windowSize.width) / 2,
-                WA_Top           , (pubScreen->Height - windowSize.height) / 2,
-                WA_InnerWidth    , windowSize.width,
-                WA_InnerHeight   , windowSize.height,
-                WA_Title         , (APTR) "Loading MilkyTracker ...",
-                WA_DragBar       , TRUE,
-                WA_DepthGadget   , TRUE,
-                WA_CloseGadget   , TRUE,
-                WA_Activate      , TRUE,
-                WA_ReportMouse   , TRUE,
-                WA_NoCareRefresh , TRUE,
-                WA_RMBTrap       , TRUE,
-                WA_IDCMP         , IDCMP_CLOSEWINDOW | IDCMP_MOUSEBUTTONS | IDCMP_MOUSEMOVE | IDCMP_RAWKEY,
+        if(fullScreen) {
+            ULONG displayId = p96BestModeIDTags(
+                P96BIDTAG_NominalWidth,     windowSize.width,
+                P96BIDTAG_NominalHeight,    windowSize.height,
+                P96BIDTAG_Depth,            bpp,
                 TAG_DONE);
+            if(displayId == INVALID_ID) {
+                fprintf(stderr, "Cannot find best screen mode (%ldx%ldx%ld)!\n", windowSize.width, windowSize.height, bpp);
+                ret = 5;
+            }
 
-            if(window) {
-                displayDevice = new DisplayDevice_Amiga(this);
-                if(displayDevice->init()) {
-                    displayDevice->allowForUpdates(false);
-
-                    screen = new PPScreen(displayDevice, tracker);
-                    tracker->setScreen(screen);
-
-                    tracker->startUp(noSplash);
+            if(!ret) {
+                screen = p96OpenScreenTags(
+                    P96SA_DisplayID             , displayId,
+                    P96SA_Left                  , 0,
+                    P96SA_Top                   , 0,
+                    P96SA_Width                 , windowSize.width,
+                    P96SA_Height                , windowSize.height,
+                    P96SA_Depth                 , bpp,
+                    P96SA_DetailPen             , 0,
+                    P96SA_BlockPen              , 1,
+                    P96SA_Quiet                 , FALSE,
+                    P96SA_Type                  , CUSTOMSCREEN,
+                    P96SA_RGBFormat             , RGBFB_R5G6B5,
+                    P96SA_BitMap                , FALSE,
+                    P96SA_ConstantBytesPerRow   , TRUE,
+                    P96SA_AutoScroll            , FALSE,
+                    P96SA_Exclusive             , TRUE,
+                    P96SA_ShowTitle             , FALSE,
+                    TAG_DONE);
+                if(screen) {
+                    window = OpenWindowTags(NULL,
+                        WA_CustomScreen  , (APTR) screen,
+                        WA_Left          , 0,
+                        WA_Top           , 0,
+                        WA_InnerWidth    , windowSize.width,
+                        WA_InnerHeight   , windowSize.height,
+                        WA_Title         , (APTR) (!fullScreen ? "Loading MilkyTracker" : NULL),
+                        WA_Borderless    , TRUE,
+                        WA_Backdrop      , TRUE,
+                        WA_Activate      , TRUE,
+                        WA_ReportMouse   , TRUE,
+                        WA_NoCareRefresh , TRUE,
+                        WA_RMBTrap       , TRUE,
+                        WA_IDCMP         , IDCMP_CLOSEWINDOW | IDCMP_MOUSEBUTTONS | IDCMP_MOUSEMOVE | IDCMP_RAWKEY,
+                        TAG_DONE);
+                    if(!window) {
+                        fprintf(stderr, "Could not create window!\n");
+                        ret = 4;
+                    }
                 } else {
-                    fprintf(stderr, "Could not init display device!\n");
-                    ret = 3;
+                    fprintf(stderr, "Could not create P96 screen!\n");
+                    ret = 6;
+                }
+            }
+        } else {
+            // Get public screen and create window in it
+            if (screen = LockPubScreen(NULL)) {
+                window = OpenWindowTags(NULL,
+                    WA_CustomScreen  , (APTR) screen,
+                    WA_Left          , (screen->Width - windowSize.width) / 2,
+                    WA_Top           , (screen->Height - windowSize.height) / 2,
+                    WA_InnerWidth    , windowSize.width,
+                    WA_InnerHeight   , windowSize.height,
+                    WA_Title         , (APTR) "Loading MilkyTracker ...",
+                    WA_DragBar       , TRUE,
+                    WA_DepthGadget   , TRUE,
+                    WA_CloseGadget   , TRUE,
+                    WA_Activate      , TRUE,
+                    WA_ReportMouse   , TRUE,
+                    WA_NoCareRefresh , TRUE,
+                    WA_RMBTrap       , TRUE,
+                    WA_IDCMP         , IDCMP_CLOSEWINDOW | IDCMP_MOUSEBUTTONS | IDCMP_MOUSEMOVE | IDCMP_RAWKEY,
+                    TAG_DONE);
+                if(!window) {
+                    fprintf(stderr, "Could not create window!\n");
+                    ret = 4;
                 }
             } else {
-                fprintf(stderr, "Could not create window!\n");
-                ret = 2;
+                fprintf(stderr, "Could not get public screen!\n");
+                ret = 1;
             }
         }
-        globalMutex->unlock();
 
         if(!ret) {
-            // And load initially if been passed
-            if(loadFile != NULL) {
-                ret = load(loadFile);
+            displayDevice = new DisplayDevice_Amiga(this);
+            if(displayDevice->init()) {
+                displayDevice->allowForUpdates(false);
+
+                trackerScreen = new PPScreen(displayDevice, tracker);
+                tracker->setScreen(trackerScreen);
+
+                tracker->startUp(noSplash);
+
+                trackerStartUpFinished = true;
+            } else {
+                fprintf(stderr, "Could not init display device!\n");
+                ret = 3;
             }
+        } else {
+            fprintf(stderr, "Could not init Intuition objects!\n");
+            ret = 2;
+        }
+    }
+    globalMutex->unlock();
+
+    if(!ret) {
+        // And load initially if been passed
+        if(loadFile != NULL) {
+            ret = load(loadFile);
         }
 
-        // Setup IPC VBISR<->loop
-        task = FindTask(NULL);
-        vbSignal = AllocSignal(-1);
-        if(vbSignal != -1) {
-            vbMask = 1L << vbSignal;
+        if(!ret) {
+            // Setup IPC VBISR<->loop
+            task = FindTask(NULL);
+            vbSignal = AllocSignal(-1);
+            if(vbSignal != -1) {
+                vbMask = 1L << vbSignal;
 
-            // Create interrupt for buffering
-            irqVerticalBlank->is_Node.ln_Type = NT_INTERRUPT;
-            irqVerticalBlank->is_Node.ln_Pri = 127;
-            irqVerticalBlank->is_Node.ln_Name = (char *) "mt-vb-irq";
-            irqVerticalBlank->is_Data = this;
-            irqVerticalBlank->is_Code = (void(*)()) verticalBlankService;
-            AddIntServer(INTB_VERTB, irqVerticalBlank);
-        } else {
-            fprintf(stderr, "Could not alloc signal for VB<->loop IPC!\n");
-            ret = 4;
+                // Create interrupt for buffering
+                irqVerticalBlank = (struct Interrupt *) AllocMem(sizeof(struct Interrupt), MEMF_PUBLIC | MEMF_CLEAR);
+                irqVerticalBlank->is_Node.ln_Type = NT_INTERRUPT;
+                irqVerticalBlank->is_Node.ln_Pri = 127;
+                irqVerticalBlank->is_Node.ln_Name = (char *) "mt-vb-irq";
+                irqVerticalBlank->is_Data = this;
+                irqVerticalBlank->is_Code = (void(*)()) verticalBlankService;
+                AddIntServer(INTB_VERTB, irqVerticalBlank);
+            } else {
+                fprintf(stderr, "Could not alloc signal for VB<->loop IPC!\n");
+                ret = 4;
+            }
         }
     }
 
@@ -205,13 +302,15 @@ AmigaApplication::verticalBlank()
     return 0;
 }
 
-void AmigaApplication::setMousePosition(pp_int32 x, pp_int32 y)
+void
+AmigaApplication::setMousePosition(pp_int32 x, pp_int32 y)
 {
     mousePosition.x = x - window->BorderLeft;
     mousePosition.y = y - window->BorderTop;
 }
 
-void AmigaApplication::loop()
+void
+AmigaApplication::loop()
 {
     struct MsgPort * port = window->UserPort;
     ULONG portMask = 1L << port->mp_SigBit;
@@ -221,6 +320,9 @@ void AmigaApplication::loop()
     ie.ie_SubClass = 0;
 
     running = true;
+
+    // Focus window
+    ActivateWindow(window);
 
     // Initial screen update
     displayDevice->allowForUpdates(true);
@@ -335,6 +437,8 @@ void AmigaApplication::loop()
                     {
                     case IECODE_LBUTTON:
                         {
+                            resetScreenAlert();
+
                             if(DoubleClick(mouseLeftSeconds, mouseLeftMicros, msg->Seconds, msg->Micros)) {
                                 PPEvent mouseDownEvent(eLMouseDoubleClick, &mousePosition, sizeof(PPPoint));
                                 raiseEventSynchronized(&mouseDownEvent);
@@ -421,27 +525,34 @@ int AmigaApplication::stop()
 	PPEvent event(eAppQuit);
 	raiseEventSynchronized(&event);
 
-    RemIntServer(INTB_VERTB, irqVerticalBlank);
+    // Stop tracker if possible
+    if(trackerStartUpFinished) {
+        if(!tracker->shutDown())
+            return 1;
+    }
+
+    // Destroy display resources
+    if(irqVerticalBlank != NULL) {
+        RemIntServer(INTB_VERTB, irqVerticalBlank);
+        FreeMem(irqVerticalBlank, sizeof(struct Interrupt));
+    }
     if(vbSignal >= 0) {
         FreeSignal(vbSignal);
     }
 
-    // Stop tracker
-    globalMutex->lock();
-    {
-        tracker->shutDown();
-
-        delete screen;
-        delete displayDevice;
-        delete tracker;
-    }
-    globalMutex->unlock();
+    // Destroy tracker resources
+    delete screen;
+    delete displayDevice;
+    delete tracker;
 
     // Clean Intuition UI
     if(window)
         CloseWindow(window);
-    if(pubScreen)
-        UnlockPubScreen(0, pubScreen);
+    if(screen)
+        if(fullScreen)
+            CloseScreen(screen);
+        else
+            UnlockPubScreen(0, screen);
 
     return 0;
 }

@@ -2,6 +2,7 @@
 /* *  tracker/amiga/CGX_Main.cpp
  *
  *  Copyright 2017 Marlon Beijer
+ *  Copyright 2020 neoman
  *
  *  This file is part of Milkytracker.
  *
@@ -22,10 +23,10 @@
 
 /*
  *  CGX_Main.cpp
- *  MilkyTracker CybergraphX (RTG) Amiga front end
+ *  MilkyTracker AGA/RTG Amiga front end
  *
  *  Created by Marlon Beijer on 17.09.17.
- *
+ *  Rewritten by neoman as full AGA/RTG port without SDL in 2020
  */
 
 #ifdef HAVE_CONFIG_H
@@ -45,29 +46,10 @@
 #if defined(__AMIGA__) || defined(WARPUP) || defined(__WARPOS__) || defined(AROS) || defined(__amigaos4__) || defined(__morphos__)
 #	include "amigaversion.h"
 #endif
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <time.h>
-#include <signal.h>
-#include <sys/stat.h>
-#include <unistd.h>
-#include <sys/types.h>
 
-//#include <SDL.h>
-//#include "SDL_KeyTranslation.h"
 #include "AmigaApplication.h"
-// ---------------------------- Tracker includes ----------------------------
 #include "PPUI.h"
-#include "DisplayDevice_Amiga.h"
-#include "Screen.h"
-#include "Tracker.h"
-#include "PPMutex.h"
-#include "PPSystem_POSIX.h"
-#include "PPPath_POSIX.h"
-// --------------------------------------------------------------------------
 
-// Amiga specifics
 extern struct ExecBase * SysBase;
 
 struct Library * IntuitionBase = NULL;
@@ -82,30 +64,9 @@ bool hasAMMX = false;
 
 struct Device * TimerBase = NULL;
 static struct IORequest timereq;
+static struct timeval startTime;
 
 static AmigaApplication * app = NULL;
-
-static pp_uint32 lmyTime;
-static PPPoint llastClickPosition = PPPoint(0, 0);
-static pp_uint16 lClickCount = 0;
-
-static pp_uint32 rmyTime;
-static PPPoint rlastClickPosition = PPPoint(0, 0);
-static pp_uint16 rClickCount = 0;
-
-static bool lMouseDown = false;
-static pp_uint32 lButtonDownStartTime;
-
-static bool rMouseDown = false;
-static pp_uint32 rButtonDownStartTime;
-
-static pp_uint32 timerTicker = 0;
-
-static PPPoint p;
-
-static bool exitDone;
-
-static struct timeval startTime;
 
 void QueryKeyModifiers() {
 	if(!app)
@@ -127,170 +88,6 @@ void QueryKeyModifiers() {
 		clearKeyModifier(KeyModifierALT);
 }
 
-/*
-static void translateMouseUpEvent(pp_int32 mouseButton, pp_int32 localMouseX, pp_int32 localMouseY) {
-	// @todo
-	if (mouseButton == SDL_BUTTON_WHEELDOWN) {
-		TMouseWheelEventParams mouseWheelParams;
-		mouseWheelParams.pos.x = localMouseX;
-		mouseWheelParams.pos.y = localMouseY;
-		mouseWheelParams.deltaX = -1;
-		mouseWheelParams.deltaY = -1;
-
-		PPEvent myEvent(eMouseWheelMoved, &mouseWheelParams, sizeof (mouseWheelParams));
-		RaiseEventSerialized(&myEvent);
-	} else if (mouseButton == SDL_BUTTON_WHEELUP) {
-		TMouseWheelEventParams mouseWheelParams;
-		mouseWheelParams.pos.x = localMouseX;
-		mouseWheelParams.pos.y = localMouseY;
-		mouseWheelParams.deltaX = 1;
-		mouseWheelParams.deltaY = 1;
-
-		PPEvent myEvent(eMouseWheelMoved, &mouseWheelParams, sizeof (mouseWheelParams));
-		RaiseEventSerialized(&myEvent);
-	} else if (mouseButton > 2 || !mouseButton)
-		return;
-
-	// -----------------------------
-	if (mouseButton == 1) {
-		lClickCount++;
-
-		if (lClickCount >= 4) {
-			pp_uint32 deltat = PPGetTickCount() - lmyTime;
-
-			if (deltat < 500) {
-				p.x = localMouseX;
-				p.y = localMouseY;
-				if (abs(p.x - llastClickPosition.x) < 4 &&
-						abs(p.y - llastClickPosition.y) < 4) {
-					PPEvent myEvent(eLMouseDoubleClick, &p, sizeof (PPPoint));
-					RaiseEventSerialized(&myEvent);
-				}
-			}
-
-			lClickCount = 0;
-		}
-
-		p.x = localMouseX;
-		p.y = localMouseY;
-		PPEvent myEvent(eLMouseUp, &p, sizeof (PPPoint));
-		RaiseEventSerialized(&myEvent);
-		lMouseDown = false;
-	} else if (mouseButton == 2) {
-		rClickCount++;
-
-		if (rClickCount >= 4) {
-			pp_uint32 deltat = PPGetTickCount() - rmyTime;
-
-			if (deltat < 500) {
-				p.x = localMouseX;
-				p.y = localMouseY;
-				if (abs(p.x - rlastClickPosition.x) < 4 && abs(p.y - rlastClickPosition.y) < 4) {
-					PPEvent myEvent(eRMouseDoubleClick, &p, sizeof (PPPoint));
-					RaiseEventSerialized(&myEvent);
-				}
-			}
-
-			rClickCount = 0;
-		}
-
-		p.x = localMouseX;
-		p.y = localMouseY;
-		PPEvent myEvent(eRMouseUp, &p, sizeof (PPPoint));
-		RaiseEventSerialized(&myEvent);
-		rMouseDown = false;
-	}
-}
-
-static void translateKeyDownEvent(const SDL_Event& event) {
-	SDL_keysym keysym = event.key.keysym;
-
-	// ALT+RETURN = Fullscreen toggle
-	if (keysym.sym == SDLK_RETURN && (keysym.mod & KMOD_LALT)) {
-		PPEvent myEvent(eFullScreen);
-		RaiseEventSerialized(&myEvent);
-		return;
-	}
-
-	pp_uint16 character = event.key.keysym.unicode;
-
-	pp_uint16 chr[3] = {toVK(keysym), toSC(keysym), character};
-
-#ifndef NOT_PC_KB
-	// Hack for azerty keyboards (num keys are shifted, so we use the scancodes)
-	if (stdKb) {
-		if (chr[1] >= 2 && chr[1] <= 10)
-			chr[0] = chr[1] + 47; // 1-9
-		else if (chr[1] == 11)
-			chr[0] = 48; // 0
-	}
-#endif
-
-	PPEvent myEvent(eKeyDown, &chr, sizeof (chr));
-	RaiseEventSerialized(&myEvent);
-
-	if (character == 127) character = VK_BACK;
-
-	if (character >= 32 && character <= 127) {
-		PPEvent myEvent2(eKeyChar, &character, sizeof (character));
-		RaiseEventSerialized(&myEvent2);
-	}
-}
-
-static void translateKeyUpEvent(const SDL_Event& event) {
-	SDL_keysym keysym = event.key.keysym;
-
-	pp_uint16 character = event.key.keysym.unicode;
-
-	pp_uint16 chr[3] = {toVK(keysym), toSC(keysym), character};
-
-#ifndef NOT_PC_KB
-	if (stdKb) {
-		if (chr[1] >= 2 && chr[1] <= 10)
-			chr[0] = chr[1] + 47;
-		else if (chr[1] == 11)
-			chr[0] = 48;
-	}
-#endif
-
-	PPEvent myEvent(eKeyUp, &chr, sizeof (chr));
-	RaiseEventSerialized(&myEvent);
-}
-
-void processSDLEvents(const SDL_Event& event) {
-	pp_uint32 mouseButton = 0;
-
-	switch (event.type) {
-		case SDL_KEYDOWN:
-			translateKeyDownEvent(event);
-			break;
-
-		case SDL_KEYUP:
-			translateKeyUpEvent(event);
-			break;
-	}
-}
-
-/*
-void exitSDLEventLoop(bool serializedEventInvoked) {
-	PPEvent event(eAppQuit);
-	RaiseEventSerialized(&event);
-
-	// it's necessary to make this mutex lock because the SDL modal event loop
-	// used in the modal dialogs expects modal dialogs to be invoked by
-	// events within these mutex lock calls
-	if (!serializedEventInvoked)
-		globalMutex->lock();
-
-	bool res = myTracker->shutDown();
-
-	if (!serializedEventInvoked)
-		globalMutex->unlock();
-
-	if (res)
-		exitDone = 1;
-}*/
-
 pp_uint32 PPGetTickCount() {
     struct timeval endTime;
 
@@ -298,6 +95,14 @@ pp_uint32 PPGetTickCount() {
     SubTime(&endTime, &startTime);
 
     return endTime.tv_secs * 1000 + endTime.tv_micro / 1000;
+}
+
+bool QueryClassicBrowser(bool currentSetting) {
+	// For fullscreen mode, always use the classic browser on Amiga
+	if(app && app->isFullScreen()) {
+		return true;
+	}
+	return currentSetting;
 }
 
 static bool checkHardware()
@@ -340,6 +145,7 @@ static int boot(int argc, char * argv[])
 	app->setCpuType(cpuType);
 	app->setHasFPU(hasFPU);
 	app->setHasAMMX(hasAMMX);
+	app->setFullScreen(true);
 
 	// Parse command line (@todo use ToolTypes)
 	while (argc > 1) {
@@ -350,7 +156,7 @@ static int boot(int argc, char * argv[])
 		} else if (strcmp(argv[argc], "-nosplash") == 0) {
 			app->setNoSplash(true);
 		} else if (strcmp(argv[argc], "-fullscreen") == 0) {
-			app->setNoSplash(false);
+			app->setFullScreen(true);
 		} else {
 			if (argv[argc][0] == '-') {
 				fprintf(stderr, "Usage: %s [-bpp N] [-fullscreen] [-nosplash] [-recvelocity]\n", argv[0]);
@@ -364,12 +170,11 @@ static int boot(int argc, char * argv[])
 	// And start
 	if(ret = app->start()) {
 		fprintf(stderr, "Starting tracker failed! (ret = %ld)\n", ret);
+		app->stop();
 	} else {
-		app->loop();
-
-		if(ret = app->stop()) {
-			fprintf(stderr, "Stopping tracker failed! (ret = %ld)\n", ret);
-		}
+		do {
+			app->loop();
+		} while(app->stop() > 0);
 	}
 
 	delete app;

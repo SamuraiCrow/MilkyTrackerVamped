@@ -15,10 +15,12 @@ DisplayDevice_Amiga::DisplayDevice_Amiga(AmigaApplication * app)
 {
     width = app->getWindowSize().width;
     height = app->getWindowSize().height;
+    screen = app->getScreen();
     window = app->getWindow();
-    pubScreen = app->getPubScreen();
     rastPort = window->RPort;
+    useRTGFullscreen = app->isFullScreen() && app->getBpp() == 16;
     useRTGWindowed = !app->isFullScreen() && app->getBpp() == 16 && GetBitMapAttr(rastPort->BitMap, BMA_DEPTH) == 16;
+    useSAGADirectFB = app->isAMMX() && useRTGFullscreen;
     useSAGAPiP = app->isAMMX() && useRTGWindowed;
     pitch = width * app->getBpp() >> 3;
     drawMutex = new PPMutex();
@@ -26,6 +28,25 @@ DisplayDevice_Amiga::DisplayDevice_Amiga(AmigaApplication * app)
 
 DisplayDevice_Amiga::~DisplayDevice_Amiga()
 {
+    if(useRTGWindowed) {
+        if(useSAGAPiP) {
+            WRITE16(SAGA_PIP_PIXFMT,   0);
+            WRITE16(SAGA_PIP_X0,       0);
+            WRITE16(SAGA_PIP_Y0,       0);
+            WRITE16(SAGA_PIP_X1,       0);
+            WRITE16(SAGA_PIP_Y1,       0);
+            WRITE16(SAGA_PIP_COLORKEY, 0);
+            WRITE32(SAGA_PIP_BPLPTR,   0);
+
+            V_FreeExpansionPort(V_PIP);
+        }
+
+        for(int i = 0; i < 2; i++) {
+            FreeMem(unalignedScreenBuffer[i], (pitch * height) + 16);
+        }
+        FreeMem(unalignedOffScreenBuffer, (pitch * height) + 16);
+    }
+
     delete drawMutex;
 }
 
@@ -64,6 +85,11 @@ DisplayDevice_Amiga::init()
 
             screenMode = SAGA_PIP_16;
         }
+
+        currentGraphics = new PPGraphics_16BIT(width, height, 0, NULL);
+	    currentGraphics->lock = true;
+    } else if(useRTGFullscreen) {
+        screenMode = RTG_FULLSCREEN_16;
 
         currentGraphics = new PPGraphics_16BIT(width, height, 0, NULL);
 	    currentGraphics->lock = true;
@@ -152,6 +178,7 @@ void
 DisplayDevice_Amiga::flush()
 {
     drawMutex->lock();
+
     if(drawCommands.size() > 0) {
         pp_uint16 * ps = (pp_uint16 *) alignedOffScreenBuffer;
 
@@ -189,9 +216,9 @@ DisplayDevice_Amiga::flush()
             WaitBlit();
         }
 
-
         drawCommands.clear();
     }
+
     drawMutex->unlock();
 }
 
@@ -202,13 +229,13 @@ DisplayDevice_Amiga::setSize(const PPSize& size)
         ULONG x0 = 0, y0 = 0;
         ULONG x1 = 0, y1 = 0;
 
-        if (window && pubScreen == IntuitionBase->FirstScreen) {
-            x0 = SAGA_PIP_DELTAX + window->LeftEdge + pubScreen->LeftEdge + 2;
-            y0 = SAGA_PIP_DELTAY + window->BorderTop + window->TopEdge + pubScreen->TopEdge + 0;
+        if (screen == IntuitionBase->FirstScreen) {
+            x0 = SAGA_PIP_DELTAX + window->LeftEdge + screen->LeftEdge + window->BorderLeft + 2;
+            y0 = SAGA_PIP_DELTAY + window->TopEdge + screen->TopEdge + window->BorderTop;
 
-            if ((x0 + window->GZZWidth - 16 - 64) < pubScreen->Width) {
-                x1 = x0 + window->GZZWidth;
-                y1 = y0 + window->GZZHeight;
+            if ((x0 + width - 16 - 64) < screen->Width) {
+                x1 = x0 + width;
+                y1 = y0 + height;
             } else {
                 x0 = 0;
                 y0 = 0;
@@ -228,6 +255,12 @@ DisplayDevice_Amiga::setTitle(const PPSystemString& title)
     app->setWindowTitle(title.getStrBuffer());
 }
 
+void
+DisplayDevice_Amiga::setAlert(const PPSystemString& title)
+{
+    app->setScreenAlert(title.getStrBuffer());
+}
+
 bool
 DisplayDevice_Amiga::goFullScreen(bool b)
 {
@@ -237,25 +270,6 @@ DisplayDevice_Amiga::goFullScreen(bool b)
 void
 DisplayDevice_Amiga::shutDown()
 {
-    if(useRTGWindowed) {
-        if(useSAGAPiP) {
-            WRITE16(SAGA_PIP_PIXFMT,   0);
-            WRITE16(SAGA_PIP_X0,       0);
-            WRITE16(SAGA_PIP_Y0,       0);
-            WRITE16(SAGA_PIP_X1,       0);
-            WRITE16(SAGA_PIP_Y1,       0);
-            WRITE16(SAGA_PIP_COLORKEY, 0);
-            WRITE32(SAGA_PIP_BPLPTR,   0);
-
-            V_FreeExpansionPort(V_PIP);
-        }
-
-        for(int i = 0; i < 2; i++) {
-            FreeMem(unalignedScreenBuffer[i], (pitch * height) + 16);
-        }
-        FreeMem(unalignedOffScreenBuffer, (pitch * height) + 16);
-    }
-
     app->setRunning(false);
 }
 

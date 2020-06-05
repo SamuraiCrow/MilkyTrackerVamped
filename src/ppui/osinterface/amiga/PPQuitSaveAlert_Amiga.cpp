@@ -22,15 +22,11 @@
 
 #include "PPQuitSaveAlert.h"
 #include "DialogFileSelector.h"
+#include "Screen.h"
 
 PPQuitSaveAlert::ReturnCodes PPQuitSaveAlert::runModal()
 {
-	// Create a message box (the message box will invoke the responder)
-	PPDialogBase* dialog = new PPDialogBase(screen, NULL, PP_DEFAULT_ID, "Save current changes?", PPDialogBase::MessageBox_YESNOCANCEL);
+	screen->getDisplayDevice()->setAlert("Please zap or save your changes before quitting!");
 
-	ReturnCodes result = PPModalDialog::ReturnCodeCANCEL; // SDL_runModalLoop(screen, dialog);
-
-	delete dialog;
-
-	return result;
+	return PPModalDialog::ReturnCodeCANCEL;
 }

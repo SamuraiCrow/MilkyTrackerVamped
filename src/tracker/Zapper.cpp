@@ -38,12 +38,10 @@
 
 void Zapper::zapAll()
 {
-	if (!tracker.checkForChanges())
-		return;
 	tracker.signalWaitState(true);
 	tracker.playerController->resetPlayTimeCounter();
-	tracker.moduleEditor->createEmptySong(true, 
-										  true, 
+	tracker.moduleEditor->createEmptySong(true,
+										  true,
 										  tracker.playerController->getPlayMode() == PlayerController::PlayMode_FastTracker2 ? 8 : 4);
 	tracker.moduleEditor->getModuleServices()->resetEstimatedSongLength();
 	tracker.moduleEditor->reloadCurrentPattern();
@@ -58,14 +56,14 @@ void Zapper::zapSong()
 {
 	tracker.signalWaitState(true);
 	tracker.playerController->resetPlayTimeCounter();
-	tracker.moduleEditor->createEmptySong(true, 
+	tracker.moduleEditor->createEmptySong(true,
 								  false,
 								  tracker.playerController->getPlayMode() == PlayerController::PlayMode_FastTracker2 ? 8 : 4);
 	tracker.moduleEditor->getModuleServices()->resetEstimatedSongLength();
 	tracker.moduleEditor->reloadCurrentPattern();
 	tracker.sectionHDRecorder->adjustOrders();
 	// stop song with resetting main volume
-	tracker.ensureSongStopped(true, false);			
+	tracker.ensureSongStopped(true, false);
 	tracker.updateSongInfo(false);
 	tracker.signalWaitState(false);
 }
@@ -76,7 +74,7 @@ void Zapper::zapPattern()
 	tracker.playerController->resetPlayTimeCounter();
 	tracker.getPatternEditor()->clearPattern();
 	tracker.updateSongInfo(false);
-	tracker.signalWaitState(false);	
+	tracker.signalWaitState(false);
 }
 
 void Zapper::zapInstruments()

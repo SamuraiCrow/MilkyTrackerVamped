@@ -57,6 +57,8 @@
 #include "TitlePageManager.h"
 #include "version.h"
 
+bool QueryClassicBrowser(bool currentSetting);
+
 void Tracker::buildDefaultSettings()
 {
 	if (settingsDatabase == NULL)
@@ -501,6 +503,10 @@ void Tracker::applySettingByKey(PPDictionaryKey* theKey, TMixerSettings& setting
 	else if (theKey->getKey().compareTo("INTERNALDISKBROWSER") == 0)
 	{
 		useClassicBrowser = (v2 != 0);
+
+#if defined(__AMIGA__)
+		useClassicBrowser = QueryClassicBrowser(useClassicBrowser);
+#endif
 	}
 	else if (theKey->getKey().compareTo("INTERNALDISKBROWSERSETTINGS") == 0)
 	{

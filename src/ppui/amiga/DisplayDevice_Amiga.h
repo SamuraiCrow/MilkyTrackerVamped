@@ -36,6 +36,7 @@ class DisplayDevice_Amiga : public PPDisplayDeviceBase
 		AGA_C2P_8,
 		RTG_WINDOWED_8,
 		RTG_WINDOWED_16,
+		RTG_FULLSCREEN_16,
 		SAGA_PIP_8,
 		SAGA_PIP_16,
 		SAGA_DIRECT
@@ -43,7 +44,9 @@ class DisplayDevice_Amiga : public PPDisplayDeviceBase
 private:
 	AmigaApplication * 	app;
 	bool                useRTGWindowed;
+	bool                useRTGFullscreen;
 	bool				useSAGAPiP;
+	bool                useSAGADirectFB;
 	pp_int32            width;
 	pp_int32            height;
 	pp_int32            pitch;
@@ -52,9 +55,9 @@ private:
 	PPMutex *           drawMutex;
 	std::vector<PPRect> drawCommands;
 
+	struct Screen * 	screen;
+	struct Window *     window;
 	struct RastPort * 	rastPort;
-	struct Window *   	window;
-	struct Screen * 	pubScreen;
 
 	void *              unalignedOffScreenBuffer;
 	void *              alignedOffScreenBuffer;
@@ -87,6 +90,7 @@ public:
 	virtual bool 	init();
 
 	virtual	void	setTitle(const PPSystemString& title);
+	virtual	void	setAlert(const PPSystemString& title);
 
 	virtual	bool	goFullScreen(bool b);
 

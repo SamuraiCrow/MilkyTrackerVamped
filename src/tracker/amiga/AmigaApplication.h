@@ -36,17 +36,20 @@ private:
     bool                    noSplash;
     bool                    running;
     bool                    fullScreen;
+    bool                    trackerStartUpFinished;
     char *                  loadFile;
+    bool                    showAlert;
 
     Tracker *               tracker;
     DisplayDevice_Amiga *   displayDevice;
-    PPScreen *              screen;
+    PPScreen *              trackerScreen;
     PPSize                  windowSize;
     PPSystemString          oldCwd;
     char                    currentTitle[256];
+    char                    currentAlert[256];
 
     struct Window *         window;
-    struct Screen *         pubScreen;
+    struct Screen *         screen;
     struct Task *           task;
 
     struct Interrupt *      irqVerticalBlank;
@@ -72,6 +75,7 @@ private:
 
     int                     load(char * loadFile);
     void                    raiseEventSynchronized(PPEvent * event);
+    void                    resetScreenAlert();
 
     void                    setMousePosition(pp_int32 x, pp_int32 y);
 
@@ -85,13 +89,14 @@ public:
     bool                    isFullScreen() const { return fullScreen; }
     bool                    isAMMX() const { return hasAMMX; }
 
+    struct Screen *         getScreen() const { return screen; }
     struct Window *         getWindow() const { return window; }
-    struct Screen *         getPubScreen() const { return pubScreen; }
 
     const PPSize&           getWindowSize() const { return windowSize; }
     pp_uint32               getBpp() const { return bpp; }
 
     void                    setRunning(bool running) { this->running = running; }
+    void                    setFullScreen(bool fullScreen) { this->fullScreen = fullScreen; }
 	void                    setCpuType(int cpuType) { this->cpuType = cpuType; }
 	void                    setHasFPU(bool hasFPU) { this->hasFPU = hasFPU; }
 	void                    setHasAMMX(bool hasAMMX) { this->hasAMMX = hasAMMX; }
@@ -99,6 +104,7 @@ public:
     void                    setNoSplash(bool noSplash) { this->noSplash = noSplash; }
     void                    setLoadFile(char * loadFile) { this->loadFile = loadFile; }
     void                    setWindowTitle(const char * title);
+    void                    setScreenAlert(const char * title);
 
     bool                    isShiftPressed() const { return keyQualifierShiftPressed; };
     bool                    isCtrlPressed() const { return keyQualifierCtrlPressed; };

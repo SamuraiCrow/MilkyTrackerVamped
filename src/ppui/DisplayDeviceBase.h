@@ -220,6 +220,7 @@ public:
 	virtual bool init()	{ return true; }
 
 	virtual void setTitle(const PPSystemString& title) { }
+	virtual void setAlert(const PPSystemString& title) { }
 
 	virtual bool goFullScreen(bool b) { return true; }
 	virtual bool isFullScreen() { return bFullScreen; }

@@ -22,23 +22,15 @@
 
 #include "PPMessageBox.h"
 #include "DialogFileSelector.h"
+#include "Screen.h"
 
 PPMessageBox::ReturnCodes PPMessageBox::runModal()
 {
-	// Convert texts
-	char* captionASCIIZ = this->caption.toASCIIZ();
 	char* contentASCIIZ = this->content.toASCIIZ();
-	PPString caption(captionASCIIZ);
 	PPString content(contentASCIIZ);
-	delete[] captionASCIIZ;
 	delete[] contentASCIIZ;
 
-	// Create a message box (the message box will invoke the responder)
-	PPDialogBase* dialog = new PPDialogBase(screen, NULL, PP_DEFAULT_ID, caption, content);
+	screen->getDisplayDevice()->setAlert(content);
 
-	ReturnCodes result = PPModalDialog::ReturnCodeCANCEL; // SDL_runModalLoop(screen, dialog);
-
-	delete dialog;
-
-	return result;
+	return PPModalDialog::ReturnCodeCANCEL;
 }
