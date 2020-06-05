@@ -21,22 +21,47 @@
  */
 
 #include "Amiga_KeyTranslation.h"
+#include <devices/inputevent.h>
 
+//
+// http://amigadev.elowar.com/read/ADCD_2.1/Libraries_Manual_guide/node0479.html
+//
 pp_uint16 toVK(const AmigaKeyInputData& key)
 {
+    bool shiftPressed = key.qual & (IEQUALIFIER_LSHIFT | IEQUALIFIER_RSHIFT);
+
+    // a-z -> A-Z
+    if(key.sym >= 0x61 && key.sym <= 0x7a) {
+        return key.sym - 0x20;
+    }
+
     switch(key.code) {
+    case 0x0f: return shiftPressed ? VK_INSERT : VK_NUMPAD0;
+    case 0x1d: return shiftPressed ? VK_END    : VK_NUMPAD1;
+    case 0x1e: return VK_NUMPAD2;
+    case 0x1f: return shiftPressed ? VK_NEXT   : VK_NUMPAD3;
+    case 0x2d: return VK_NUMPAD4;
+    case 0x2e: return VK_NUMPAD5;
+    case 0x2f: return VK_NUMPAD6;
+    case 0x3c: return shiftPressed ? VK_DELETE : VK_DECIMAL;
+    case 0x3d: return shiftPressed ? VK_HOME   : VK_NUMPAD7;
+    case 0x3e: return VK_NUMPAD8;
+    case 0x3f: return shiftPressed ? VK_PRIOR  : VK_NUMPAD9;
+
     case 0x40: return VK_SPACE;
     case 0x41: return VK_BACK;
     case 0x42: return VK_TAB;
-    case 0x43: return VK_RETURN;
+    case 0x43: return VK_SEPARATOR; // Keypad Enter!
     case 0x44: return VK_RETURN;
     case 0x45: return VK_ESCAPE;
     case 0x46: return VK_DELETE;
 
-    case 0x4C: return VK_UP;
-    case 0x4D: return VK_DOWN;
-    case 0x4E: return VK_RIGHT;
-    case 0x4F: return VK_LEFT;
+    case 0x4A: return VK_SUBTRACT;
+
+    case 0x4c: return VK_UP;
+    case 0x4d: return VK_DOWN;
+    case 0x4e: return VK_RIGHT;
+    case 0x4f: return VK_LEFT;
 
     case 0x50: return VK_F1;
     case 0x51: return VK_F2;
@@ -49,8 +74,29 @@ pp_uint16 toVK(const AmigaKeyInputData& key)
     case 0x58: return VK_F9;
     case 0x59: return VK_F10; // @todo F11? F12? etc.
 
+    case 0x5c: return VK_DIVIDE;
+    case 0x5d: return VK_MULTIPLY;
+    case 0x5e: return VK_ADD;
+
+    case 0x5f: return VK_HELP;
+
+    case 0x60: return VK_SHIFT;
+    case 0x61: return VK_SHIFT;
+
+    case 0x62: return VK_CAPITAL;
+
+    case 0x63: return VK_LCONTROL;
+    case 0x64: return VK_ALT;
+    case 0x65: return VK_RCONTROL; // Remap Right ALT to "Play Song"
+    case 0x66: return VK_LMENU;
+    case 0x67: return VK_RMENU; // Remap Right Amiga to "Play Pattern"
     }
-    return 0;
+
+    if(key.sym != -1) {
+        return key.sym;
+    }
+
+    return VK_UNDEFINED;
 }
 
 pp_uint16 toSC(const AmigaKeyInputData& key)

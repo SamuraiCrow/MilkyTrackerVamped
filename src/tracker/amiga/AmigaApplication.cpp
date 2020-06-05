@@ -252,16 +252,18 @@ void AmigaApplication::loop()
                         APTR eventptr;
                         int actual;
                         AmigaKeyInputData key;
+                        bool keyUp = false;
 
                         keyQualifierShiftPressed = (msg->Qualifier & (IEQUALIFIER_LSHIFT | IEQUALIFIER_RSHIFT)) ? true : false;
                         keyQualifierCtrlPressed = (msg->Qualifier & IEQUALIFIER_CONTROL) ? true : false;
                         keyQualifierAltPressed = (msg->Qualifier & (IEQUALIFIER_LALT | IEQUALIFIER_RALT)) ? true : false;
 
                         ie.ie_Code = msg->Code;
-                        ie.ie_Qualifier = msg->Qualifier & ~(IEQUALIFIER_LSHIFT | IEQUALIFIER_RSHIFT | IEQUALIFIER_CAPSLOCK | IEQUALIFIER_CONTROL | IEQUALIFIER_LALT | IEQUALIFIER_RALT);
+                        ie.ie_Qualifier = msg->Qualifier & ~(IEQUALIFIER_CONTROL | IEQUALIFIER_LALT | IEQUALIFIER_RALT);
                         ie.ie_EventAddress = (APTR *) *((ULONG *)msg->IAddress);
 
                         key.code = msg->Code;
+                        key.qual = msg->Qualifier;
                         key.sym = -1;
 
                         actual = MapRawKey(&ie, (STRPTR) buffer, 8, NULL);
@@ -269,7 +271,29 @@ void AmigaApplication::loop()
                             key.sym = *buffer;
                         }
 
-                        printf("IDCMP:RAWKEY: code=$%04x qualifier=$%04lx sym=$%04x / %c\n", msg->Code, msg->Qualifier, key.sym, key.sym);
+                        printf("Raw key data: code=$%04x qualifier=$%04lx sym=$%04x / %c\n", msg->Code, msg->Qualifier, key.sym, key.sym);
+
+                        keyUp = key.code >= 0x80;
+                        if(keyUp)
+                            key.code &= 0x80;
+
+                        pp_uint16 chr[3] = {toVK(key), toSC(key), key.sym == -1 ? 0 : key.sym};
+
+                        printf("Translated key data: vk=$%04x, sc=$%04x, chr=$%04x\n", chr[0], chr[1], chr[2]);
+
+                        if(keyUp) {
+                            PPEvent keyUpEvent(eKeyUp, &chr, sizeof(chr));
+                            raiseEventSynchronized(&keyUpEvent);
+                        } else {
+                            PPEvent keyDownEvent(eKeyDown, &chr, sizeof(chr));
+                            raiseEventSynchronized(&keyDownEvent);
+
+                            if (key.sym >= 0x20 && key.sym <= 0x7f) {
+                                pp_uint8 character = (pp_uint8) key.sym;
+                                PPEvent keyCharEvent(eKeyChar, &character, sizeof(pp_uint8));
+                                raiseEventSynchronized(&keyCharEvent);
+                            }
+                        }
                     }
                     break;
                 case IDCMP_MOUSEMOVE:

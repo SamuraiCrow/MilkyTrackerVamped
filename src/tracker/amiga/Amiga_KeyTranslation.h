@@ -27,6 +27,7 @@
 
 struct AmigaKeyInputData {
     pp_uint16 code;
+    pp_uint16 qual;
     pp_int16  sym;
 };
 
