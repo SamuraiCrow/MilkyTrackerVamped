@@ -68,6 +68,12 @@ static struct timeval startTime;
 
 static AmigaApplication * app = NULL;
 
+void PrintStackSize() {
+	struct Task * task = FindTask(NULL);
+	ULONG currentstack = (ULONG) task->tc_SPUpper - (ULONG) task->tc_SPLower;
+	printf("Current stack: %lu\n", currentstack);
+}
+
 void QueryKeyModifiers() {
 	if(!app)
 		return;
@@ -184,7 +190,7 @@ static int boot(int argc, char * argv[])
 	return ret;
 }
 
-int main(int argc, char * argv[])
+int main2(int argc, char * argv[])
 {
 	int ret = 0;
 

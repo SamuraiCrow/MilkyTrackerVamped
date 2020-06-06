@@ -64,6 +64,13 @@ AmigaApplication::~AmigaApplication()
     delete globalMutex;
 }
 
+struct Screen * AmigaApplication::getScreen() const
+{
+    if(fullScreen)
+        return screen;
+    return pubScreen;
+}
+
 void AmigaApplication::raiseEventSynchronized(PPEvent * event)
 {
     if(!tracker || !trackerScreen)
@@ -146,72 +153,77 @@ int AmigaApplication::start()
     {
         tracker = new Tracker();
 
-        windowSize = tracker->getWindowSizeFromDatabase();
-        if (!fullScreen)
-            fullScreen = tracker->getFullScreenFlagFromDatabase();
+        if (pubScreen = LockPubScreen(NULL)) {
+            if (!fullScreen)
+                fullScreen = tracker->getFullScreenFlagFromDatabase();
 
-        if(fullScreen) {
-            ULONG displayId = p96BestModeIDTags(
-                P96BIDTAG_NominalWidth,     windowSize.width,
-                P96BIDTAG_NominalHeight,    windowSize.height,
-                P96BIDTAG_Depth,            bpp,
-                TAG_DONE);
-            if(displayId == INVALID_ID) {
-                fprintf(stderr, "Cannot find best screen mode (%ldx%ldx%ld)!\n", windowSize.width, windowSize.height, bpp);
-                ret = 5;
+            if(fullScreen) {
+                windowSize.width = pubScreen->Width;
+                windowSize.height = pubScreen->Height;
+            } else {
+                windowSize = tracker->getWindowSizeFromDatabase();
             }
 
-            if(!ret) {
-                screen = p96OpenScreenTags(
-                    P96SA_DisplayID             , displayId,
-                    P96SA_Left                  , 0,
-                    P96SA_Top                   , 0,
-                    P96SA_Width                 , windowSize.width,
-                    P96SA_Height                , windowSize.height,
-                    P96SA_Depth                 , bpp,
-                    P96SA_DetailPen             , 0,
-                    P96SA_BlockPen              , 1,
-                    P96SA_Quiet                 , FALSE,
-                    P96SA_Type                  , CUSTOMSCREEN,
-                    P96SA_RGBFormat             , RGBFB_R5G6B5,
-                    P96SA_BitMap                , FALSE,
-                    P96SA_ConstantBytesPerRow   , TRUE,
-                    P96SA_AutoScroll            , FALSE,
-                    P96SA_Exclusive             , TRUE,
-                    P96SA_ShowTitle             , FALSE,
+            if(fullScreen) {
+                ULONG displayId = p96BestModeIDTags(
+                    P96BIDTAG_NominalWidth,     windowSize.width,
+                    P96BIDTAG_NominalHeight,    windowSize.height,
+                    P96BIDTAG_Depth,            bpp,
                     TAG_DONE);
-                if(screen) {
-                    window = OpenWindowTags(NULL,
-                        WA_CustomScreen  , (APTR) screen,
-                        WA_Left          , 0,
-                        WA_Top           , 0,
-                        WA_InnerWidth    , windowSize.width,
-                        WA_InnerHeight   , windowSize.height,
-                        WA_Title         , (APTR) (!fullScreen ? "Loading MilkyTracker" : NULL),
-                        WA_Borderless    , TRUE,
-                        WA_Backdrop      , TRUE,
-                        WA_Activate      , TRUE,
-                        WA_ReportMouse   , TRUE,
-                        WA_NoCareRefresh , TRUE,
-                        WA_RMBTrap       , TRUE,
-                        WA_IDCMP         , IDCMP_CLOSEWINDOW | IDCMP_MOUSEBUTTONS | IDCMP_MOUSEMOVE | IDCMP_RAWKEY,
-                        TAG_DONE);
-                    if(!window) {
-                        fprintf(stderr, "Could not create window!\n");
-                        ret = 4;
-                    }
-                } else {
-                    fprintf(stderr, "Could not create P96 screen!\n");
-                    ret = 6;
+                if(displayId == INVALID_ID) {
+                    fprintf(stderr, "Cannot find best screen mode (%ldx%ldx%ld)!\n", windowSize.width, windowSize.height, bpp);
+                    ret = 5;
                 }
-            }
-        } else {
-            // Get public screen and create window in it
-            if (screen = LockPubScreen(NULL)) {
+
+                if(!ret) {
+                    screen = p96OpenScreenTags(
+                        P96SA_DisplayID             , displayId,
+                        P96SA_Left                  , 0,
+                        P96SA_Top                   , 0,
+                        P96SA_Width                 , windowSize.width,
+                        P96SA_Height                , windowSize.height,
+                        P96SA_Depth                 , bpp,
+                        P96SA_DetailPen             , 0,
+                        P96SA_BlockPen              , 1,
+                        P96SA_Quiet                 , FALSE,
+                        P96SA_Type                  , CUSTOMSCREEN,
+                        P96SA_RGBFormat             , RGBFB_R5G6B5,
+                        P96SA_BitMap                , FALSE,
+                        P96SA_ConstantBytesPerRow   , TRUE,
+                        P96SA_AutoScroll            , FALSE,
+                        P96SA_Exclusive             , TRUE,
+                        P96SA_ShowTitle             , FALSE,
+                        TAG_DONE);
+                    if(screen) {
+                        window = OpenWindowTags(NULL,
+                            WA_CustomScreen  , (APTR) screen,
+                            WA_Left          , 0,
+                            WA_Top           , 0,
+                            WA_InnerWidth    , windowSize.width,
+                            WA_InnerHeight   , windowSize.height,
+                            WA_Title         , (APTR) (!fullScreen ? "Loading MilkyTracker" : NULL),
+                            WA_Borderless    , TRUE,
+                            WA_Backdrop      , TRUE,
+                            WA_Activate      , TRUE,
+                            WA_ReportMouse   , TRUE,
+                            WA_NoCareRefresh , TRUE,
+                            WA_RMBTrap       , TRUE,
+                            WA_IDCMP         , IDCMP_CLOSEWINDOW | IDCMP_MOUSEBUTTONS | IDCMP_MOUSEMOVE | IDCMP_RAWKEY,
+                            TAG_DONE);
+                        if(!window) {
+                            fprintf(stderr, "Could not create window!\n");
+                            ret = 4;
+                        }
+                    } else {
+                        fprintf(stderr, "Could not create P96 screen!\n");
+                        ret = 6;
+                    }
+                }
+            } else {
                 window = OpenWindowTags(NULL,
-                    WA_CustomScreen  , (APTR) screen,
-                    WA_Left          , (screen->Width - windowSize.width) / 2,
-                    WA_Top           , (screen->Height - windowSize.height) / 2,
+                    WA_CustomScreen  , (APTR) pubScreen,
+                    WA_Left          , (pubScreen->Width - windowSize.width) / 2,
+                    WA_Top           , (pubScreen->Height - windowSize.height) / 2,
                     WA_InnerWidth    , windowSize.width,
                     WA_InnerHeight   , windowSize.height,
                     WA_Title         , (APTR) "Loading MilkyTracker ...",
@@ -228,10 +240,10 @@ int AmigaApplication::start()
                     fprintf(stderr, "Could not create window!\n");
                     ret = 4;
                 }
-            } else {
-                fprintf(stderr, "Could not get public screen!\n");
-                ret = 1;
             }
+        } else {
+            fprintf(stderr, "Could not get public screen!\n");
+            ret = 1;
         }
 
         if(!ret) {
@@ -549,10 +561,9 @@ int AmigaApplication::stop()
     if(window)
         CloseWindow(window);
     if(screen)
-        if(fullScreen)
-            CloseScreen(screen);
-        else
-            UnlockPubScreen(0, screen);
+        CloseScreen(screen);
+    if(pubScreen)
+        UnlockPubScreen(0, screen);
 
     return 0;
 }

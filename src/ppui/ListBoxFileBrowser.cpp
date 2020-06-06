@@ -109,7 +109,6 @@ const PPPathEntry* PPListBoxFileBrowser::getPathEntry(pp_int32 index) const
 
 bool PPListBoxFileBrowser::canGotoHome() const
 {
-	printf("lbfb cgh\n");
 	return currentPath->canGotoHome();
 }
 
@@ -131,7 +130,6 @@ void PPListBoxFileBrowser::gotoHome()
 
 bool PPListBoxFileBrowser::canGotoRoot() const
 {
-	printf("lbfb cgr\n");
 	return currentPath->canGotoRoot();
 }
 
@@ -153,7 +151,6 @@ void PPListBoxFileBrowser::gotoRoot()
 
 bool PPListBoxFileBrowser::canGotoParent() const
 {
-	printf("lbfb cgp\n");
 	return currentPath->canGotoParent();
 }
 
@@ -175,12 +172,7 @@ void PPListBoxFileBrowser::gotoParent()
 
 bool PPListBoxFileBrowser::currentSelectionIsFile()
 {
-	printf("lbfb csif %ld\n", PPListBox::getSelectedIndex());
 	const PPPathEntry* entry = getPathEntry(PPListBox::getSelectedIndex());
-	printf("lbfb csif %lx\n", entry);
-	if(entry) {
-		printf("lbfb csif %ld\n", entry->isFile() ? 1 : 0);
-	}
 	return entry ? entry->isFile() : false;
 }
 
@@ -225,7 +217,6 @@ bool PPListBoxFileBrowser::gotoPath(const PPSystemString& path, bool reload/* = 
 
 bool PPListBoxFileBrowser::canPrev() const
 {
-	printf("lbfb cp\n");
 	return !history.IsEmpty();
 }
 
@@ -239,7 +230,6 @@ void PPListBoxFileBrowser::prev()
 
 bool PPListBoxFileBrowser::canNext() const
 {
-	printf("lbfb cn\n");
 	return !history.IsTop();
 }
 

@@ -50,6 +50,7 @@ private:
 
     struct Window *         window;
     struct Screen *         screen;
+    struct Screen *         pubScreen;
     struct Task *           task;
 
     struct Interrupt *      irqVerticalBlank;
@@ -89,7 +90,7 @@ public:
     bool                    isFullScreen() const { return fullScreen; }
     bool                    isAMMX() const { return hasAMMX; }
 
-    struct Screen *         getScreen() const { return screen; }
+    struct Screen *         getScreen() const;
     struct Window *         getWindow() const { return window; }
 
     const PPSize&           getWindowSize() const { return windowSize; }

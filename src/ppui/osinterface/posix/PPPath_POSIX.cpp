@@ -101,14 +101,16 @@ PPPath_POSIX::PPPath_POSIX(const PPSystemString& path) :
 
 const PPSystemString PPPath_POSIX::getCurrent()
 {
-	char cwd[PPMAX_DIR_PATH+1];
-	memset(cwd, 0, sizeof(cwd));
+	char * cwd= new char[PPMAX_DIR_PATH+1];
+	*cwd = 0;
 
 	getcwd(cwd, PPMAX_DIR_PATH+1);
 
 	PPSystemString path(cwd);
-
 	path.ensureTrailingCharacter(getPathSeparatorAsASCII());
+
+	delete[] cwd;
+
 	return path;
 }
 

@@ -88,13 +88,13 @@ void SectionSwitcher::showBottomSection(ActiveBottomSections section, bool paint
 
 void SectionSwitcher::showUpperSection(SectionAbstract* section, bool hideSIP/* = true*/)
 {
-	printf("suo 1\n");
 	tracker.screen->pauseUpdate(true);
+
 	if (currentUpperSection)
 	{
 		currentUpperSection->show(false);
 	}
-	printf("suo 2\n");
+
 	if (section)
 	{
 		if (hideSIP)
@@ -102,11 +102,9 @@ void SectionSwitcher::showUpperSection(SectionAbstract* section, bool hideSIP/* 
 
 		section->show(true);
 	}
-	printf("suo 3\n");
+
 	tracker.screen->pauseUpdate(false);
-	printf("suo 4\n");
 	tracker.screen->update();
-	printf("suo 5\n");
 	currentUpperSection = section;
 }
 

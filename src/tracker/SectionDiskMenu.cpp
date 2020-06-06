@@ -905,7 +905,6 @@ void SectionDiskMenu::init(pp_int32 px, pp_int32 py)
 
 void SectionDiskMenu::show(bool bShow)
 {
-	printf("sdm show 1\n");
 	// sanity check
 	if (bShow == diskMenuVisible)
 		return;
@@ -913,7 +912,6 @@ void SectionDiskMenu::show(bool bShow)
 #ifdef __LOWRES__
 	tracker.screen->pauseUpdate(true);
 #endif
-	printf("sdm show 2\n");
 
 	PPRadioGroup* radioGroup = static_cast<PPRadioGroup*>(static_cast<PPContainer*>(sectionContainer)->getControlByID(DISKMENU_NORMAL_RADIOGROUP_SONGTYPE));
 
@@ -949,12 +947,10 @@ void SectionDiskMenu::show(bool bShow)
 		currentPath = getCurrentPath();
 	}
 
-	printf("sdm show 3\n");
 	diskMenuVisible = bShow;
 
 	SectionUpperLeft::show(bShow);
 
-	printf("sdm show 4\n");
 	if (bShow)
 	{
 #ifdef __LOWRES__
@@ -968,17 +964,11 @@ void SectionDiskMenu::show(bool bShow)
 
 		if (forceClassicBrowser)
 		{
-	printf("sdm show 5\n");
 			showNormalView(false);
-	printf("sdm show 6\n");
 			showClassicView(true);
-	printf("sdm show 7\n");
 			updateClassicView();
-	printf("sdm show 8\n");
 			updateFilenameEditField(classicViewState);
-	printf("sdm show 9\n");
 			forceClassicBrowser = false;
-	printf("sdm show 10\n");
 		}
 	}
 	else
@@ -1011,7 +1001,6 @@ void SectionDiskMenu::show(bool bShow)
 		tracker.screen->update();
 	}
 #endif
-	printf("sdm show 11\n");
 }
 
 void SectionDiskMenu::update(bool repaint/* = true*/)
@@ -1230,13 +1219,10 @@ void SectionDiskMenu::updateClassicView(bool repaint/* = true*/)
 {
 	pp_uint32 i;
 
-	printf("ucv 1\n");
 	if (!classicViewVisible)
 		return;
 
-	printf("ucv 2\n");
 	updateButtonStates(false);
-	printf("ucv 3\n");
 
 	bool cond = classicViewState != BrowseAll;
 
@@ -1248,23 +1234,18 @@ void SectionDiskMenu::updateClassicView(bool repaint/* = true*/)
 	static_cast<PPContainer*>(sectionContainer)->getControlByID(DISKMENU_CLASSIC_BUTTON_TYPE_PATTERN)->hide(cond);
 	static_cast<PPContainer*>(sectionContainer)->getControlByID(DISKMENU_CLASSIC_BUTTON_TYPE_TRACK)->hide(cond);
 
-	printf("ucv 4\n");
 	if (classicViewState == BrowseAll)
 	{
 		currentActiveRadioGroup = NULL;
 	}
 
-	printf("ucv 5\n");
 	PPPoint pos = static_cast<PPContainer*>(sectionContainer)->getControlByID(DISKMENU_CLASSIC_BUTTON_TYPE_MODULE)->getLocation();
-	printf("ucv 6\n");
 
 	for (i = 0; i < sizeof(radioGroupLocations) / sizeof(PPPoint); i++)
 	{
 		static_cast<PPContainer*>(sectionContainer)->getControlByID(INDEXTORADIOGROUP(i))->setLocation(pos);
 		static_cast<PPContainer*>(sectionContainer)->getControlByID(INDEXTORADIOGROUP(i))->hide(true);
 	}
-
-	printf("ucv 7\n");
 
 	switch (classicViewState)
 	{
@@ -1288,7 +1269,6 @@ void SectionDiskMenu::updateClassicView(bool repaint/* = true*/)
 			break;
 	}
 
-	printf("ucv 8\n");
 	cond = listBoxFiles->getSize().height == fileBrowserExtent.height;
 	static_cast<PPContainer*>(sectionContainer)->getControlByID(DISKMENU_CLASSIC_STATICTEXT_FILTEREXTENSIONS)->hide(cond);
 	static_cast<PPContainer*>(sectionContainer)->getControlByID(DISKMENU_CLASSIC_CHECKBOX_FILTEREXTENSIONS)->hide(cond);
@@ -1296,34 +1276,26 @@ void SectionDiskMenu::updateClassicView(bool repaint/* = true*/)
 	static_cast<PPContainer*>(sectionContainer)->getControlByID(DISKMENU_CLASSIC_BUTTON_SORTBY)->hide(cond);
 	static_cast<PPContainer*>(sectionContainer)->getControlByID(DISKMENU_CLASSIC_BUTTON_SORTORDER)->hide(cond);
 
-	printf("ucv 9\n");
 	for (i = DISKMENU_CLASSIC_BUTTON_DIR0; i <= DISKMENU_CLASSIC_BUTTON_STOREDIR; i++)
 		static_cast<PPContainer*>(sectionContainer)->getControlByID(i)->hide(listBoxFiles->getSize().width == fileBrowserExtent.width);
 
-	printf("ucv 10\n");
 	if (currentActiveRadioGroup)
 		currentActiveRadioGroup->hide(false);
 
-	printf("ucv 11\n");
 	if (repaint)
 		tracker.screen->paintControl(sectionContainer);
-	printf("ucv 12\n");
 }
 
 void SectionDiskMenu::showClassicView(bool bShow)
 {
-	printf("scw 1\n");
 	for (pp_int32 i = 0; i < classicViewControls->size(); i++)
 		classicViewControls->get(i)->hide(!bShow);
 
-	printf("scw 2\n");
 	classicViewVisible = bShow;
 
 	if (bShow)
 	{
-	printf("scw 3\n");
 		updateClassicView();
-	printf("scw 4\n");
 	}
 }
 
@@ -1478,9 +1450,6 @@ void SectionDiskMenu::loadCurrentSelectedFile()
 {
 	PPSystemString fileFullPath = listBoxFiles->getCurrentPathAsString();
 	fileFullPath.append(listBoxFiles->getCurrentSelectedPathEntry()->getName());
-
-	printf("View State: %ld\n", classicViewState);
-	printf("Load full path: %s\n", fileFullPath.getStrBuffer());
 
 	switch (classicViewState)
 	{
@@ -1669,7 +1638,6 @@ void SectionDiskMenu::deleteCurrent()
 
 void SectionDiskMenu::updateButtonStates(bool repaint/* = true*/)
 {
-	printf("ubs 1\n");
 	static const pp_uint32 IDs[] =
 	{
 		DISKMENU_CLASSIC_BUTTON_PREV,
@@ -1681,7 +1649,6 @@ void SectionDiskMenu::updateButtonStates(bool repaint/* = true*/)
 		DISKMENU_CLASSIC_BUTTON_DELETE,
 		DISKMENU_CLASSIC_BUTTON_MAKEDIR
 	};
-	printf("ubs 2\n");
 
 	const bool states[] =
 	{
@@ -1694,11 +1661,8 @@ void SectionDiskMenu::updateButtonStates(bool repaint/* = true*/)
 		listBoxFiles->currentSelectionIsFile(),
 		false
 	};
-	printf("ubs 3\n");
 
 	ASSERT(sizeof(states)/sizeof(bool) == sizeof(IDs)/sizeof(pp_uint32));
-
-	printf("ubs 4\n");
 
 	pp_uint32 i;
 	for (i = 0; i < sizeof(IDs)/sizeof(pp_uint32); i++)
@@ -1713,8 +1677,6 @@ void SectionDiskMenu::updateButtonStates(bool repaint/* = true*/)
 		}
 	}
 
-	printf("ubs 5\n");
-
 	const char* stateText = listBoxFiles->currentSelectionIsFile() ? "Load" : "Step";
 	PPButton* button = static_cast<PPButton*>(static_cast<PPContainer*>(sectionContainer)->getControlByID(DISKMENU_CLASSIC_BUTTON_LOAD));
 	if (button->getText().compareTo(stateText) != 0)
@@ -1724,8 +1686,6 @@ void SectionDiskMenu::updateButtonStates(bool repaint/* = true*/)
 			tracker.screen->paintControl(button);
 	}
 
-	printf("ubs 6\n");
-
 	stateText = sortAscending ? "\xfd" : "\xfe";
 	button = static_cast<PPButton*>(static_cast<PPContainer*>(sectionContainer)->getControlByID(DISKMENU_CLASSIC_BUTTON_SORTORDER));
 	if (button->getText().compareTo(stateText) != 0)
@@ -1734,8 +1694,6 @@ void SectionDiskMenu::updateButtonStates(bool repaint/* = true*/)
 		if (repaint)
 			tracker.screen->paintControl(button);
 	}
-
-	printf("ubs 7\n");
 
 	static const char* sortTypes[PPListBoxFileBrowser::NumSortRules] = {"Name", "Size", "Extension"};
 	stateText = sortTypes[listBoxFiles->getSortType()];
@@ -1747,8 +1705,6 @@ void SectionDiskMenu::updateButtonStates(bool repaint/* = true*/)
 			tracker.screen->paintControl(button);
 	}
 
-	printf("ubs 7\n");
-
 	PPString stateText2 = (listBoxFiles->getSize().height == fileBrowserExtent.height) ? TrackerConfig::stringButtonExtended : TrackerConfig::stringButtonCollapsed;
 	button = static_cast<PPButton*>(static_cast<PPContainer*>(sectionContainer)->getControlByID(DISKMENU_CLASSIC_BUTTON_VEXTEND));
 	if (button->getText().compareTo(stateText2) != 0)
@@ -1758,8 +1714,6 @@ void SectionDiskMenu::updateButtonStates(bool repaint/* = true*/)
 			tracker.screen->paintControl(button);
 	}
 
-	printf("ubs 8\n");
-
 	stateText2 = (listBoxFiles->getSize().width == fileBrowserExtent.width) ? ">" : "<";
 	button = static_cast<PPButton*>(static_cast<PPContainer*>(sectionContainer)->getControlByID(DISKMENU_CLASSIC_BUTTON_HEXTEND));
 	if (button->getText().compareTo(stateText2) != 0)
@@ -1768,8 +1722,6 @@ void SectionDiskMenu::updateButtonStates(bool repaint/* = true*/)
 		if (repaint)
 			tracker.screen->paintControl(button);
 	}
-
-	printf("ubs 9\n");
 
 	// update directory buttons
 #if 0

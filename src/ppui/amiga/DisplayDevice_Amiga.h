@@ -85,6 +85,8 @@ public:
 
 	virtual	bool 	supportsScaling() const { return false; }
 
+	virtual PPSize	getDisplayResolution() const;
+
 	// --- ex. PPWindow -------------------------------------------------------
 public:
 	virtual bool 	init();

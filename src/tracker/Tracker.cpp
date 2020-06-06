@@ -2682,8 +2682,6 @@ bool Tracker::finishLoading()
 
 bool Tracker::loadTypeFromFile(FileTypes eType, const PPSystemString& fileName, bool suspendPlayer/* = true*/, bool repaint/* = true*/, bool saveCheck/* = true*/)
 {
-	printf("Load type from file: %s\n", fileName.getStrBuffer());
-
 	bool res = prepareLoading(eType, fileName, suspendPlayer, repaint, saveCheck);
 	if (!res)
 		return false;
@@ -2856,20 +2854,14 @@ bool Tracker::loadTypeWithDialog(FileTypes eLoadType, bool suspendPlayer/* = tru
 
 void Tracker::loadType(FileTypes eType)
 {
-	printf("loadType 1\n");
 	if (useClassicBrowser)
 	{
-	printf("loadType 2\n");
 		prepareLoadSaveUI();
-	printf("loadType 3\n");
 
 		sectionDiskMenu->selectSaveType(eType);
-	printf("loadType 4\n");
 		eventKeyDownBinding_InvokeSectionDiskMenu();
-	printf("loadType 5\n");
 
 		finishLoadSaveUI();
-	printf("loadType 6\n");
 	}
 	else
 	{

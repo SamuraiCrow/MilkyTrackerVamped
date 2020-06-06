@@ -39,9 +39,9 @@ void PPListBox::initialize()
 	// create background button
 	//pp_int32 w = size.width - (scrollable?SCROLLBARWIDTH-2:0)-2;
 	//pp_int32 h = horizontalScrollbar? size.height - (scrollable?SCROLLBARWIDTH-2:0)-2 : size.height-2;
-	
+
 	pp_int32 w = size.width - 2;
-	pp_int32 h = size.height - 2;	
+	pp_int32 h = size.height - 2;
 
 	backgroundButton = new PPButton(0, parentScreen, NULL, PPPoint(location.x+1, location.y+1), PPSize(w, h), border, false);
 	backgroundButton->setColor(*backGroundButtonColor);
@@ -49,23 +49,23 @@ void PPListBox::initialize()
 
 	vScrollbar = new PPScrollbar(0, parentScreen, this, PPPoint(location.x + size.width - SCROLLBARWIDTH, location.y), size.height, false);
 	hScrollbar = new PPScrollbar(0, parentScreen, this, PPPoint(location.x, location.y + size.height - SCROLLBARWIDTH), size.width - SCROLLBARWIDTH, true);
-	
+
 	if (vScrollbar)
 		vScrollbar->show(!autoHideVScroll);
 	if (hScrollbar)
 		hScrollbar->show(!autoHideHScroll);
 }
 
-PPListBox::PPListBox(pp_int32 id, PPScreen* parentScreen, EventListenerInterface* eventListener, 
-					 const PPPoint& location, const PPSize& size, 
-					 bool border/*= true*/, 
-					 bool editable/*= false*/, 
+PPListBox::PPListBox(pp_int32 id, PPScreen* parentScreen, EventListenerInterface* eventListener,
+					 const PPPoint& location, const PPSize& size,
+					 bool border/*= true*/,
+					 bool editable/*= false*/,
 					 bool scrollable/* = true*/,
 					 bool showSelectionAlways/*= false*/) :
 	PPControl(id, parentScreen, eventListener, location, size),
 	borderColor(&PPUIConfig::getInstance()->getColor(PPUIConfig::ColorListBoxBorder)),
 	backGroundButtonColor(&PPUIConfig::getInstance()->getColor(PPUIConfig::ColorListBoxBackground)),
-	// default textcolor 
+	// default textcolor
 	textColor(&PPUIConfig::getInstance()->getColor(PPUIConfig::ColorStaticText)),
 	autoHideVScroll(true),
 	autoHideHScroll(true),
@@ -98,7 +98,7 @@ PPListBox::PPListBox(pp_int32 id, PPScreen* parentScreen, EventListenerInterface
 	//this->clickable = clickable;
 
 	// create char vector with 16 initial entries
-	items = new PPSimpleVector<PPString>(16);		
+	items = new PPSimpleVector<PPString>(16);
 
 	// create background button
 	initialize();
@@ -109,26 +109,26 @@ PPListBox::PPListBox(pp_int32 id, PPScreen* parentScreen, EventListenerInterface
 
 	font = PPFont::getFont(PPFont::FONT_SYSTEM);
 
-	startIndex = 0;	
+	startIndex = 0;
 	startPos = 0;
 	timerTicker = 0;
 
 	selectionIndex = showSelectionAlways ? 0 : -1;
-	
+
 	columnSelectionStart = -1;
 
 	adjustScrollbars();
 
-	editCopy = NULL;	
+	editCopy = NULL;
 }
 
 PPListBox::~PPListBox()
 {
 	delete vScrollbar;
 	delete hScrollbar;
-		
+
 	delete backgroundButton;
-		
+
 	delete items;
 }
 
@@ -155,7 +155,7 @@ void PPListBox::paint(PPGraphicsAbstract* g)
 
 	if (showIndex)
 		xOffset += (maxDigits * font->getCharWidth() + 5);
-	
+
 	pp_int32 yOffset = 2;
 
 	backgroundButton->paint(g);
@@ -182,7 +182,7 @@ void PPListBox::paint(PPGraphicsAbstract* g)
 
 		if (pos >= location.y + size.height)
 			break;
-		
+
 		if (i == selectionIndex /*&& columnSelectionStart < 0*/ && selectionVisible)
 		{
 			PPRect currentRect = g->getRect();
@@ -191,13 +191,13 @@ void PPListBox::paint(PPGraphicsAbstract* g)
 
 			if (rect.y1 < currentRect.y1)
 				rect.y1 = currentRect.y1;
-			
+
 			if (rect.x1 < currentRect.x1)
 				rect.x1 = currentRect.x1;
 
 			if (rect.y2 > currentRect.y2)
 				rect.y2 = currentRect.y2;
-			
+
 			if (rect.x2 > currentRect.x2)
 				rect.x2 = currentRect.x2;
 
@@ -222,16 +222,16 @@ void PPListBox::paint(PPGraphicsAbstract* g)
 		if (showIndex)
 		{
 			char hexIndex[10];
-		
+
 			PPTools::convertToHex(hexIndex, i + indexBaseCount, maxDigits);
-			
+
 			g->drawString(hexIndex, location.x + 2, pos);
 		}
-		
+
 		PPRect currentRect = g->getRect();
-		
-		g->setRect(location.x + xOffset, 
-				   location.y + yOffset, 
+
+		g->setRect(location.x + xOffset,
+				   location.y + yOffset,
 				   location.x + size.width-2, location.y + size.height-2);
 
 		if (columnSelectionStart>=0 && selectionIndex == i)
@@ -250,7 +250,7 @@ void PPListBox::paint(PPGraphicsAbstract* g)
 				for (pp_int32 j = 0; j < 8; j++)
 					g->drawVLine(pos, pos + getItemHeight(), location.x + xOffset - ((startPos-columnSelectionStart)*font->getCharWidth()) + j);
 			}
-			
+
 			g->setColor(*textColor);
 		}
 
@@ -259,7 +259,7 @@ void PPListBox::paint(PPGraphicsAbstract* g)
 		g->drawString(*items->get(i), location.x + xOffset - (startPos*font->getCharWidth()), pos);
 
 		g->setRect(currentRect);
-		
+
 		pos+=getItemHeight();
 	}
 
@@ -288,35 +288,35 @@ PPListBox::SelectReturnCodes PPListBox::select(const PPPoint* p)
 		return SelectReturnCodePlaceCursor;
 
 	timerTicker = 0;
-	
+
 	PPPoint cp = *p;
 	cp.x-=location.x;
 	cp.y-=location.y;
-	
+
 	pp_int32 xOffset = 2;
 	pp_uint32 maxDigits = PPTools::getHexNumDigits(items->size() - 1 + indexBaseCount);
 	if (maxDigits == 0)
 		maxDigits++;
-	
+
 	if (showIndex)
 		xOffset += (maxDigits * font->getCharWidth() + 5);
-	
+
 	pp_int32 yOffset = 2;
-	
+
 	cp.x -= xOffset;
 	cp.y -= yOffset;
-	
+
 	if (cp.y > visibleHeight - getItemHeight())
 		cp.y = visibleHeight - getItemHeight();
-	
+
 	pp_int32 selectionIndex = (cp.y / getItemHeight()) + startIndex;
-	
+
 	if (selectionIndex < 0 || selectionIndex >= items->size())
 		selectionIndex = -1;
-	
+
 	if (showSelectionAlways && selectionIndex == -1)
 		return SelectReturnCodeBreak;
-	
+
 	// selected line is different from current line so commit changes first
 	// then select other line
 	if (selectionIndex != this->selectionIndex)
@@ -325,43 +325,43 @@ PPListBox::SelectReturnCodes PPListBox::select(const PPPoint* p)
 		//this->selectionIndex = selectionIndex;
 		if (selectionIndex < 0 || selectionIndex >= items->size())
 			selectionIndex = -1;
-		
+
 		if (selectionIndex != -1)
 		{
 			PPEvent e(ePreSelection, &selectionIndex, sizeof(selectionIndex));
 			eventListener->handleEvent(reinterpret_cast<PPObject*>(this), &e);
 		}
-		
+
 		this->selectionIndex = selectionIndex;
-		
+
 		if (selectionIndex != -1)
 		{
 			PPEvent e(eSelection, &selectionIndex, sizeof(selectionIndex));
 			eventListener->handleEvent(reinterpret_cast<PPObject*>(this), &e);
 		}
-		
-		columnSelectionStart = -1;	
-		
+
+		columnSelectionStart = -1;
+
 		if (centerSelection)
 			assureCursorVisible();
 	}
 	else if (columnSelectionStart > 0 && this->selectionIndex >= 0)
 	{
 		pp_int32 columnSelStart = cp.x / font->getCharWidth() + startPos;
-		
+
 		if (columnSelStart <= (signed)getItem(selectionIndex).length())
 			columnSelectionStart = columnSelStart;
 		else
 			columnSelectionStart = (signed)getItem(selectionIndex).length();
 	}
-	
+
 	parentScreen->paintControl(this);
-	
+
 	return SelectReturnCodeDefault;
 }
 
 pp_int32 PPListBox::dispatchEvent(PPEvent* event)
-{ 
+{
 	if (eventListener == NULL)
 		return -1;
 
@@ -384,7 +384,7 @@ pp_int32 PPListBox::dispatchEvent(PPEvent* event)
 			}
 			break;
 		}
-	
+
 		case eFocusGainedNoRepaint:
 		{
 			timerTicker = 0;
@@ -399,7 +399,7 @@ pp_int32 PPListBox::dispatchEvent(PPEvent* event)
 			parentScreen->paintControl(this);
 			break;
 		}
-	
+
 		case eFocusLost:
 		{
 			commitChanges();
@@ -417,7 +417,7 @@ pp_int32 PPListBox::dispatchEvent(PPEvent* event)
 		case eMouseWheelMoved:
 		{
 			TMouseWheelEventParams* params = (TMouseWheelEventParams*)event->getDataPtr();
-			
+
 			// Vertical scrolling takes priority over horizontal scrolling and is mutually
 			// exclusive from horizontal scrolling.
 			if (vScrollbar && params->deltaY)
@@ -426,7 +426,7 @@ pp_int32 PPListBox::dispatchEvent(PPEvent* event)
 				PPEvent e = PPEvent(ed, abs(params->deltaY));
 				handleEvent(reinterpret_cast<PPObject*>(vScrollbar), &e);
 			}
-			
+
 			else if (hScrollbar && params->deltaX)
 			{
 				EEventDescriptor ed = params->deltaX < 0 ? eBarScrollDown : eBarScrollUp;
@@ -435,10 +435,10 @@ pp_int32 PPListBox::dispatchEvent(PPEvent* event)
 			}
 
 			event->cancel();
-			
+
 			break;
 		}
-		
+
 		case eRMouseDown:
 		{
 			PPPoint* p = (PPPoint*)event->getDataPtr();
@@ -460,7 +460,7 @@ pp_int32 PPListBox::dispatchEvent(PPEvent* event)
 				if (controlCaughtByLMouseButton)
 					break;
 				caughtControl = vScrollbar;
-				caughtControl->dispatchEvent(event);				
+				caughtControl->dispatchEvent(event);
 				controlCaughtByRMouseButton = true;
 			}
 			else if (rightButtonConfirm)
@@ -499,7 +499,7 @@ dragorautoscroll:
 				PPPoint cp = *p;
 
 				// check if we hit the items area:
-				
+
 				// below area => scroll up
 				if (p->y < getVisibleRect().y1)
 				{
@@ -513,10 +513,10 @@ dragorautoscroll:
 				{
 					PPEvent e(eBarScrollDown);
 					handleEvent(reinterpret_cast<PPObject*>(vScrollbar), &e);
-					// and limit the hit point to the end of the area					
+					// and limit the hit point to the end of the area
 					cp.y = getVisibleRect().y2 - getItemHeight();
 				}
-				
+
 				// handle selection by click point
 				switch (select(&cp))
 				{
@@ -533,7 +533,7 @@ dragorautoscroll:
 
 			break;
 		}
-		
+
 		case eLMouseDown:
 		{
 			PPPoint* p = (PPPoint*)event->getDataPtr();
@@ -555,7 +555,7 @@ dragorautoscroll:
 				if (controlCaughtByRMouseButton)
 					break;
 				caughtControl = vScrollbar;
-				caughtControl->dispatchEvent(event);				
+				caughtControl->dispatchEvent(event);
 				controlCaughtByLMouseButton = true;
 			}
 			// Clicked on text -> select text
@@ -580,17 +580,17 @@ dragorautoscroll:
 			if (caughtControl && !controlCaughtByLMouseButton && !controlCaughtByRMouseButton)
 			{
 				caughtControl->dispatchEvent(event);
-				caughtControl = NULL;			
+				caughtControl = NULL;
 				break;
 			}
-			
+
 			if (rMouseDown)
 				rMouseDown = false;
 			else
 				break;
 		case eLMouseDoubleClick:
 		{
-placeCursor:			
+placeCursor:
 			timerTicker = 0;
 
 			PPPoint cp = *((PPPoint*)event->getDataPtr());
@@ -598,14 +598,14 @@ placeCursor:
 			cp.y-=location.y;
 
 			pp_int32 xOffset = 2;
-			
+
 			pp_uint32 maxDigits = PPTools::getHexNumDigits(items->size() - 1 + indexBaseCount);
 			if (maxDigits == 0)
 				maxDigits++;
-			
+
 			if (showIndex)
 				xOffset += (maxDigits * font->getCharWidth() + 5);
-			
+
 			pp_int32 yOffset = 2;
 
 			cp.x-=xOffset;
@@ -615,10 +615,10 @@ placeCursor:
 					  cp.y >= 0 &&
 					  cp.x <= visibleWidth &&
 					  cp.y <= visibleHeight);
-			
+
 			if (!editable && b)
 			{
-				pp_int32 selectionIndex = (cp.y / getItemHeight()) + startIndex;				
+				pp_int32 selectionIndex = (cp.y / getItemHeight()) + startIndex;
 				if (caughtControl == NULL && selectionIndex >= 0 && selectionIndex < items->size())
 				{
 					PPEvent e(eConfirmed, &selectionIndex, sizeof(selectionIndex));
@@ -626,11 +626,11 @@ placeCursor:
 				}
 				break;
 			}
-			
+
 			if (b)
 			{
 				pp_int32 selectionIndex = (cp.y / getItemHeight()) + startIndex;
-				
+
 				if (selectionIndex < 0 || selectionIndex >= items->size())
 				{
 					if (!showSelectionAlways)
@@ -641,13 +641,13 @@ placeCursor:
 					// selected line is different from current line so commit changes first
 					// then select other line
 					commitChanges();
-				
+
 					if (selectionIndex != -1)
 					{
 						PPEvent e(ePreSelection, &selectionIndex, sizeof(selectionIndex));
 						eventListener->handleEvent(reinterpret_cast<PPObject*>(this), &e);
 					}
-					
+
 					this->selectionIndex = selectionIndex;
 
 					if (selectionIndex != -1)
@@ -655,14 +655,14 @@ placeCursor:
 						PPEvent e(eSelection, &selectionIndex, sizeof(selectionIndex));
 						eventListener->handleEvent(reinterpret_cast<PPObject*>(this), &e);
 					}
-					
+
 					pp_int32 columnSelStart = cp.x / font->getCharWidth() + startPos;
-					
+
 					if (columnSelStart <= (signed)getItem(selectionIndex).length())
 						columnSelectionStart = columnSelStart;
 					else
 						columnSelectionStart = (signed)getItem(selectionIndex).length();
-				
+
 					if (editCopy)
 						delete editCopy;
 
@@ -671,15 +671,15 @@ placeCursor:
 				else if (this->selectionIndex == selectionIndex && columnSelectionStart >= 0)
 				{
 					pp_int32 columnSelStart = cp.x / font->getCharWidth() + startPos;
-					
+
 					if (columnSelStart <= (signed)getItem(selectionIndex).length())
 						columnSelectionStart = columnSelStart;
 					else
-						columnSelectionStart = (signed)getItem(selectionIndex).length();				
+						columnSelectionStart = (signed)getItem(selectionIndex).length();
 				}
-				
+
 				parentScreen->paintControl(this);
-			
+
 			}
 
 			break;
@@ -687,7 +687,7 @@ placeCursor:
 
 		case eLMouseUp:
 			controlCaughtByLMouseButton = false;
-			
+
 			lMouseDown = false;
 
 			if (caughtControl == NULL)
@@ -696,7 +696,7 @@ placeCursor:
 			if (!controlCaughtByLMouseButton && !controlCaughtByRMouseButton)
 			{
 				caughtControl->dispatchEvent(event);
-				caughtControl = NULL;			
+				caughtControl = NULL;
 				break;
 			}
 
@@ -709,13 +709,13 @@ placeCursor:
 
 			if (!isEditing())
 				break;
-		
+
 			if (selectionIndex < 0 ||
 				selectionIndex >= items->size()/* ||
 				columnSelectionStart < 0*/)
 				break;
-			
-			char keyCode = *((char *)event->getDataPtr());			
+
+			char keyCode = *((char *)event->getDataPtr());
 
 			if (selectionIndex >= 0 &&
 				columnSelectionStart > (signed)getItem(selectionIndex).length())
@@ -726,11 +726,11 @@ placeCursor:
 			switch (keyCode)
 			{
 				default:
-					if ((maxEditSize > -1) && 
+					if ((maxEditSize > -1) &&
 						((signed)items->get(selectionIndex)->length() >= maxEditSize))
 						break;
 
-					if (columnSelectionStart < 0 || 
+					if (columnSelectionStart < 0 ||
 						selectionIndex < 0)
 						break;
 
@@ -748,22 +748,22 @@ placeCursor:
 			adjustScrollbars();
 			adjustScrollbarPositions();
 
-			parentScreen->paintControl(this);			
+			parentScreen->paintControl(this);
 
 			break;
 		}
 
 
 		case eKeyDown:
-		{	
+		{
 			if (caughtControl)
 				break;
-		
+
 			if (selectionIndex < 0 ||
 				selectionIndex >= items->size()/* ||
 				columnSelectionStart < 0*/)
 				break;
-			
+
 			pp_uint16 keyCode = *((pp_uint16*)event->getDataPtr());
 
 			if (selectionIndex >= 0 &&
@@ -831,7 +831,7 @@ placeCursor:
 					if (columnSelectionStart)
 						columnSelectionStart--;
 					break;
-				
+
 				case VK_RIGHT:
 					assureCursorVisible();
 					// Not editing, try to scroll right
@@ -846,7 +846,7 @@ placeCursor:
 					if (columnSelectionStart < (signed)getItem(selectionIndex).length())
 						columnSelectionStart++;
 					break;
-				
+
 				case VK_UP:
 					assureCursorVisible();
 					if (columnSelectionStart >= 0)
@@ -862,7 +862,7 @@ placeCursor:
 						eventListener->handleEvent(reinterpret_cast<PPObject*>(this), &e);
 					}
 					break;
-				
+
 				case VK_DOWN:
 					assureCursorVisible();
 					if (columnSelectionStart >= 0)
@@ -885,11 +885,11 @@ placeCursor:
 					pp_int32 lastSelectionIndex = selectionIndex;
 					pp_int32 newSelectionIndex = selectionIndex;
 					pp_int32 visibleItems = getNumVisibleItems();
-					
+
 					if (newSelectionIndex + visibleItems >= items->size() - 1)
 					{
 						newSelectionIndex = items->size() - 1;
-						startIndex = newSelectionIndex - visibleItems;	
+						startIndex = newSelectionIndex - visibleItems;
 					}
 					else
 					{
@@ -928,11 +928,11 @@ placeCursor:
 					pp_int32 lastSelectionIndex = selectionIndex;
 					pp_int32 newSelectionIndex = selectionIndex;
 					pp_int32 visibleItems = getNumVisibleItems();
-					
+
 					newSelectionIndex-=visibleItems;
 					if (newSelectionIndex < 0)
 						newSelectionIndex = 0;
-					
+
 					if (newSelectionIndex != lastSelectionIndex)
 					{
 						PPEvent ePre(ePreSelection, &newSelectionIndex, sizeof(newSelectionIndex));
@@ -943,7 +943,7 @@ placeCursor:
 					}
 					break;
 				}
-				
+
 				default:
 					goto skiprefresh;
 			}
@@ -957,7 +957,7 @@ placeCursor:
 			adjustScrollbars();
 			adjustScrollbarPositions();
 
-			parentScreen->paintControl(this);			
+			parentScreen->paintControl(this);
 skiprefresh:
 			break;
 		}
@@ -980,7 +980,7 @@ pp_int32 PPListBox::handleEvent(PPObject* sender, PPEvent* event)
 	pp_int32 lastSelectionIndex = selectionIndex;
 
 	// Vertical scrollbar, scroll down
-	if (sender == reinterpret_cast<PPObject*>(vScrollbar) && 
+	if (sender == reinterpret_cast<PPObject*>(vScrollbar) &&
 		vScrollbar &&
 		vScrollbar->isVisible() &&
 		event->getID() == eBarScrollDown)
@@ -1016,7 +1016,7 @@ pp_int32 PPListBox::handleEvent(PPObject* sender, PPEvent* event)
 		}
 	}
 	// Vertical scrollbar, scroll up
-	else if (sender == reinterpret_cast<PPObject*>(vScrollbar) && 
+	else if (sender == reinterpret_cast<PPObject*>(vScrollbar) &&
 			 vScrollbar &&
 			 vScrollbar->isVisible() &&
 			 event->getID() == eBarScrollUp)
@@ -1043,16 +1043,16 @@ pp_int32 PPListBox::handleEvent(PPObject* sender, PPEvent* event)
 			startIndex -= event->getMetaData();
 			if(startIndex < 0)
 				startIndex = 0;
-			
+
 			pp_int32 visibleItems = getNumVisibleItems();
-			
+
 			float v = (float)(items->size() - visibleItems);
-			
+
 			vScrollbar->setBarPosition((pp_int32)(startIndex*(65536.0f/v)));
 		}
 	}
 	// Vertical scrollbar, position changed
-	else if (sender == reinterpret_cast<PPObject*>(vScrollbar) && 
+	else if (sender == reinterpret_cast<PPObject*>(vScrollbar) &&
 			 vScrollbar &&
 			 vScrollbar->isVisible() &&
 			 event->getID() == eBarPosChanged)
@@ -1061,13 +1061,13 @@ pp_int32 PPListBox::handleEvent(PPObject* sender, PPEvent* event)
 		float pos = vScrollbar->getBarPosition()/65536.0f;
 
 		pp_int32 visibleItems = getNumVisibleItems();
-		
+
 		float v = (float)(items->size() - visibleItems);
 
 		startIndex = (pp_uint32)(v*pos);
 	}
 	// Horizontal scrollbar, scroll up (=left)
-	else if (sender == reinterpret_cast<PPObject*>(hScrollbar) && 
+	else if (sender == reinterpret_cast<PPObject*>(hScrollbar) &&
 			 hScrollbar &&
 			 hScrollbar->isVisible() &&
 			 event->getID() == eBarScrollUp)
@@ -1082,7 +1082,7 @@ pp_int32 PPListBox::handleEvent(PPObject* sender, PPEvent* event)
 		hScrollbar->setBarPosition((pp_int32)(startPos*(65536.0f/v)));
 	}
 	// Horizontal scrollbar, scroll down (=right)
-	else if (sender == reinterpret_cast<PPObject*>(hScrollbar) && 
+	else if (sender == reinterpret_cast<PPObject*>(hScrollbar) &&
 			 hScrollbar &&
 			 hScrollbar->isVisible() &&
 			 event->getID() == eBarScrollDown)
@@ -1097,7 +1097,7 @@ pp_int32 PPListBox::handleEvent(PPObject* sender, PPEvent* event)
 		hScrollbar->setBarPosition((pp_int32)(startPos*(65536.0f/v)));
 	}
 	// Horizontal scrollbar, position changed
-	else if (sender == reinterpret_cast<PPObject*>(hScrollbar) && 
+	else if (sender == reinterpret_cast<PPObject*>(hScrollbar) &&
 			 hScrollbar &&
 			 hScrollbar->isVisible() &&
 			 event->getID() == eBarPosChanged)
@@ -1106,33 +1106,33 @@ pp_int32 PPListBox::handleEvent(PPObject* sender, PPEvent* event)
 		float pos = hScrollbar->getBarPosition()/65536.0f;
 
 		pp_int32 visibleItems = (visibleWidth) / font->getCharWidth();
-		
+
 		float v = (float)(getMaxWidth() - visibleItems);
 
 		startPos = (pp_uint32)(v*pos);
 	}
 
 	parentScreen->paintControl(this);
-	
+
 	return 0;
 }
 
 void PPListBox::setSize(const PPSize& size)
 {
 	PPControl::setSize(size);
-	
+
 	delete backgroundButton;
-	
+
 	if (vScrollbar)
 		delete vScrollbar;
 
 	if (hScrollbar)
 		delete hScrollbar;
-	
+
 	initialize();
 
 	adjustScrollbars();
-	
+
 	assureCursorVisible();
 }
 
@@ -1147,17 +1147,17 @@ void PPListBox::setLocation(const PPPoint& p)
 
 	if (hScrollbar)
 		delete hScrollbar;
-	
+
 	initialize();
 
 	adjustScrollbars();
-	
+
 	assureCursorVisible();
 }
 
 void PPListBox::addItem(const PPString& item)
 {
-	items->add(new PPString(item)); 
+	items->add(new PPString(item));
 
 	adjustScrollbars();
 }
@@ -1176,7 +1176,7 @@ void PPListBox::clear()
 {
 	items->clear();
 
-	startIndex = 0;	
+	startIndex = 0;
 	startPos = 0;
 
 	selectionIndex = showSelectionAlways ? 0 : -1;
@@ -1186,7 +1186,7 @@ void PPListBox::clear()
 
 	if (vScrollbar)
 		vScrollbar->setBarPosition(0);
-	
+
 	if (hScrollbar)
 		hScrollbar->setBarPosition(0);
 }
@@ -1216,7 +1216,7 @@ void PPListBox::setSelectedIndexByItem(const PPString& item, bool adjustStartInd
 
 void PPListBox::placeCursorAtEnd()
 {
-	if (selectionIndex >= 0 && selectionIndex < items->size())		
+	if (selectionIndex >= 0 && selectionIndex < items->size())
 		columnSelectionStart = getItem(selectionIndex).length();
 	else if (items->size())
 	{
@@ -1225,7 +1225,7 @@ void PPListBox::placeCursorAtEnd()
 
 		if (editCopy)
 			delete editCopy;
-		
+
 		editCopy = new PPString(getItem(selectionIndex));
 	}
 }
@@ -1239,14 +1239,14 @@ void PPListBox::placeCursorAtStart()
 
 		if (editCopy)
 			delete editCopy;
-		
+
 		editCopy = new PPString(getItem(selectionIndex));
 	}
 }
 
 void PPListBox::setShowIndex(bool showIndex)
-{ 
-	this->showIndex = showIndex; 
+{
+	this->showIndex = showIndex;
 
 	calcVisible();
 }
@@ -1259,12 +1259,12 @@ void PPListBox::calcVisible()
 		visibleHeight = size.height - (scrollable?SCROLLBARWIDTH:0);
 	else
 		visibleHeight = size.height;
-	
-	if (vScrollbar->isVisible())	
+
+	if (vScrollbar->isVisible())
 		visibleWidth = size.width - (scrollable?SCROLLBARWIDTH:0);
 	else
 		visibleWidth = size.width;
-	
+
 	if (border)
 	{
 		if (!hScrollbar->isVisible())
@@ -1272,11 +1272,11 @@ void PPListBox::calcVisible()
 		if (!vScrollbar->isVisible())
 			visibleWidth--;
 	}
-	
+
 	if (showIndex)
 	{
 		pp_uint32 maxDigits = PPTools::getHexNumDigits(items->size() - 1 + indexBaseCount);
-		
+
 		if (maxDigits == 0)
 			maxDigits++;
 		visibleWidth -= (maxDigits * font->getCharWidth() + 5);
@@ -1289,18 +1289,18 @@ void PPListBox::adjustScrollbarPositions()
 	if (vScrollbar)
 	{
 		pp_int32 visibleItems = getNumVisibleItems();
-	
+
 		float v = (float)(items->size() - visibleItems);
-	
+
 		vScrollbar->setBarPosition((pp_int32)(startIndex*(65536.0f/v)));
 	}
-	
+
 	if (hScrollbar)
 	{
 		pp_int32 visibleItems = (visibleWidth) / font->getCharWidth();
-		
+
 		float v = (float)(getMaxWidth() - visibleItems);
-		
+
 		hScrollbar->setBarPosition((pp_int32)(startPos*(65536.0f/v)));
 	}
 }
@@ -1312,18 +1312,18 @@ void PPListBox::adjustScrollbars()
 		calcVisible();
 		return;
 	}
-		
+
 	vScrollbar->show(!autoHideVScroll);
 	hScrollbar->show(!autoHideHScroll);
 	calcVisible();
-	
+
 	if (items->size() == 0/* || getMaxWidth()*font->getCharWidth() == 0*/)
 	{
 		return;
 	}
-	
+
 	const pp_int32 maxWidth = font->getCharWidth() * getMaxWidth();
-	
+
 	// number of items fit into the current visible area (y direction)
 	if (items->size() <= getNumVisibleItems())
 	{
@@ -1367,9 +1367,9 @@ void PPListBox::adjustScrollbars()
 		pp_int32 width = size.width - (vScrollbar->isVisible() ? SCROLLBARWIDTH : 0);
 		hScrollbar->setSize(width);
 	}
-	
+
 	float s = 1.0f;
-	
+
 	if (vScrollbar)
 	{
 		s = (float)(visibleHeight) / (float)(items->size()*(getItemHeight()));
@@ -1377,7 +1377,7 @@ void PPListBox::adjustScrollbars()
 		vScrollbar->setBarSize((pp_int32)(s*65536.0f), false);
 	}
 
-	
+
 	if (hScrollbar)
 	{
 		s = (float)(visibleWidth) / (float)(getMaxWidth()*(font->getCharWidth()));
@@ -1392,11 +1392,11 @@ void PPListBox::assureCursorVisible()
 	{
 		pp_int32 visiblePixels = (visibleHeight - getItemHeight()) - 1;
 		pp_int32 visibleItems = visiblePixels / getItemHeight();
-				
+
 		if (!centerSelection)
-		{	
-		
-			if ((startIndex <= selectionIndex) && 
+		{
+
+			if ((startIndex <= selectionIndex) &&
 				((selectionIndex - startIndex) * getItemHeight()) < visiblePixels)
 			{
 			}
@@ -1422,35 +1422,35 @@ void PPListBox::assureCursorVisible()
 		else
 		{
 			pp_int32 mid = (visibleHeight/2) / getItemHeight();
-			startIndex = selectionIndex - mid;	
+			startIndex = selectionIndex - mid;
 			if (startIndex < 0)
 				startIndex = 0;
 		}
-	
+
 	}
-	
+
 	if (columnSelectionStart >= 0)
 	{
-		
-		
+
+
 		pp_int32 visibleChars = (visibleWidth - font->getCharWidth()) / font->getCharWidth();
-		
-		if ((startPos < columnSelectionStart) && 
+
+		if ((startPos < columnSelectionStart) &&
 			((columnSelectionStart - startPos) * font->getCharWidth()) < (visibleWidth - font->getCharWidth()))
 		{
 		}
 		else if (columnSelectionStart + (signed)visibleChars < (signed)getMaxWidth())
-			startPos = columnSelectionStart;				
+			startPos = columnSelectionStart;
 		else
 		{
 			startPos = columnSelectionStart - visibleChars;
-			if (startPos < 0) 
+			if (startPos < 0)
 				startPos = 0;
 		}
-								
-		
+
+
 	}
-	
+
 	adjustScrollbarPositions();
 }
 
@@ -1465,16 +1465,16 @@ void PPListBox::commitChanges()
 	if (isEditing())
 	{
 		PPString* str = items->get(selectionIndex);
-	
+
 		if (editCopy && str->compareTo(*editCopy) != 0)
 		{
-			PPEvent e(eValueChanged, &str, sizeof(PPString*));				
+			PPEvent e(eValueChanged, &str, sizeof(PPString*));
 			eventListener->handleEvent(reinterpret_cast<PPObject*>(this), &e);
 		}
-		
+
 		if (!showSelectionAlways)
 			selectionIndex = -1;
-		
+
 		columnSelectionStart = -1;
 		if (editCopy)
 		{
@@ -1511,44 +1511,44 @@ void PPListBox::restoreState(bool assureCursor/* = true*/)
 {
 	if (lastStartIndex < items->size())
 		startIndex = lastStartIndex;
-	
+
 	if (startPos < (signed)getMaxWidth())
 		startPos = lastStartPos;
-	
+
 	if (lastSelectionIndex < items->size())
 		selectionIndex = lastSelectionIndex;
 	else
 		selectionIndex = items->size()-1;
-	
+
 	if (selectionIndex < 0 && showSelectionAlways && items->size())
 		selectionIndex = 0;
-	
+
 	// adjust scrollbar positions
 	if (vScrollbar)
 	{
 		pp_int32 visibleItems = getNumVisibleItems();
-		
+
 		float v = (float)(items->size() - visibleItems);
-		
+
 		vScrollbar->setBarPosition((pp_int32)(startIndex*(65536.0f/v)));
-		
+
 		// if scrollbar isn't visible, reset vertical position to start
 		if (!vScrollbar->isVisible())
 			startIndex = 0;
 	}
 	else if (hadVScrollbar)
-	{		
+	{
 		// if scrollbar isn't visible, reset vertical position to start
 		startIndex = 0;
 	}
-	
-	
+
+
 	if (hScrollbar)
 	{
 		pp_int32 visibleItems = (visibleWidth) / font->getCharWidth();
-		
+
 		float v = (float)(getMaxWidth() - visibleItems);
-		
+
 		hScrollbar->setBarPosition((pp_int32)(startPos*(65536.0f/v)));
 
 		// if scrollbar isn't visible, reset horizontal position to start
@@ -1556,11 +1556,11 @@ void PPListBox::restoreState(bool assureCursor/* = true*/)
 			startPos = 0;
 	}
 	else if (hadHScrollbar)
-	{		
+	{
 		// if scrollbar isn't visible, reset horizontal position to start
 		startPos = 0;
 	}
-	
+
 	if (assureCursor)
 		assureCursorVisible();
 }

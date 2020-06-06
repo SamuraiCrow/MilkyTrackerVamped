@@ -223,12 +223,21 @@ AudioDriverManager::AudioDriverManager() :
 #include <exec/exec.h>
 #include <proto/exec.h>
 
+extern bool hasAMMX;
+
 AudioDriverManager::AudioDriverManager() :
 	defaultDriverIndex(0)
 {
-	ALLOC_DRIVERLIST(1);
-	driverList[0] = new AudioDriver_Pamela();
-	//driverList[1] = new AudioDriver_Pamela();
+	if(hasAMMX) {
+		ALLOC_DRIVERLIST(2);
+
+		driverList[0] = new AudioDriver_Pamela();
+		driverList[1] = new AudioDriver_Paula();
+	} else {
+		ALLOC_DRIVERLIST(1);
+
+		driverList[0] = new AudioDriver_Paula();
+	}
 }
 
 #endif

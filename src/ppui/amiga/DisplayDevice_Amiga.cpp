@@ -15,6 +15,8 @@ DisplayDevice_Amiga::DisplayDevice_Amiga(AmigaApplication * app)
 {
     width = app->getWindowSize().width;
     height = app->getWindowSize().height;
+    size.width = width;
+    size.height = height;
     screen = app->getScreen();
     window = app->getWindow();
     rastPort = window->RPort;
@@ -297,4 +299,10 @@ DisplayDevice_Amiga::setMouseCursor(MouseCursorTypes type)
     case MouseCursorTypeWait:
         break;
 	}
+}
+
+PPSize
+DisplayDevice_Amiga::getDisplayResolution() const
+{
+    return PPSize(width, height);
 }

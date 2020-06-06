@@ -469,36 +469,6 @@ void PPContainer::setFocus(PPControl* control, bool repaint/* = true*/)
 		PPEvent e(repaint ? eFocusGained : eFocusGainedNoRepaint);
 		this->focusedControl->dispatchEvent(&e);
 	}
-
-
-#if 0
-	if (verbose)
-	{
-		/*if (focusedControl != control && focusedControl)
-		{
-			PPEvent e(eFocusLost);
-			focusedControl->dispatchEvent(&e);
-		}*/
-
-		PPEvent eLost(eFocusLost);
-		for (pp_int32 i = 0; i < controls.size(); i++)
-		{
-			PPControl* ctrl = controls.get(i);
-			if (ctrl != control)
-				ctrl->dispatchEvent(&eLost);
-		}
-
-		if (reGain && control)
-		{
-			PPEvent eGained(eFocusGained);
-			control->dispatchEvent(&eGained);
-
-			lastFocusedControl = control;
-		}
-
-	}
-	focusedControl = control;
-#endif
 }
 
 bool PPContainer::hasFocus(PPControl* control) const
