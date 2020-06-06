@@ -41,14 +41,14 @@ private:
 		{
 			values[i] = this->values[i];
 		}
-		delete[] this->values;		
+		delete[] this->values;
 		this->values = values;
 	}
 
 	// no copy construction please
 	PPSimpleVector(const PPSimpleVector&);
 	PPSimpleVector& operator=(const PPSimpleVector&);
-	
+
 public:
 	PPSimpleVector(pp_int32 initialSize = 0, bool destroy = true)
 	{
@@ -68,7 +68,7 @@ public:
 	}
 
 	~PPSimpleVector()
-	{	
+	{
 		if (values)
 		{
 			if (destroy)
@@ -81,11 +81,11 @@ public:
 
 	PPSimpleVector* clone()
 	{
-		PPSimpleVector* clonedVector = new PPSimpleVector(numValuesAllocated, true);		
+		PPSimpleVector* clonedVector = new PPSimpleVector(numValuesAllocated, true);
 		for (pp_int32 i = 0; i < numValues; i++)
 		{
 			clonedVector->values[i] = new Type(*values[i]);
-		}		
+		}
 		clonedVector->numValues = numValues;
 		return clonedVector;
 	}
@@ -106,23 +106,23 @@ public:
 	{
 		if (!numValues)
 			return NULL;
-			
+
 		if (index < 0 || index >= numValues)
 			return NULL;
-			
+
 		Type* result = values[index];
 
 		for (pp_int32 i = index; i < numValues-1; i++)
 			values[i] = values[i+1];
-			
+
 		numValues--;
-		
+
 		if (numValuesAllocated - numValues > 16)
 		{
 			numValuesAllocated-=16;
 			reallocate();
 		}
-		
+
 		return result;
 	}
 
@@ -130,31 +130,31 @@ public:
 	{
 		if (!numValues)
 			return false;
-			
+
 		if (index < 0 || index >= numValues)
 			return false;
-			
+
 		if (destroy)
 			delete values[index];
 
 		for (pp_int32 i = index; i < numValues-1; i++)
 			values[i] = values[i+1];
-			
+
 		numValues--;
-		
+
 		if (numValuesAllocated - numValues > 16)
 		{
 			numValuesAllocated-=16;
 			reallocate();
 		}
-		
+
 		return true;
 	}
 
 	void add(Type* value)
 	{
 		if (numValues >= numValuesAllocated)
-		{			
+		{
 			numValuesAllocated += 16;
 			reallocate();
 		}
@@ -175,7 +175,7 @@ public:
 
 	Type* get(pp_int32 index) const
 	{
-		if (index < numValues)
+		if (index >= 0 && index < numValues)
 		{
 			return values[index];
 		}
@@ -192,21 +192,21 @@ public:
 	{
 		virtual pp_int32 compare(const Type& left, const Type& right) const = 0;
 	};
-	
+
 private:
 	static pp_int32 partition(Type** a, pp_int32 left, pp_int32 right, const SortRule& sortRule, bool descending = false)
 	{
 		const pp_int32 sign = descending ? -1 : 1;
-	
+
 		pp_int32 first=left, pivot=right--;
 		while(left<=right)
 		{
 			while(sortRule.compare(*a[left], *a[pivot])*sign < 0/*a[left]<a[pivot]*/)
 				left++;
-			
+
 			while((right>=first)&&(sortRule.compare(*a[right], *a[pivot])*sign >= 0/*a[right]>=a[pivot]*/))
 				right--;
-			
+
 			if(left<right)
 			{
 				swap(a, left,right);
@@ -215,26 +215,26 @@ private:
 		}
 		if(left!=pivot)
 		swap(a, left,pivot);
-			
+
 		return left;
 	}
-			
+
 	static void swap(Type** a, pp_int32 i, pp_int32 j)
 	{
 		Type* temp=a[i];
 		a[i]=a[j];
 		a[j]=temp;
 	}
-			
+
 	static void sortInternal(Type** array, pp_int32 left, pp_int32 right, const SortRule& sortRule, bool descending = false)
 	{
 		pp_int32 p;
-		
+
 		if(left>=right)
 			return;
-		
+
 		p = partition(array, left, right, sortRule, descending);
-		
+
 		sortInternal(array, left,p-1, sortRule, descending);
 		sortInternal(array, p+1, right, sortRule, descending);
 	}
@@ -244,13 +244,13 @@ public:
 	{
 		if (r == -1)
 			r = size()-1;
-	
+
 		// no need to sort
 		if (l == 0 && r <= 1)
 			return;
-		
+
 		sortInternal(values, l, r, sortRule, descending);
-	}	
+	}
 };
 
 #endif

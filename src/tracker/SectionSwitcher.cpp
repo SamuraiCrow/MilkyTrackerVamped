@@ -68,7 +68,7 @@ void SectionSwitcher::showBottomSection(ActiveBottomSections section, bool paint
 		bottomSection = section;
 	else
 		bottomSection = ActiveBottomSectionNone;
-	
+
 	switch (bottomSection)
 	{
 		case ActiveBottomSectionInstrumentEditor:
@@ -80,19 +80,21 @@ void SectionSwitcher::showBottomSection(ActiveBottomSections section, bool paint
 		case ActiveBottomSectionNone:
 			tracker.rearrangePatternEditorControl();
 			break;
-	}	
-	
+	}
+
 	if (paint)
 		tracker.screen->paint();
 }
 
 void SectionSwitcher::showUpperSection(SectionAbstract* section, bool hideSIP/* = true*/)
 {
+	printf("suo 1\n");
 	tracker.screen->pauseUpdate(true);
 	if (currentUpperSection)
 	{
 		currentUpperSection->show(false);
 	}
+	printf("suo 2\n");
 	if (section)
 	{
 		if (hideSIP)
@@ -100,8 +102,11 @@ void SectionSwitcher::showUpperSection(SectionAbstract* section, bool hideSIP/* 
 
 		section->show(true);
 	}
+	printf("suo 3\n");
 	tracker.screen->pauseUpdate(false);
+	printf("suo 4\n");
 	tracker.screen->update();
+	printf("suo 5\n");
 	currentUpperSection = section;
 }
 
@@ -111,22 +116,22 @@ void SectionSwitcher::showSubMenu(ActiveLowerSectionPages section, bool repaint/
 	// Hide everything first
 	tracker.showSongSettings(false);
 	tracker.showMainOptions(false);
-	tracker.screen->getControlByID(CONTAINER_INSTRUMENTLIST)->show(false);	
+	tracker.screen->getControlByID(CONTAINER_INSTRUMENTLIST)->show(false);
 	tracker.screen->getControlByID(CONTAINER_LOWRES_TINYMENU)->show(false);
 	tracker.screen->getControlByID(CONTAINER_LOWRES_JAMMENU)->show(false);
-	
+
 	tracker.scopesControl->show(false);
 	tracker.screen->getControlByID(CONTAINER_SCOPECONTROL)->show(false);
-	
+
 	// Last active page was the "Jam"-section so the pattern editor has probably been resized
 	// Check if it was resized and if so, restore original size
-	if (lastLowerSectionPage == ActiveLowerSectionPageJam && 
+	if (lastLowerSectionPage == ActiveLowerSectionPageJam &&
 		section != ActiveLowerSectionPageJam &&
 		patternEditorSize != tracker.getPatternEditorControl()->getSize())
 	{
 		tracker.getPatternEditorControl()->setSize(patternEditorSize);
-	}	
-	
+	}
+
 	switch (section)
 	{
 		case ActiveLowerSectionPageMain:
@@ -138,7 +143,7 @@ void SectionSwitcher::showSubMenu(ActiveLowerSectionPages section, bool repaint/
 			tracker.hideInputControl(false);
 			break;
 		case ActiveLowerSectionPageInstruments:
-			tracker.screen->getControlByID(CONTAINER_INSTRUMENTLIST)->show(true);	
+			tracker.screen->getControlByID(CONTAINER_INSTRUMENTLIST)->show(true);
 			tracker.screen->getControlByID(CONTAINER_LOWRES_TINYMENU)->show(true);
 			tracker.hideInputControl(false);
 			break;
@@ -161,7 +166,7 @@ void SectionSwitcher::showSubMenu(ActiveLowerSectionPages section, bool repaint/
 			break;
 		}
 	}
-	
+
 	if (repaint)
 		tracker.screen->paint();
 }
@@ -172,19 +177,19 @@ void SectionSwitcher::switchToSubMenu(ActiveLowerSectionPages lsPageNew)
 	// same page, nothing to do
 	if (lsPageNew == lowerSectionPage)
 		return;
-	
+
 	// remember what was currently active
 	lastLowerSectionPage = lowerSectionPage;
 	// apply new page
 	lowerSectionPage = lsPageNew;
-				
+
 	updateSubMenusButtons(false);
 	// make it visible
 	showSubMenu(lowerSectionPage);
 }
 
-void SectionSwitcher::hideBottomSection() 
-{ 
+void SectionSwitcher::hideBottomSection()
+{
 	if (bottomSection != ActiveBottomSectionNone)
 		showBottomSection(ActiveBottomSectionNone, false);
 }
@@ -195,7 +200,7 @@ void SectionSwitcher::updateSubMenusButtons(bool repaint/* = true*/)
 
 	for (pp_int32 i = 0; i < tracker.NUMSUBMENUS(); i++)
 		static_cast<PPButton*>(container->getControlByID(BUTTON_0+i))->setPressed(false);
-	
+
 	static_cast<PPButton*>(container->getControlByID(BUTTON_0+lowerSectionPage))->setPressed(true);
 
 	if (repaint)

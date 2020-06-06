@@ -38,6 +38,10 @@
 #include "SystemMessage.h"
 #include "version.h"
 
+#if defined(__AMIGA__)
+#	define __EXCLUDE_BIGLOGO__
+#endif
+
 // Logo picture
 #if defined(__EXCLUDE_BIGLOGO__) || defined(__LOWRES__)
 	#include "LogoSmall.h"

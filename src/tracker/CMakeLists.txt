@@ -44,7 +44,6 @@ add_executable(tracker
     FileIdentificator.cpp
     GlobalColorConfig.cpp
     InputControlListener.cpp
-    LogoBig.cpp
     LogoSmall.cpp
     ModuleEditor.cpp
     ModuleServices.cpp
@@ -391,6 +390,13 @@ if(APPLE OR WIN32 OR AROS OR AMIGA)
     set(INSTALL_DEST .)
 else()
     set(INSTALL_DEST ${CMAKE_INSTALL_BINDIR})
+endif()
+
+# Big logo only for big platforms
+if(NOT AROS AND NOT AMIGA)
+    target_sources(tracker PRIVATE
+        LogoBig.cpp
+    )
 endif()
 
 install(TARGETS tracker DESTINATION ${INSTALL_DEST})

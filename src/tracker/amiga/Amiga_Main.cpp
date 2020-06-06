@@ -145,7 +145,6 @@ static int boot(int argc, char * argv[])
 	app->setCpuType(cpuType);
 	app->setHasFPU(hasFPU);
 	app->setHasAMMX(hasAMMX);
-	app->setFullScreen(true);
 
 	// Parse command line (@todo use ToolTypes)
 	while (argc > 1) {
@@ -166,6 +165,9 @@ static int boot(int argc, char * argv[])
 			}
 		}
 	}
+
+	app->setNoSplash(true);
+	app->setFullScreen(true);
 
 	// And start
 	if(ret = app->start()) {
