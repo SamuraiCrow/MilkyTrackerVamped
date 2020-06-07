@@ -138,10 +138,13 @@ elseif(WIN32)
             win32
     )
 elseif(AROS OR AMIGA)
+    enable_language(ASM_VASM)
+
     target_sources(ppui
         PRIVATE
             # Sources
             amiga/DisplayDevice_Amiga.cpp
+            amiga/DisplayDevice_Amiga.s
 
             # Headers
             amiga/DisplayDevice_Amiga.h

@@ -1,4 +1,4 @@
-#include "AudioDriver_Pamela.h"
+#include "AudioDriver_Arne.h"
 #include "MasterMixer.h"
 
 #define CUSTOM_DMACON2          (CUSTOM_DMACON  + 0x200)
@@ -25,33 +25,33 @@
 #define SAMPLE_SIZE             MP_NUMBYTES
 
 
-AudioDriver_Pamela::AudioDriver_Pamela()
+AudioDriver_Arne::AudioDriver_Arne()
 {
 }
 
-AudioDriver_Pamela::~AudioDriver_Pamela()
+AudioDriver_Arne::~AudioDriver_Arne()
 {
 }
 
 mp_uint32
-AudioDriver_Pamela::getChannels() const
+AudioDriver_Arne::getChannels() const
 {
     return MAX_CHANNELS;
 }
 
 mp_uint32
-AudioDriver_Pamela::getSampleSize() const
+AudioDriver_Arne::getSampleSize() const
 {
     return SAMPLE_SIZE;
 }
 
 mp_sint32
-AudioDriver_Pamela::initDevice(mp_sint32 bufferSizeInWords, mp_uint32 mixFrequency, MasterMixer* mixer)
+AudioDriver_Arne::initDevice(mp_sint32 bufferSizeInWords, mp_uint32 mixFrequency, MasterMixer* mixer)
 {
 #if DEBUG_DRIVER
     printf("%s\n", __PRETTY_FUNCTION__);
     printf("Wanted mix frequency: %ld\n", mixFrequency);
-    printf("Driver running in Pamela mode\n");
+    printf("Driver running in Arne mode\n");
 #endif
 
     mixFrequency = mixFrequency > 44100 ? 44100 : mixFrequency;
@@ -60,7 +60,7 @@ AudioDriver_Pamela::initDevice(mp_sint32 bufferSizeInWords, mp_uint32 mixFrequen
 }
 
 void
-AudioDriver_Pamela::setGlobalVolume(mp_ubyte volume)
+AudioDriver_Arne::setGlobalVolume(mp_ubyte volume)
 {
     int i;
 
@@ -70,7 +70,7 @@ AudioDriver_Pamela::setGlobalVolume(mp_ubyte volume)
 }
 
 void
-AudioDriver_Pamela::disableDMA()
+AudioDriver_Arne::disableDMA()
 {
     switch(outputMode) {
     case Mix:
@@ -87,7 +87,7 @@ AudioDriver_Pamela::disableDMA()
 }
 
 void
-AudioDriver_Pamela::enableDMA()
+AudioDriver_Arne::enableDMA()
 {
     switch(outputMode) {
     case Mix:
@@ -104,7 +104,7 @@ AudioDriver_Pamela::enableDMA()
 }
 
 void
-AudioDriver_Pamela::initHardware()
+AudioDriver_Arne::initHardware()
 {
     int i;
 
@@ -136,7 +136,7 @@ AudioDriver_Pamela::initHardware()
 }
 
 void
-AudioDriver_Pamela::playAudioImpl()
+AudioDriver_Arne::playAudioImpl()
 {
     int i;
 
@@ -161,7 +161,7 @@ AudioDriver_Pamela::playAudioImpl()
 }
 
 void
-AudioDriver_Pamela::bufferAudioImpl()
+AudioDriver_Arne::bufferAudioImpl()
 {
     int i;
 
@@ -204,13 +204,13 @@ AudioDriver_Pamela::bufferAudioImpl()
 
 
 const char*
-AudioDriver_Pamela::getDriverID()
+AudioDriver_Arne::getDriverID()
 {
-    return "Apollo SAGA Pamela 16-ch";
+    return "Apollo SAGA Arne 16-ch";
 }
 
 mp_sint32
-AudioDriver_Pamela::getPreferredBufferSize() const
+AudioDriver_Arne::getPreferredBufferSize() const
 {
     return 4096;
 }

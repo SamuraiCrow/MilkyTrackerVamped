@@ -454,18 +454,18 @@ AmigaApplication::loop()
                             if(DoubleClick(mouseLeftSeconds, mouseLeftMicros, msg->Seconds, msg->Micros)) {
                                 PPEvent mouseDownEvent(eLMouseDoubleClick, &mousePosition, sizeof(PPPoint));
                                 raiseEventSynchronized(&mouseDownEvent);
-                            } else {
-                                PPEvent mouseDownEvent(eLMouseDown, &mousePosition, sizeof(PPPoint));
-                                raiseEventSynchronized(&mouseDownEvent);
-
-                                mouseLeftSeconds  = msg->Seconds;
-                                mouseLeftMicros   = msg->Micros;
-                                mouseLeftDown     = true;
-                                mouseLeftVBStart  = vbCount;
-                                mouseRightSeconds = 0;
-                                mouseRightMicros  = 0;
-                                mouseRightDown    = false;
                             }
+
+                            PPEvent mouseDownEvent(eLMouseDown, &mousePosition, sizeof(PPPoint));
+                            raiseEventSynchronized(&mouseDownEvent);
+
+                            mouseLeftSeconds  = msg->Seconds;
+                            mouseLeftMicros   = msg->Micros;
+                            mouseLeftDown     = true;
+                            mouseLeftVBStart  = vbCount;
+                            mouseRightSeconds = 0;
+                            mouseRightMicros  = 0;
+                            mouseRightDown    = false;
                         }
                         break;
                     case IECODE_LBUTTON | IECODE_UP_PREFIX:
@@ -480,18 +480,18 @@ AmigaApplication::loop()
                             if(DoubleClick(mouseRightSeconds, mouseRightMicros, msg->Seconds, msg->Micros)) {
                                 PPEvent mouseDownEvent(eRMouseDoubleClick, &mousePosition, sizeof(PPPoint));
                                 raiseEventSynchronized(&mouseDownEvent);
-                            } else {
-                                PPEvent mouseDownEvent(eRMouseDown, &mousePosition, sizeof(PPPoint));
-                                raiseEventSynchronized(&mouseDownEvent);
-
-                                mouseLeftSeconds  = 0;
-                                mouseLeftMicros   = 0;
-                                mouseLeftDown     = false;
-                                mouseRightSeconds = msg->Seconds;
-                                mouseRightMicros  = msg->Micros;
-                                mouseRightDown    = true;
-                                mouseRightVBStart = vbCount;
                             }
+
+                            PPEvent mouseDownEvent(eRMouseDown, &mousePosition, sizeof(PPPoint));
+                            raiseEventSynchronized(&mouseDownEvent);
+
+                            mouseLeftSeconds  = 0;
+                            mouseLeftMicros   = 0;
+                            mouseLeftDown     = false;
+                            mouseRightSeconds = msg->Seconds;
+                            mouseRightMicros  = msg->Micros;
+                            mouseRightDown    = true;
+                            mouseRightVBStart = vbCount;
                         }
                         break;
                     case IECODE_RBUTTON | IECODE_UP_PREFIX:

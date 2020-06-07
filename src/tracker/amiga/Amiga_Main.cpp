@@ -173,7 +173,7 @@ static int boot(int argc, char * argv[])
 	}
 
 	app->setNoSplash(true);
-	app->setFullScreen(true);
+	//app->setFullScreen(true);
 
 	// And start
 	if(ret = app->start()) {

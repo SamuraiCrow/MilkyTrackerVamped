@@ -190,17 +190,14 @@ DisplayDevice_Amiga::flush()
                 pp_uint16 * pd = (pp_uint16 *) alignedScreenBuffer[i];
 
                 for(std::vector<PPRect>::iterator rect = drawCommands.begin(); rect != drawCommands.end(); ++rect) {
-                    register pp_uint32 rw = rect->width();
+                    pp_uint32 rw = rect->width();
                     pp_uint32 off = rect->y1 * width + rect->x1;
-                    pp_uint16 * s = ps + off;
-                    pp_uint16 * d = pd + off;
+                    pp_uint8 * s = (pp_uint8 *) (ps + off);
+                    pp_uint8 * d = (pp_uint8 *) (pd + off);
+                    pp_uint32 stride = (width - rw) << 1;
+                    pp_uint32 pitch = rw << 1;
 
-                    // Copy line by line
-                    for(int y = 0; y < rect->height(); y++) {
-                        memcpy(d, s, rw * 2); // @todo
-                        s += width;
-                        d += width;
-                    }
+                    CopyRect_68080(s, d, stride, stride, pitch, rect->height());
                 }
             }
 

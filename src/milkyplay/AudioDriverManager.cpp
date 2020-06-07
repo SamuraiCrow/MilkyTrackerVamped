@@ -219,7 +219,7 @@ AudioDriverManager::AudioDriverManager() :
 //					Amiga implementations
 //////////////////////////////////////////////////////////////////
 #include "AudioDriver_Paula.h"
-#include "AudioDriver_Pamela.h"
+#include "AudioDriver_Arne.h"
 #include <exec/exec.h>
 #include <proto/exec.h>
 
@@ -228,14 +228,11 @@ extern bool hasAMMX;
 AudioDriverManager::AudioDriverManager() :
 	defaultDriverIndex(0)
 {
+	ALLOC_DRIVERLIST(1);
+
 	if(hasAMMX) {
-		ALLOC_DRIVERLIST(2);
-
-		driverList[0] = new AudioDriver_Pamela();
-		driverList[1] = new AudioDriver_Paula();
+		driverList[0] = new AudioDriver_Arne();
 	} else {
-		ALLOC_DRIVERLIST(1);
-
 		driverList[0] = new AudioDriver_Paula();
 	}
 }

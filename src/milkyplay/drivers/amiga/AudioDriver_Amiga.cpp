@@ -173,6 +173,8 @@ AudioDriver_Amiga<SampleType>::dealloc()
         FreeMem(samplesRight, ringSize * sampleSize);
         FreeMem(samplesLeft, ringSize * sampleSize);
 
+        FreeMem(samplesFetched, fetchSize << 2);
+
         break;
     default:
     case DirectOut:
@@ -188,8 +190,6 @@ AudioDriver_Amiga<SampleType>::dealloc()
 
         break;
     }
-
-    FreeMem(samplesFetched, fetchSize << 2);
 }
 
 template<typename SampleType>
@@ -201,6 +201,7 @@ AudioDriver_Amiga<SampleType>::closeDevice()
 #endif
     setGlobalVolume(0);
     disableDMA();
+    disableIRQ();
 
     custom.dmacon = DMAF_SETCLR | dmaconOld;
 

@@ -25,6 +25,10 @@
 
 #include <vector>
 
+extern "C" void CopyRect_68080(register unsigned char * iptr __asm("a0"), register unsigned char * optr __asm("a1"),
+	register unsigned int istride __asm("d2"), register unsigned int ostride __asm("d3"),
+	register unsigned int w __asm("d0"), register unsigned int h __asm("d1"));
+
 class AmigaApplication;
 class PPMutex;
 
