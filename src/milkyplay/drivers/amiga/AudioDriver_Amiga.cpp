@@ -27,11 +27,12 @@ AudioDriver_Amiga<SampleType>::AudioDriver_Amiga()
 , irqEnabled(false)
 , irqAudioOld(NULL)
 , allocated(false)
-#if defined(AMIGA_DIRECTOUT)
+/*#if defined(AMIGA_DIRECTOUT)
 , outputMode(DirectOut)
 #else
 , outputMode(Mix)
-#endif
+#endif*/
+, outputMode(ResampleHW)
 , statVerticalBlankMixMedian(0)
 , statAudioBufferReset(0)
 , statAudioBufferResetMedian(0)
@@ -135,7 +136,6 @@ AudioDriver_Amiga<SampleType>::alloc(mp_sint32 bufferSize)
         samplesRight = (SampleType *) AllocMem(ringSize * sampleSize, MEMF_CHIP | MEMF_CLEAR);
 
         break;
-    default:
     case DirectOut:
         // Ring buffers for each channel
         chanFetch = (mp_sword **) AllocMem(nChannels * sizeof(mp_sword *), MEMF_PUBLIC | MEMF_CLEAR);
@@ -146,8 +146,11 @@ AudioDriver_Amiga<SampleType>::alloc(mp_sint32 bufferSize)
             chanRing[i] = (SampleType *) AllocMem(ringSize * sampleSize, MEMF_CHIP | MEMF_CLEAR);
         }
 
-        chanRingPtrs = (SampleType **) AllocMem(nChannels * sizeof(SampleType *), MEMF_PUBLIC | MEMF_CLEAR);
+        mixerProxy = new MixerProxyDirectOut(nChannels, bufferSize);
 
+        break;
+    case ResampleHW:
+        mixerProxy = new MixerProxyHardwareOut(nChannels, bufferSize);
         break;
     }
 
@@ -176,9 +179,8 @@ AudioDriver_Amiga<SampleType>::dealloc()
         FreeMem(samplesFetched, fetchSize << 2);
 
         break;
-    default:
     case DirectOut:
-        FreeMem(chanRingPtrs, nChannels * sizeof(SampleType *));
+        delete mixerProxy;
 
         for(i = 0; i < nChannels; i++) {
             FreeMem(chanRing[i], ringSize * sampleSize);
@@ -187,6 +189,11 @@ AudioDriver_Amiga<SampleType>::dealloc()
 
         FreeMem(chanRing, nChannels * sizeof(SampleType *));
         FreeMem(chanFetch, nChannels * sizeof(mp_sword *));
+
+        break;
+
+    case ResampleHW:
+        delete mixerProxy;
 
         break;
     }

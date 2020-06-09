@@ -188,14 +188,12 @@ AudioDriver_Arne::bufferAudioImpl()
     case DirectOut:
         {
             if (isMixerActive()) {
-                for(i = 0; i < MAX_CHANNELS; i++) {
-                    chanRingPtrs[i] = chanRing[i] + idxWrite;
-                }
-                mixer->mixerHandler(NULL, MAX_CHANNELS, chanRingPtrs);
+                for(i = 0; i < MAX_CHANNELS; i++)
+                    mixerProxy->setBuffer(i, chanRing[i] + idxWrite);
+                mixer->mixerHandler(NULL, mixerProxy);
             } else {
-                for(i = 0; i < MAX_CHANNELS; i++) {
+                for(i = 0; i < MAX_CHANNELS; i++)
                     memset(chanRing[i] + idxWrite, 0, fetchSize * SAMPLE_SIZE);
-                }
             }
         }
         break;

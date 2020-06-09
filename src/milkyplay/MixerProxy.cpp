@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009, The MilkyTracker Team.
+ * Copyright (c) 2020, neoman
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -27,29 +27,49 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-/*
- *  Mixable.h
- *  MilkyPlay
- *
- *  Created by Peter Barth on 14.12.07.
- *
- */
-
-#ifndef __MIXABLE_H__
-#define __MIXABLE_H__
-
-#include "MilkyPlayTypes.h"
 #include "MixerProxy.h"
 
-#define MAX_DIRECTOUT_CHANNELS 16
+#include <string.h>
 
-struct Mixable
+MixerProxy::MixerProxy(mp_uint32 numChannels, mp_uint32 bufferSize, Processor * processor)
+: numChannels(numChannels)
+, bufferSize(bufferSize)
+, processor(processor)
 {
-	virtual ~Mixable()
-	{
-	}
 
-	virtual void mix(mp_sint32* buffer, mp_uint32 numSamples, MixerProxy * mixerProxy = 0) = 0;
-};
+}
 
-#endif
+MixerProxyDirectOut::MixerProxyDirectOut(mp_uint32 numChannels, mp_uint32 bufferSize, Processor * processor)
+: MixerProxy(numChannels, bufferSize, processor)
+{
+    buffers = new mp_sword*[numChannels];
+}
+
+MixerProxyDirectOut::~MixerProxyDirectOut()
+{
+    delete[] buffers;
+}
+
+bool MixerProxyDirectOut::lock()
+{
+    for(int i = 0; i < numChannels; i++) {
+        memset(buffers[i], 0, bufferSize * sizeof(mp_sword));
+    }
+
+    return true;
+}
+
+void MixerProxyDirectOut::setBuffer(mp_uint32 idx, mp_sword * buffer)
+{
+    buffers[idx] = buffer;
+}
+
+MixerProxyHardwareOut::MixerProxyHardwareOut(mp_uint32 numChannels, mp_uint32 bufferSize, Processor * processor)
+: MixerProxy(numChannels, bufferSize, processor)
+{
+}
+
+bool MixerProxyHardwareOut::lock()
+{
+    return true;
+}

@@ -171,20 +171,20 @@ AudioDriver_Paula::bufferAudioImpl()
     case DirectOut:
         {
             if (isMixerActive()) {
-                mixer->mixerHandler(NULL, MAX_CHANNELS, chanFetch);
+                for(i = 0; i < MAX_CHANNELS; i++)
+                    mixerProxy->setBuffer(i, chanFetch[i]);
+                mixer->mixerHandler(NULL, mixerProxy);
 
                 for(i = 0; i < MAX_CHANNELS; i++) {
                     mp_sword * s = chanFetch[i];
                     mp_sbyte * d = chanRing[i] + idxWrite;
 
-                    for(j = 0; j < fetchSize; j++) {
+                    for(j = 0; j < fetchSize; j++)
                         *(d++) = *(s++) >> 8;
-                    }
                 }
             } else {
-                for(i = 0; i < MAX_CHANNELS; i++) {
+                for(i = 0; i < MAX_CHANNELS; i++)
                     memset(chanRing[i] + idxWrite, 0, fetchSize * SAMPLE_SIZE);
-                }
             }
         }
         break;

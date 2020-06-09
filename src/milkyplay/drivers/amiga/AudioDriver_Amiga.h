@@ -9,6 +9,7 @@
 #define __AUDIODRIVER_AMIGA_H__
 
 #include "AudioDriverBase.h"
+#include "MixerProxy.h"
 
 #include <exec/exec.h>
 #include <clib/exec_protos.h>
@@ -50,6 +51,8 @@ protected:
 		DirectOut,
 		ResampleHW
 	};
+
+	MixerProxy * 		mixerProxy;
 
 	bool                allocated;
 	bool                irqEnabled;

@@ -54,6 +54,7 @@ add_library(milkyplay STATIC
     LoaderUNI.cpp
     LoaderXM.cpp
     MasterMixer.cpp
+    MixerProxy.cpp
     PlayerBase.cpp
     PlayerFAR.cpp
     PlayerGeneric.cpp
@@ -85,6 +86,7 @@ add_library(milkyplay STATIC
     MilkyPlayResults.h
     MilkyPlayTypes.h
     Mixable.h
+    MixerProxy.h
     PlayerBase.h
     PlayerFAR.h
     PlayerGeneric.h

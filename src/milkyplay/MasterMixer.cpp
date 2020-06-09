@@ -378,20 +378,16 @@ bool MasterMixer::isDevicePaused(Mixable* device)
 	return false;
 }
 
-void MasterMixer::mixerHandler(mp_sword* buffer, mp_uint32 numChannels /* = 0 */, mp_sword** buffers /* = 0 */)
+void MasterMixer::mixerHandler(mp_sword* buffer, MixerProxy * mixerProxy)
 {
-	bool doMix = numChannels == 0;
-	mp_sword * bufferPtrs[MAX_DIRECTOUT_CHANNELS] = { 0 };
+	bool mixDown = mixerProxy == NULL || mixerProxy->getProcessingType() == MixerProxy::MixDown;
 
 	// Prepare the mix buffer(s)
 	if (!disableMixing) {
-		if(doMix) {
+		if(mixDown) {
 			prepareBuffer();
 		} else {
-			for(int i = 0; i < numChannels; i++) {
-				bufferPtrs[i] = buffers[i];
-				memset(bufferPtrs[i], 0, bufferSize * sizeof(mp_sword));
-			}
+			mixerProxy->lock();
 		}
 	}
 
@@ -414,12 +410,17 @@ void MasterMixer::mixerHandler(mp_sword* buffer, mp_uint32 numChannels /* = 0 */
 		}
 		else if (device->mixable && !device->paused)
 		{
-			device->mixable->mix(mixBuffer, bufferSize, numChannels, bufferPtrs);
+			device->mixable->mix(mixBuffer, bufferSize, mixerProxy);
 		}
 	}
 
-	if (doMix && !disableMixing)
-		swapOutBuffer(buffer);
+	if (!disableMixing) {
+		if (mixDown) {
+			swapOutBuffer(buffer);
+		} else {
+			mixerProxy->unlock();
+		}
+	}
 }
 
 void MasterMixer::notifyListener(MasterMixerNotifications notification)
