@@ -34,6 +34,8 @@ int main(int argc, char *argv[])
 
             MainReturn = main2(argc, argv);
 
+            // @todo can crash here - don't know why
+
             StackSwap(&MyStackSwap);
 
             /* Now locals can be accessed again */

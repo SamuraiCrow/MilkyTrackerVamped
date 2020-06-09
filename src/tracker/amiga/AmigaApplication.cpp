@@ -220,25 +220,31 @@ int AmigaApplication::start()
                     }
                 }
             } else {
-                window = OpenWindowTags(NULL,
-                    WA_CustomScreen  , (APTR) pubScreen,
-                    WA_Left          , (pubScreen->Width - windowSize.width) / 2,
-                    WA_Top           , (pubScreen->Height - windowSize.height) / 2,
-                    WA_InnerWidth    , windowSize.width,
-                    WA_InnerHeight   , windowSize.height,
-                    WA_Title         , (APTR) "Loading MilkyTracker ...",
-                    WA_DragBar       , TRUE,
-                    WA_DepthGadget   , TRUE,
-                    WA_CloseGadget   , TRUE,
-                    WA_Activate      , TRUE,
-                    WA_ReportMouse   , TRUE,
-                    WA_NoCareRefresh , TRUE,
-                    WA_RMBTrap       , TRUE,
-                    WA_IDCMP         , IDCMP_CLOSEWINDOW | IDCMP_MOUSEBUTTONS | IDCMP_MOUSEMOVE | IDCMP_RAWKEY,
-                    TAG_DONE);
-                if(!window) {
-                    fprintf(stderr, "Could not create window!\n");
-                    ret = 4;
+                ULONG screenDepth = p96GetBitMapAttr(pubScreen->ViewPort.RasInfo->BitMap, P96BMA_DEPTH);
+                if(screenDepth == 16) {
+                    window = OpenWindowTags(NULL,
+                        WA_CustomScreen  , (APTR) pubScreen,
+                        WA_Left          , (pubScreen->Width - windowSize.width) / 2,
+                        WA_Top           , (pubScreen->Height - windowSize.height) / 2,
+                        WA_InnerWidth    , windowSize.width,
+                        WA_InnerHeight   , windowSize.height,
+                        WA_Title         , (APTR) "Loading MilkyTracker ...",
+                        WA_DragBar       , TRUE,
+                        WA_DepthGadget   , TRUE,
+                        WA_CloseGadget   , TRUE,
+                        WA_Activate      , TRUE,
+                        WA_ReportMouse   , TRUE,
+                        WA_NoCareRefresh , TRUE,
+                        WA_RMBTrap       , TRUE,
+                        WA_IDCMP         , IDCMP_CLOSEWINDOW | IDCMP_MOUSEBUTTONS | IDCMP_MOUSEMOVE | IDCMP_RAWKEY,
+                        TAG_DONE);
+                    if(!window) {
+                        fprintf(stderr, "Could not create window!\n");
+                        ret = 4;
+                    }
+                } else {
+                    fprintf(stderr, "Only 16-bit modes are supported for windowed mode!\n");
+                    ret = 7;
                 }
             }
         } else {

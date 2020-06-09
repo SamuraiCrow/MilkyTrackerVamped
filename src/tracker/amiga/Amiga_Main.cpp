@@ -57,6 +57,7 @@ struct Library * KeymapBase = NULL;
 struct Library * GfxBase = NULL;
 struct Library * P96Base = NULL;
 struct Library * VampireBase = NULL;
+struct Library * IconBase = NULL;
 
 int	cpuType = 0;
 bool hasFPU = false;
@@ -146,34 +147,60 @@ static bool checkHardware()
 static int boot(int argc, char * argv[])
 {
 	int ret;
-	app = new AmigaApplication();
+	EasyStruct easyStruct;
+	bool fromWorkbench;
+	char exePath[256] = {0};
+	BPTR dirLock, oldDir;
+	struct DiskObject * diskObj;
+	bool choseFullscreenByToolType = false;
 
+	app = new AmigaApplication();
 	app->setCpuType(cpuType);
 	app->setHasFPU(hasFPU);
 	app->setHasAMMX(hasAMMX);
 
-	// Parse command line (@todo use ToolTypes)
-	while (argc > 1) {
-		--argc;
-		if (strcmp(argv[argc - 1], "-bpp") == 0) {
-			app->setBpp(atoi(argv[argc]));
-			--argc;
-		} else if (strcmp(argv[argc], "-nosplash") == 0) {
-			app->setNoSplash(true);
-		} else if (strcmp(argv[argc], "-fullscreen") == 0) {
+	// Get program path from WBStartup/argv
+   	fromWorkbench = argc == 0;
+	if(fromWorkbench) {
+   		struct WBArg * workbenchArgs = ((struct WBStartup *) argv)->sm_ArgList;
+		dirLock = workbenchArgs->wa_Lock;
+		strncpy(exePath, (char *) workbenchArgs->wa_Name, 255);
+		oldDir = CurrentDir(dirLock);
+	} else {
+		strncpy(exePath, argv[0], 255);
+	}
+
+	// Process tool types
+	if(diskObj = GetDiskObject(exePath)) {
+		char * toolTypeVal;
+
+		if(toolTypeVal = (char *) FindToolType(diskObj->do_ToolTypes, (STRPTR) "FULLSCREEN")) {
+			app->setFullScreen(*toolTypeVal == '1');
+			choseFullscreenByToolType = true;
+		}
+
+		FreeDiskObject(diskObj);
+	}
+
+	if(fromWorkbench) {
+		CurrentDir(oldDir);
+	}
+
+	// Ask to run in fullscreen mode
+	if(!choseFullscreenByToolType) {
+		easyStruct.es_StructSize = sizeof(struct EasyStruct);
+		easyStruct.es_Flags = 0;
+		easyStruct.es_Title = (UBYTE *) "MilkyTracker";
+		easyStruct.es_TextFormat = (UBYTE *) "Do you want to run in fullscreen mode?";
+		easyStruct.es_GadgetFormat = (UBYTE *) "Yes|No";
+
+		if(EasyRequest(NULL, &easyStruct, NULL) == 1) {
 			app->setFullScreen(true);
-		} else {
-			if (argv[argc][0] == '-') {
-				fprintf(stderr, "Usage: %s [-bpp N] [-fullscreen] [-nosplash] [-recvelocity]\n", argv[0]);
-				return 1;
-			} else {
-				app->setLoadFile(argv[argc]);
-			}
 		}
 	}
 
+	// @todo Add new splash screen
 	app->setNoSplash(true);
-	//app->setFullScreen(true);
 
 	// And start
 	if(ret = app->start()) {
@@ -202,43 +229,48 @@ int main2(int argc, char * argv[])
 	// Open libraries and boot application
     if(KeymapBase = OpenLibrary("keymap.library", 39)) {
 		if(IntuitionBase = OpenLibrary("intuition.library", 39)) {
-			if(GfxBase = OpenLibrary("graphics.library", 39)) {
-				if(P96Base = OpenLibrary(P96NAME, 2)) {
-					BYTE err = OpenDevice("timer.device", 0, &timereq, 0);
-					if(err == 0) {
-						TimerBase = timereq.io_Device;
-						GetSysTime(&startTime);
+			if(IconBase = OpenLibrary("icon.library", 37)) {
+				if(GfxBase = OpenLibrary("graphics.library", 39)) {
+					if(P96Base = OpenLibrary(P96NAME, 2)) {
+						BYTE err = OpenDevice("timer.device", 0, &timereq, 0);
+						if(err == 0) {
+							TimerBase = timereq.io_Device;
+							GetSysTime(&startTime);
 
-						if(hasAMMX) {
-							if(!(VampireBase = (struct Library *) OpenResource(V_VAMPIRENAME))) {
-								fprintf(stderr, "Could not find vampire.resource!\n");
-								ret = 2;
-							} else if(VampireBase->lib_Version < 45) {
-								fprintf(stderr, "Vampire.resource version needs to be 45 or higher!\n");
-								ret = 2;
-							} else if(V_EnableAMMX(V_AMMX_V2) == VRES_ERROR) {
-								fprintf(stderr, "Cannot enable AMMX V2+!\n");
-								ret = 2;
+							if(hasAMMX) {
+								if(!(VampireBase = (struct Library *) OpenResource(V_VAMPIRENAME))) {
+									fprintf(stderr, "Could not find vampire.resource!\n");
+									ret = 2;
+								} else if(VampireBase->lib_Version < 45) {
+									fprintf(stderr, "Vampire.resource version needs to be 45 or higher!\n");
+									ret = 2;
+								} else if(V_EnableAMMX(V_AMMX_V2) == VRES_ERROR) {
+									fprintf(stderr, "Cannot enable AMMX V2+!\n");
+									ret = 2;
+								}
 							}
-						}
 
-						if(!ret) {
-							ret = boot(argc, argv);
-						}
+							if(!ret) {
+								ret = boot(argc, argv);
+							}
 
-						CloseDevice(&timereq);
+							CloseDevice(&timereq);
+						} else {
+							fprintf(stderr, "Could not open timer.device! (err = %ld)\n", err);
+							ret = 1;
+						}
+						CloseLibrary(P96Base);
 					} else {
-						fprintf(stderr, "Could not open timer.device! (err = %ld)\n", err);
+						fprintf(stderr, "Could not open %s V2!\n", P96NAME);
 						ret = 1;
 					}
-					CloseLibrary(P96Base);
+					CloseLibrary(GfxBase);
 				} else {
-					fprintf(stderr, "Could not open %s V2!\n", P96NAME);
+					fprintf(stderr, "Could not open graphics.library V39!\n");
 					ret = 1;
 				}
-				CloseLibrary(GfxBase);
 			} else {
-				fprintf(stderr, "Could not open graphics.library V39!\n");
+				fprintf(stderr, "Could not open icon.library V37!\n");
 				ret = 1;
 			}
 			CloseLibrary(IntuitionBase);

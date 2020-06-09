@@ -613,6 +613,7 @@ ChannelMixer::ChannelMixer(mp_uint32 numChannels,
 
 	// Helper structures for direct output
 	mixbuffBeatPackets = new mp_sword*[MAX_DIRECTOUT_CHANNELS];
+	memset(mixbuffBeatPackets, 0, MAX_DIRECTOUT_CHANNELS * sizeof(mp_sword *));
 
 	// Set initial frequency
 	setFrequency(frequency);

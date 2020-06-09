@@ -306,8 +306,6 @@ AudioDriver_Amiga<SampleType>::start()
 	return MP_OK;
 }
 
-extern "C" void usleep(unsigned long microseconds);
-
 template<typename SampleType>
 mp_sint32
 AudioDriver_Amiga<SampleType>::stop()

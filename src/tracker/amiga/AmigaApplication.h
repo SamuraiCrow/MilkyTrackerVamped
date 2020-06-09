@@ -5,6 +5,8 @@
 
 #include <exec/exec.h>
 #include <intuition/intuition.h>
+#include <workbench/startup.h>
+#include <workbench/workbench.h>
 
 #include <vampire/saga.h>
 #include <vampire/vampire.h>
@@ -18,6 +20,7 @@
 #include <clib/intuition_protos.h>
 #include <clib/picasso96_protos.h>
 #include <clib/vampire_protos.h>
+#include <clib/icon_protos.h>
 
 #include <hardware/intbits.h>
 

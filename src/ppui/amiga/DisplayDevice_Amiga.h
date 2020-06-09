@@ -43,19 +43,25 @@ class DisplayDevice_Amiga : public PPDisplayDeviceBase
 		RTG_FULLSCREEN_16,
 		SAGA_PIP_8,
 		SAGA_PIP_16,
-		SAGA_DIRECT
+		SAGA_DIRECT_16
 	};
 private:
 	AmigaApplication * 	app;
+
 	bool                useRTGWindowed;
 	bool                useRTGFullscreen;
+	bool                useRTGMode;
+
 	bool				useSAGAPiP;
 	bool                useSAGADirectFB;
+	bool                useSAGAMode;
+
 	pp_int32            width;
 	pp_int32            height;
 	pp_int32            pitch;
 	pp_uint32           dbPage;
 	ScreenMode          screenMode;
+
 	PPMutex *           drawMutex;
 	std::vector<PPRect> drawCommands;
 
