@@ -31,6 +31,9 @@ public:
 
 	virtual	const char*	getDriverID();
 	virtual	mp_sint32	getPreferredBufferSize() const;
+
+	virtual void 		playAudio();
+	virtual mp_sint32  	bufferAudio();
 };
 
 #endif

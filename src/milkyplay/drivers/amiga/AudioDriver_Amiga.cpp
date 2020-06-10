@@ -32,7 +32,7 @@ AudioDriver_Amiga<SampleType>::AudioDriver_Amiga()
 #else
 , outputMode(Mix)
 #endif*/
-, outputMode(DirectOut)
+, outputMode(ResampleHW)
 , statVerticalBlankMixMedian(0)
 , statAudioBufferReset(0)
 , statAudioBufferResetMedian(0)
@@ -184,7 +184,6 @@ AudioDriver_Amiga<SampleType>::dealloc()
 
         break;
     case DirectOut:
-
         for(i = 0; i < nChannels; i++) {
             FreeMem(chanRing[i], ringSize * sampleSize);
             FreeMem(chanFetch[i], fetchSize * sizeof(mp_sword));
@@ -192,10 +191,6 @@ AudioDriver_Amiga<SampleType>::dealloc()
 
         FreeMem(chanRing, nChannels * sizeof(SampleType *));
         FreeMem(chanFetch, nChannels * sizeof(mp_sword *));
-
-        break;
-
-    case ResampleHW:
 
         break;
     }

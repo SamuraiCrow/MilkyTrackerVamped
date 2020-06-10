@@ -66,7 +66,6 @@ AudioDriver_Paula::disableDMA()
     case Mix:
         *((volatile mp_uword *) CUSTOM_DMACON) = DMAF_AUD0 | DMAF_AUD1;
         break;
-    default:
     case DirectOut:
         *((volatile mp_uword *) CUSTOM_DMACON) = DMAF_AUDIO;
         break;
@@ -80,7 +79,6 @@ AudioDriver_Paula::enableDMA()
     case Mix:
         *((volatile mp_uword *) CUSTOM_DMACON) = DMAF_SETCLR | DMAF_AUD0 | DMAF_AUD1;
         break;
-    default:
     case DirectOut:
         *((volatile mp_uword *) CUSTOM_DMACON) = DMAF_SETCLR | DMAF_AUDIO;
         break;
@@ -106,7 +104,6 @@ AudioDriver_Paula::initHardware()
         *((volatile mp_uword *) AUDIO_PERIOD(1)) = period;
 
         break;
-    default:
     case DirectOut:
         for(i = 0; i < MAX_CHANNELS; i++) {
             *((volatile mp_uint32 *) AUDIO_LOCHI(i)) = (mp_uint32) chanRing[i];
@@ -132,7 +129,6 @@ AudioDriver_Paula::playAudioImpl()
         *((volatile mp_uword *) AUDIO_LENGTH(1)) = chunkSize >> 1;
 
         break;
-    default:
     case DirectOut:
         for(i = 0; i < MAX_CHANNELS; i++) {
             *((volatile mp_uint32 *) AUDIO_LOCHI(i)) = (mp_uint32) (chanRing[i] + idxRead);
@@ -167,7 +163,6 @@ AudioDriver_Paula::bufferAudioImpl()
             }
         }
         break;
-    default:
     case DirectOut:
         {
             if (isMixerActive()) {
@@ -188,6 +183,13 @@ AudioDriver_Paula::bufferAudioImpl()
             }
         }
         break;
+    case ResampleHW:
+        {
+            if(isMixerActive()) {
+                mixer->mixerHandler(NULL, mixerProxy);
+            }
+        }
+        break;
     }
 }
 
@@ -202,4 +204,25 @@ mp_sint32
 AudioDriver_Paula::getPreferredBufferSize() const
 {
     return 8192;
+}
+
+
+void
+AudioDriver_Paula::playAudio()
+{
+    if(outputMode == ResampleHW) {
+
+    } else {
+        AudioDriver_Amiga<mp_sbyte>::playAudio();
+    }
+}
+
+mp_sint32
+AudioDriver_Paula::bufferAudio()
+{
+    if(outputMode == ResampleHW) {
+        bufferAudioImpl();
+    } else {
+        return AudioDriver_Amiga<mp_sbyte>::bufferAudio();
+    }
 }

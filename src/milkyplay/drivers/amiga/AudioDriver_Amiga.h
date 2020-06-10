@@ -117,7 +117,7 @@ protected:
 	virtual mp_sint32   getStatValue(mp_uint32 key);
 
 public:
-	void 				playAudio();
+	virtual void 		playAudio();
 	virtual mp_sint32  	bufferAudio();
 };
 
