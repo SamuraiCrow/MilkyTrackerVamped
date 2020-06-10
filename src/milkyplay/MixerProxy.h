@@ -123,7 +123,7 @@ public:
 	virtual ProcessingType	getProcessingType() const { return MixDown; }
 	virtual mp_uint32       getNumChannels() const { return numChannels; }
 
-	MixerProxyMixDown(mp_uint32 numChannels, Processor * processor = 0) : MixerProxy(numChannels, processor) {}
+	MixerProxyMixDown(mp_uint32 numChannels = 2) : MixerProxy(numChannels) {}
 	virtual ~MixerProxyMixDown();
 };
 

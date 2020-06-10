@@ -31,16 +31,22 @@
 #include "Mixable.h"
 #include "AudioDriverBase.h"
 
+#include <stdio.h>
+
 MixerProxy::MixerProxy(mp_uint32 numChannels, Processor * processor)
 : numChannels(numChannels)
 , processor(processor)
 {
+    //printf("MixerProxy: Create %ld channels (* = %lx)\n", numChannels, this);
+
     buffers = new void* [numChannels];
     memset(buffers, 0, numChannels * sizeof(void *));
 }
 
 MixerProxy::~MixerProxy()
 {
+    //printf("MixerProxy: Destroy (* = %lx)\n", this);
+
     delete[] buffers;
 }
 

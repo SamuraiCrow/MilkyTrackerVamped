@@ -22,7 +22,7 @@
 #include <stdio.h>
 #include <string.h>
 
-//#define DEBUG_DRIVER            1
+#define DEBUG_DRIVER            1
 
 #define CIAAPRA                 0xbfe001
 
@@ -39,7 +39,7 @@
 class AudioDriverInterface_Amiga : public AudioDriverBase
 {
 public:
-	virtual mp_sint32  	bufferAudio();
+	virtual mp_sint32	bufferAudio();
 };
 
 template<typename SampleType>
@@ -72,7 +72,6 @@ protected:
 
 	mp_sword ** 		chanFetch;
 
-	SampleType ** 		chanRingPtrs;
 	SampleType ** 		chanRing;
 
 	mp_sword * 			samplesFetched;

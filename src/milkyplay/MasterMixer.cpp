@@ -62,7 +62,8 @@ MasterMixer::MasterMixer(mp_uint32 sampleRate,
 	audioDriver(audioDriver),
 	initialized(false),
 	started(false),
-	paused(false)
+	paused(false),
+	mixDownProxy(0)
 {
 }
 
@@ -390,7 +391,7 @@ void MasterMixer::mixerHandler(mp_sword* buffer, MixerProxy * mixerProxy)
 		// mix-down buffer (slot 1)
 		//
 		if(!mixDownProxy) {
-			mixDownProxy = new MixerProxyMixDown(2);
+			mixDownProxy = new MixerProxyMixDown();
 		}
 		mixerProxy = mixDownProxy;
 
