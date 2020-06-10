@@ -405,8 +405,10 @@ public:
 
 	mp_uint32		getMixBufferSize() const { return mixBufferSize; }
 
+	void			mixDown(MixerProxy * mixerProxy);
 	void			directOut(MixerProxy * mixerProxy);
 	void			hardwareOut(MixerProxy * mixerProxy);
+
 	virtual void	mix(MixerProxy * mixerProxy);
 
 	void			updateSampleCounter(mp_sint32 numSamples) { sampleCounter+=numSamples; }

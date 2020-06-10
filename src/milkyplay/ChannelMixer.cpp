@@ -1016,94 +1016,256 @@ static inline void storeTimeRecordData(mp_sint32 nb, ChannelMixer::TMixerChannel
 
 void ChannelMixer::hardwareOut(MixerProxy * mixerProxy)
 {
-	if (!paused)
-	{
-		mp_uint32 nDriverChannels = mixerProxy->getNumChannels();
-		mp_uint32 nChannels = mixerNumActiveChannels < nDriverChannels ? mixerNumActiveChannels : nDriverChannels;
+	mp_uint32 nDriverChannels = mixerProxy->getNumChannels();
+	mp_uint32 nChannels = mixerNumActiveChannels < nDriverChannels ? mixerNumActiveChannels : nDriverChannels;
 
-	}
+	printf("hardwareOut: %ld/%ld\n", nDriverChannels, nChannels);
 }
 
 void ChannelMixer::directOut(MixerProxy * mixerProxy)
 {
-	if (!paused)
-	{
-		mp_uint32 nDriverChannels = mixerProxy->getNumChannels();
-		mp_uint32 nChannels = mixerNumActiveChannels < nDriverChannels ? mixerNumActiveChannels : nDriverChannels;
+	mp_uint32 nDriverChannels = mixerProxy->getNumChannels();
+	mp_uint32 nChannels = mixerNumActiveChannels < nDriverChannels ? mixerNumActiveChannels : nDriverChannels;
 
-		mp_sint32 beatLength = beatPacketSize;
-		mp_sint32 mixSize = mixBufferSize;
-		mp_sint32 done = 0;
-		mp_uint32 c;
+	mp_sint32 beatLength = beatPacketSize;
+	mp_sint32 mixSize = mixBufferSize;
+	mp_sint32 done = 0;
+	mp_uint32 c;
 
-		if (lastBeatRemainder) {
-			mp_sint32 todo = lastBeatRemainder;
-			if (lastBeatRemainder > mixBufferSize) {
-				todo = mixBufferSize;
-				mp_uint32 pos = beatLength - lastBeatRemainder;
+	if (lastBeatRemainder) {
+		mp_sint32 todo = lastBeatRemainder;
+		if (lastBeatRemainder > mixBufferSize) {
+			todo = mixBufferSize;
+			mp_uint32 pos = beatLength - lastBeatRemainder;
+			for(c = 0; c < nChannels; c++) {
+				memcpy(mixerProxy->getBuffer<mp_sword>(c), mixbuffBeatPackets[c] + pos, todo * sizeof(mp_sword));
+			}
+			done = mixBufferSize;
+			lastBeatRemainder -= done;
+		} else {
+			mp_uint32 pos = beatLength - lastBeatRemainder;
+			for(c = 0; c < nChannels; c++) {
+				memcpy(mixerProxy->getBuffer<mp_sword>(c), mixbuffBeatPackets[c] + pos, todo * sizeof(mp_sword));
+				mixerProxy->advanceBuffer<mp_sword>(c, lastBeatRemainder);
+			}
+			mixSize -= lastBeatRemainder;
+			done = lastBeatRemainder;
+			lastBeatRemainder = 0;
+		}
+	}
+
+	if (done < (mp_sint32)mixBufferSize) {
+		const mp_sint32 numbeats = /*numBeatPackets*/mixSize / beatLength;
+		mp_sint32 nb;
+
+		done += numbeats * beatLength;
+
+		for (nb = 0; nb < numbeats; nb++) {
+			timer(nb);
+
+			if (!disableMixing) {
 				for(c = 0; c < nChannels; c++) {
-					memcpy(mixerProxy->getBuffer<mp_sword>(c), mixbuffBeatPackets[c] + pos, todo * sizeof(mp_sword));
+					storeTimeRecordData(nb, &channel[c]);
+					if(resamplerTable[MIXER_NORMAL] != NULL) {
+						resamplerTable[MIXER_NORMAL]->directOutChannel(this, c, mixerProxy->getBuffer<mp_sword>(c) + nb * beatLength, nb, beatLength);
+					}
 				}
-				done = mixBufferSize;
-				lastBeatRemainder -= done;
-			} else {
-				mp_uint32 pos = beatLength - lastBeatRemainder;
-				for(c = 0; c < nChannels; c++) {
-					memcpy(mixerProxy->getBuffer<mp_sword>(c), mixbuffBeatPackets[c] + pos, todo * sizeof(mp_sword));
-					mixerProxy->advanceBuffer<mp_sword>(c, lastBeatRemainder);
-				}
-				mixSize -= lastBeatRemainder;
-				done = lastBeatRemainder;
-				lastBeatRemainder = 0;
 			}
 		}
 
+		for(c = 0; c < nChannels; c++) {
+			mixerProxy->advanceBuffer<mp_sword>(c, numbeats * beatLength);
+		}
+
 		if (done < (mp_sint32)mixBufferSize) {
-			const mp_sint32 numbeats = /*numBeatPackets*/mixSize / beatLength;
-			mp_sint32 nb;
-
-			done += numbeats * beatLength;
-
-			for (nb = 0; nb < numbeats; nb++) {
-				timer(nb);
-
-				if (!disableMixing) {
-					for(c = 0; c < nChannels; c++) {
-						storeTimeRecordData(nb, &channel[c]);
-						if(resamplerTable[MIXER_NORMAL] != NULL) {
-							resamplerTable[MIXER_NORMAL]->directOutChannel(this, c, mixerProxy->getBuffer<mp_sword>(c) + nb * beatLength, nb, beatLength);
-						}
-					}
-				}
-			}
-
 			for(c = 0; c < nChannels; c++) {
-				mixerProxy->advanceBuffer<mp_sword>(c, numbeats * beatLength);
+				memset(mixbuffBeatPackets[c], 0, beatLength * sizeof(mp_sword));
 			}
 
-			if (done < (mp_sint32)mixBufferSize) {
+			timer(numbeats);
+
+			if (!disableMixing) {
 				for(c = 0; c < nChannels; c++) {
-					memset(mixbuffBeatPackets[c], 0, beatLength * sizeof(mp_sword));
-				}
-
-				timer(numbeats);
-
-				if (!disableMixing) {
-					for(c = 0; c < nChannels; c++) {
-						storeTimeRecordData(nb, &channel[c]);
-						if(resamplerTable[MIXER_NORMAL] != NULL) {
-							resamplerTable[MIXER_NORMAL]->directOutChannel(this, c, mixbuffBeatPackets[c], nb, beatLength);
-						}
+					storeTimeRecordData(nb, &channel[c]);
+					if(resamplerTable[MIXER_NORMAL] != NULL) {
+						resamplerTable[MIXER_NORMAL]->directOutChannel(this, c, mixbuffBeatPackets[c], nb, beatLength);
 					}
 				}
+			}
 
-				mp_sint32 todo = mixBufferSize - done;
-				if (todo) {
-					for(c = 0; c < nChannels; c++) {
-						memcpy(mixerProxy->getBuffer<mp_sword>(c), mixbuffBeatPackets[c], todo * sizeof(mp_sword));
-					}
-					lastBeatRemainder = beatLength - todo;
+			mp_sint32 todo = mixBufferSize - done;
+			if (todo) {
+				for(c = 0; c < nChannels; c++) {
+					memcpy(mixerProxy->getBuffer<mp_sword>(c), mixbuffBeatPackets[c], todo * sizeof(mp_sword));
 				}
+				lastBeatRemainder = beatLength - todo;
+			}
+		}
+	}
+}
+
+void ChannelMixer::mixDown(MixerProxy * mixerProxy)
+{
+	mp_sint32* buffer = mixerProxy->getBuffer<mp_sint32>(MixerProxyMixDown::MixBuffer);
+
+	mp_sint32 beatLength = beatPacketSize;
+	mp_sint32 mixSize = mixBufferSize;
+
+	mp_sint32 done = 0;
+
+	if (lastBeatRemainder)
+	{
+		mp_sint32 todo = lastBeatRemainder;
+		if (lastBeatRemainder > mixBufferSize)
+		{
+			todo = mixBufferSize;
+			mp_uint32 pos = beatLength - lastBeatRemainder;
+			//memcpy(buffer, mixbuffBeatPacket + pos*MP_NUMCHANNELS, todo*MP_NUMCHANNELS*sizeof(mp_sint32));
+			const mp_sint32* src = mixbuffBeatPacket + pos*MP_NUMCHANNELS;
+			mp_sint32* dst = buffer;
+			for (mp_sint32 i = 0; i < todo*MP_NUMCHANNELS; i++, src++, dst++)
+				*dst += *src;
+			done = mixBufferSize;
+			lastBeatRemainder-=done;
+		}
+		else
+		{
+			mp_uint32 pos = beatLength - lastBeatRemainder;
+			//memcpy(buffer, mixbuffBeatPacket + pos*MP_NUMCHANNELS, todo*MP_NUMCHANNELS*sizeof(mp_sint32));
+			const mp_sint32* src = mixbuffBeatPacket + pos*MP_NUMCHANNELS;
+			mp_sint32* dst = buffer;
+			for (mp_sint32 i = 0; i < todo*MP_NUMCHANNELS; i++, src++, dst++)
+				*dst += *src;
+			buffer+=lastBeatRemainder*MP_NUMCHANNELS;
+			mixSize-=lastBeatRemainder;
+			done = lastBeatRemainder;
+			lastBeatRemainder = 0;
+		}
+	}
+
+	if (done < (mp_sint32)mixBufferSize)
+	{
+		const mp_sint32 numbeats = /*numBeatPackets*/mixSize / beatLength;
+
+		done+=numbeats*beatLength;
+
+		mp_sint32 nb;
+
+		const bool isRamping = this->isRamping();
+
+		for (nb=0;nb<numbeats;nb++)
+		{
+			if (isRamping)
+			{
+				const TMixerChannel* src = channel;
+				TMixerChannel* dst = newChannel;
+				const mp_uint32 mixerNumActiveChannels = this->mixerNumActiveChannels;
+				if (allowFilters)
+				{
+					// this is crucial for volume ramping, store current
+					// active sample rate (stored in the step values for each channel)
+					// and also filter coefficients	and last samples
+					for (mp_uint32 c = 0; c < mixerNumActiveChannels; c++, src++, dst++)
+					{
+						dst->smpadd = src->smpadd;
+						dst->rsmpadd = src->rsmpadd;
+
+						dst->a = src->a;
+						dst->b = src->b;
+						dst->c = src->c;
+						dst->currsample = src->currsample;
+						dst->prevsample = src->prevsample;
+					}
+				}
+				else
+				{
+					// this is crucial for volume ramping, store current
+					// active sample rate (stored in the step values for each channel)
+					// and also filter coefficients	and last samples
+					for (mp_uint32 c = 0; c < mixerNumActiveChannels; c++, src++, dst++)
+					{
+						dst->smpadd = src->smpadd;
+						dst->rsmpadd = src->rsmpadd;
+					}
+				}
+			}
+
+			timer(nb);
+
+			if (!disableMixing)
+			{
+				// do some in between state recording
+				// to be able to show smooth updates even if the buffer is large
+				for (mp_uint32 c=0;c<mixerNumActiveChannels;c++)
+					storeTimeRecordData(nb, &channel[c]);
+
+				mixBeatPacket(mixerNumActiveChannels, buffer+nb*beatLength*MP_NUMCHANNELS, nb, beatLength);
+			}
+		}
+
+		buffer+=numbeats*beatLength*MP_NUMCHANNELS;
+
+		if (done < (mp_sint32)mixBufferSize)
+		{
+			memset(mixbuffBeatPacket, 0, beatLength*MP_NUMCHANNELS*sizeof(mp_sint32));
+
+			if (isRamping)
+			{
+				const TMixerChannel* src = channel;
+				TMixerChannel* dst = newChannel;
+				const mp_uint32 mixerNumActiveChannels = this->mixerNumActiveChannels;
+				if (allowFilters)
+				{
+					// this is crucial for volume ramping, store current
+					// active sample rate (stored in the step values for each channel)
+					// and also filter coefficients	and last samples
+					for (mp_uint32 c = 0; c < mixerNumActiveChannels; c++, src++, dst++)
+					{
+						dst->smpadd = src->smpadd;
+						dst->rsmpadd = src->rsmpadd;
+
+						dst->a = src->a;
+						dst->b = src->b;
+						dst->c = src->c;
+						dst->currsample = src->currsample;
+						dst->prevsample = src->prevsample;
+					}
+				}
+				else
+				{
+					// this is crucial for volume ramping, store current
+					// active sample rate (stored in the step values for each channel)
+					// and also filter coefficients	and last samples
+					for (mp_uint32 c = 0; c < mixerNumActiveChannels; c++, src++, dst++)
+					{
+						dst->smpadd = src->smpadd;
+						dst->rsmpadd = src->rsmpadd;
+					}
+				}
+			}
+
+			timer(numbeats);
+
+			if (!disableMixing)
+			{
+				// do some in between state recording
+				// to be able to show smooth updates even if the buffer is large
+				for (mp_uint32 c=0;c<mixerNumActiveChannels;c++)
+					storeTimeRecordData(nb, &channel[c]);
+
+				mixBeatPacket(mixerNumActiveChannels, mixbuffBeatPacket, numbeats, beatLength);
+			}
+
+			mp_sint32 todo = mixBufferSize - done;
+
+			if (todo)
+			{
+				//memcpy(buffer, mixbuffBeatPacket, todo*MP_NUMCHANNELS*sizeof(mp_sint32));
+				const mp_sint32* src = mixbuffBeatPacket;
+				mp_sint32* dst = buffer;
+				for (mp_sint32 i = 0; i < todo*MP_NUMCHANNELS; i++, src++, dst++)
+					*dst += *src;
+				lastBeatRemainder = beatLength - todo;
 			}
 		}
 	}
@@ -1111,195 +1273,28 @@ void ChannelMixer::directOut(MixerProxy * mixerProxy)
 
 void ChannelMixer::mix(MixerProxy * mixerProxy)
 {
-	mp_uint32 bufferSize = mixerProxy->getBufferSize();
+	updateSampleCounter(mixerProxy->getBufferSize());
 
-	updateSampleCounter(bufferSize);
-
-	if (!isPlaying())
+	if (!isPlaying() || paused)
 		return;
 
 	//
 	// For performance reasons, we choose a dedicated code path for the way of mixer processing here
 	//
 	switch(mixerProxy->getProcessingType()) {
+	case MixerProxy::MixDown:
+		// Mix down channels into *one single* stereo mix buffer
+		mixDown(mixerProxy);
+		return;
 	case MixerProxy::DirectOut:
 		// Direct out to channels for machines with multi-channel hardware
 		directOut(mixerProxy);
 		return;
 	case MixerProxy::HardwareOut:
+		// Hardware out to channels for machine with multi-channel audio DMA control
 		hardwareOut(mixerProxy);
 		return;
 	}
-
-	// Default behavior
-	// @todo integrate with mixer processors!
-	if (!paused)
-	{
-		mp_sint32* buffer = mixerProxy->getBuffer<mp_sint32>(MixerProxyMixDown::MixBuffer);
-
-		mp_sint32 beatLength = beatPacketSize;
-		mp_sint32 mixSize = mixBufferSize;
-
-		mp_sint32 done = 0;
-
-		if (lastBeatRemainder)
-		{
-			mp_sint32 todo = lastBeatRemainder;
-			if (lastBeatRemainder > mixBufferSize)
-			{
-				todo = mixBufferSize;
-				mp_uint32 pos = beatLength - lastBeatRemainder;
-				//memcpy(buffer, mixbuffBeatPacket + pos*MP_NUMCHANNELS, todo*MP_NUMCHANNELS*sizeof(mp_sint32));
-				const mp_sint32* src = mixbuffBeatPacket + pos*MP_NUMCHANNELS;
-				mp_sint32* dst = buffer;
-				for (mp_sint32 i = 0; i < todo*MP_NUMCHANNELS; i++, src++, dst++)
-					*dst += *src;
-				done = mixBufferSize;
-				lastBeatRemainder-=done;
-			}
-			else
-			{
-				mp_uint32 pos = beatLength - lastBeatRemainder;
-				//memcpy(buffer, mixbuffBeatPacket + pos*MP_NUMCHANNELS, todo*MP_NUMCHANNELS*sizeof(mp_sint32));
-				const mp_sint32* src = mixbuffBeatPacket + pos*MP_NUMCHANNELS;
-				mp_sint32* dst = buffer;
-				for (mp_sint32 i = 0; i < todo*MP_NUMCHANNELS; i++, src++, dst++)
-					*dst += *src;
-				buffer+=lastBeatRemainder*MP_NUMCHANNELS;
-				mixSize-=lastBeatRemainder;
-				done = lastBeatRemainder;
-				lastBeatRemainder = 0;
-			}
-		}
-
-		if (done < (mp_sint32)mixBufferSize)
-		{
-			const mp_sint32 numbeats = /*numBeatPackets*/mixSize / beatLength;
-
-			done+=numbeats*beatLength;
-
-			mp_sint32 nb;
-
-			const bool isRamping = this->isRamping();
-
-			for (nb=0;nb<numbeats;nb++)
-			{
-				if (isRamping)
-				{
-					const TMixerChannel* src = channel;
-					TMixerChannel* dst = newChannel;
-					const mp_uint32 mixerNumActiveChannels = this->mixerNumActiveChannels;
-					if (allowFilters)
-					{
-						// this is crucial for volume ramping, store current
-						// active sample rate (stored in the step values for each channel)
-						// and also filter coefficients	and last samples
-						for (mp_uint32 c = 0; c < mixerNumActiveChannels; c++, src++, dst++)
-						{
-							dst->smpadd = src->smpadd;
-							dst->rsmpadd = src->rsmpadd;
-
-							dst->a = src->a;
-							dst->b = src->b;
-							dst->c = src->c;
-							dst->currsample = src->currsample;
-							dst->prevsample = src->prevsample;
-						}
-					}
-					else
-					{
-						// this is crucial for volume ramping, store current
-						// active sample rate (stored in the step values for each channel)
-						// and also filter coefficients	and last samples
-						for (mp_uint32 c = 0; c < mixerNumActiveChannels; c++, src++, dst++)
-						{
-							dst->smpadd = src->smpadd;
-							dst->rsmpadd = src->rsmpadd;
-						}
-					}
-				}
-
-				timer(nb);
-
-				if (!disableMixing)
-				{
-					// do some in between state recording
-					// to be able to show smooth updates even if the buffer is large
-					for (mp_uint32 c=0;c<mixerNumActiveChannels;c++)
-						storeTimeRecordData(nb, &channel[c]);
-
-					mixBeatPacket(mixerNumActiveChannels, buffer+nb*beatLength*MP_NUMCHANNELS, nb, beatLength);
-				}
-			}
-
-			buffer+=numbeats*beatLength*MP_NUMCHANNELS;
-
-			if (done < (mp_sint32)mixBufferSize)
-			{
-				memset(mixbuffBeatPacket, 0, beatLength*MP_NUMCHANNELS*sizeof(mp_sint32));
-
-				if (isRamping)
-				{
-					const TMixerChannel* src = channel;
-					TMixerChannel* dst = newChannel;
-					const mp_uint32 mixerNumActiveChannels = this->mixerNumActiveChannels;
-					if (allowFilters)
-					{
-						// this is crucial for volume ramping, store current
-						// active sample rate (stored in the step values for each channel)
-						// and also filter coefficients	and last samples
-						for (mp_uint32 c = 0; c < mixerNumActiveChannels; c++, src++, dst++)
-						{
-							dst->smpadd = src->smpadd;
-							dst->rsmpadd = src->rsmpadd;
-
-							dst->a = src->a;
-							dst->b = src->b;
-							dst->c = src->c;
-							dst->currsample = src->currsample;
-							dst->prevsample = src->prevsample;
-						}
-					}
-					else
-					{
-						// this is crucial for volume ramping, store current
-						// active sample rate (stored in the step values for each channel)
-						// and also filter coefficients	and last samples
-						for (mp_uint32 c = 0; c < mixerNumActiveChannels; c++, src++, dst++)
-						{
-							dst->smpadd = src->smpadd;
-							dst->rsmpadd = src->rsmpadd;
-						}
-					}
-				}
-
-				timer(numbeats);
-
-				if (!disableMixing)
-				{
-					// do some in between state recording
-					// to be able to show smooth updates even if the buffer is large
-					for (mp_uint32 c=0;c<mixerNumActiveChannels;c++)
-						storeTimeRecordData(nb, &channel[c]);
-
-					mixBeatPacket(mixerNumActiveChannels, mixbuffBeatPacket, numbeats, beatLength);
-				}
-
-				mp_sint32 todo = mixBufferSize - done;
-
-				if (todo)
-				{
-					//memcpy(buffer, mixbuffBeatPacket, todo*MP_NUMCHANNELS*sizeof(mp_sint32));
-					const mp_sint32* src = mixbuffBeatPacket;
-					mp_sint32* dst = buffer;
-					for (mp_sint32 i = 0; i < todo*MP_NUMCHANNELS; i++, src++, dst++)
-						*dst += *src;
-					lastBeatRemainder = beatLength - todo;
-				}
-			}
-		}
-	}
-
 }
 
 mp_sint32 ChannelMixer::initDevice()
@@ -1416,68 +1411,8 @@ mp_sint32 ChannelMixer::getBeatIndexFromSamplePos(mp_uint32 smpPos) const
 	return smpPos / getBeatPacketSize();
 }
 
-/*mp_sint32 ChannelMixer::getCurrentSample(mp_sint32 position,mp_sint32 channel)
-{
-	if (position < 0)
-	{
-		position = abs(position);
-	}
-	if (position > (mp_sint32)mixBufferSize-1)
-	{
-		position %= mixBufferSize*2;
-		position -= mixBufferSize;
-		position = mixBufferSize-1-position;
-	}
-
-	mp_sint32 val = (mp_sword)mixbuff32[position*MP_NUMCHANNELS+channel];
-	if (val < -32768)
-		val = -32768;
-	if (val > 32767)
-		val = 32767;
-
-	return val;
-}
-
-mp_sint32 ChannelMixer::getCurrentSamplePeak(mp_sint32 position,mp_sint32 channel)
-{
-	if (audioDriver->supportsTimeQuery())
-	{
-		mp_sword peak = 0;
-
-		for (mp_sint32 p = position-mixBufferSize; p <= position; p++)
-		{
-			mp_sword s = getCurrentSample(p, channel);
-			if (s > peak)
-				peak = s;
-			if (-s > peak)
-				peak = -s;
-		}
-		return peak;
-	}
-	else
-	{
-		mp_sword peak = 0;
-		for (mp_uint32 pos = 0; pos < mixBufferSize; pos++)
-		{
-			mp_sint32 s = mixbuff32[pos*MP_NUMCHANNELS+channel];
-			if (s < -32768)
-				s = -32768;
-			if (s > 32767)
-				s = 32767;
-			if (s > peak)
-				peak = s;
-			if (-s > peak)
-				peak = -s;
-		}
-
-		return peak;
-	}
-}*/
-
 mp_uint32 ChannelMixer::getSyncSampleCounter()
 {
-	/*return audioDriver->getNumPlayedSamples();*/
-
 	return 0;
 }
 
