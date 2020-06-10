@@ -39,6 +39,7 @@
 #define __MASTERMIXER_H__
 
 #include "Mixable.h"
+#include "MixerProxy.h"
 
 class MasterMixer
 {
@@ -128,6 +129,7 @@ private:
 	bool disableMixing;
 	mp_uint32 numDevices;
 	Mixable* filterHook;
+	MixerProxy * mixDownProxy;
 
 	struct DeviceDescriptor
 	{
@@ -157,9 +159,6 @@ private:
 	void notifyListener(MasterMixerNotifications notification);
 
 	void cleanup();
-
-	inline void prepareBuffer();
-	inline void swapOutBuffer(mp_sword* bufferOut);
 };
 
 #endif

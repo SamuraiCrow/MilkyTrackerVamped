@@ -189,7 +189,7 @@ AudioDriver_Arne::bufferAudioImpl()
         {
             if (isMixerActive()) {
                 for(i = 0; i < MAX_CHANNELS; i++)
-                    mixerProxy->setBuffer(i, chanRing[i] + idxWrite);
+                    mixerProxy->setBuffer<mp_sword>(i, chanRing[i] + idxWrite);
                 mixer->mixerHandler(NULL, mixerProxy);
             } else {
                 for(i = 0; i < MAX_CHANNELS; i++)

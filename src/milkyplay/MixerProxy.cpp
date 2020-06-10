@@ -28,48 +28,76 @@
  */
 
 #include "MixerProxy.h"
+#include "Mixable.h"
+#include "AudioDriverBase.h"
 
-#include <string.h>
-
-MixerProxy::MixerProxy(mp_uint32 numChannels, mp_uint32 bufferSize, Processor * processor)
+MixerProxy::MixerProxy(mp_uint32 numChannels, Processor * processor)
 : numChannels(numChannels)
-, bufferSize(bufferSize)
 , processor(processor)
 {
-
+    buffers = new void* [numChannels];
+    memset(buffers, 0, numChannels * sizeof(void *));
 }
 
-MixerProxyDirectOut::MixerProxyDirectOut(mp_uint32 numChannels, mp_uint32 bufferSize, Processor * processor)
-: MixerProxy(numChannels, bufferSize, processor)
-{
-    buffers = new mp_sword*[numChannels];
-}
-
-MixerProxyDirectOut::~MixerProxyDirectOut()
+MixerProxy::~MixerProxy()
 {
     delete[] buffers;
 }
 
-bool MixerProxyDirectOut::lock()
+MixerProxyMixDown::~MixerProxyMixDown()
 {
+    deleteBuffer<mp_sint32>(MixBuffer);
+}
+
+bool MixerProxyMixDown::lock(mp_uint32 bufferSize, mp_uint32 sampleShift)
+{
+    if(this->bufferSize != bufferSize) {
+        deleteBuffer<mp_sint32>(MixBuffer);
+        setBuffer<mp_sint32>(MixBuffer, new mp_sint32[bufferSize * MP_NUMCHANNELS]);
+    }
+
+    MixerProxy::lock(bufferSize, sampleShift);
+
+    clearBuffer<mp_sint32>(MixBuffer, bufferSize * MP_NUMCHANNELS);
+
+    return true;
+}
+
+void MixerProxyMixDown::unlock(Mixable * filterHook)
+{
+	mp_sint32 * bufferIn = getBuffer<mp_sint32>(MixBuffer);
+    mp_sword * bufferOut = getBuffer<mp_sword>(MixDownBuffer);
+
+	if (filterHook)
+		filterHook->mix(this);
+
+	const mp_sint32 sampleShift = this->sampleShift;
+	const mp_sint32 lowerBound = -((128<<sampleShift)*256);
+	const mp_sint32 upperBound = ((128<<sampleShift)*256)-1;
+	const mp_sint32 bufferSize = this->bufferSize * MP_NUMCHANNELS;
+
+	for (mp_sint32 i = 0; i < bufferSize; i++) {
+		mp_sint32 b = *bufferIn++;
+
+		if (b>upperBound) b = upperBound;
+		else if (b<lowerBound) b = lowerBound;
+
+		*bufferOut++ = b>>sampleShift;
+	}
+}
+
+bool MixerProxyDirectOut::lock(mp_uint32 bufferSize, mp_uint32 sampleShift)
+{
+    MixerProxy::lock(bufferSize, sampleShift);
+
     for(int i = 0; i < numChannels; i++) {
-        memset(buffers[i], 0, bufferSize * sizeof(mp_sword));
+        clearBuffer<mp_sword>(i, bufferSize);
     }
 
     return true;
 }
 
-void MixerProxyDirectOut::setBuffer(mp_uint32 idx, mp_sword * buffer)
-{
-    buffers[idx] = buffer;
-}
-
-MixerProxyHardwareOut::MixerProxyHardwareOut(mp_uint32 numChannels, mp_uint32 bufferSize, Processor * processor)
-: MixerProxy(numChannels, bufferSize, processor)
-{
-}
-
-bool MixerProxyHardwareOut::lock()
+bool MixerProxyHardwareOut::lock(mp_uint32 bufferSize, mp_uint32 sampleShift)
 {
     return true;
 }

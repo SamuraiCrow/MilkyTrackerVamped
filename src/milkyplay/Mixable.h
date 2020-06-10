@@ -43,13 +43,15 @@
 
 #define MAX_DIRECTOUT_CHANNELS 16
 
+class MixerProxy;
+
 struct Mixable
 {
 	virtual ~Mixable()
 	{
 	}
 
-	virtual void mix(mp_sint32* buffer, mp_uint32 numSamples, MixerProxy * mixerProxy = 0) = 0;
+	virtual void mix(MixerProxy * mixerProxy) = 0;
 };
 
 #endif

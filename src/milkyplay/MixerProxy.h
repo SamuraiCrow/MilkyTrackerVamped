@@ -27,10 +27,12 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef __MIXER_DEVICE_H__
-#define __MIXER_DEVICE_H__
+#ifndef __MIXER_PROXY_H__
+#define __MIXER_PROXY_H__
 
 #include "MilkyPlayTypes.h"
+
+#include <string.h>
 
 #define MAX_DIRECTOUT_CHANNELS 16
 
@@ -40,6 +42,9 @@
 //
 // -> @todo this is not clean yet.
 //
+
+struct Mixable;
+
 class MixerProxy
 {
 public:
@@ -54,47 +59,93 @@ public:
 	};
 
 protected:
-	mp_uint32 				numChannels;
-	mp_uint32 				bufferSize;
-	mp_sword **				buffers;
-	Processor *             processor;
+	mp_uint32 	numChannels;
+	void **		buffers;
+	Processor * processor;
+	mp_uint32 	bufferSize;
+	mp_uint32 	sampleShift;
 
 public:
-	virtual bool 			lock() { return false; }
-	virtual bool			unlock() { return true; }
-	virtual void            setBuffer(mp_uint32 idx, mp_sword * buffer) { }
-	virtual void            advanceBuffer(mp_uint32 idx, mp_uint32 offset) { buffers[idx] += offset; }
-	virtual mp_sword *      getBuffer(mp_uint32 idx) const { return buffers[idx]; }
+	template <class SampleType>
+	void setBuffer(mp_uint32 idx, SampleType * buffer) {
+		buffers[idx] = buffer;
+	}
+
+	template <class SampleType>
+	void deleteBuffer(mp_uint32 idx) {
+		delete[] reinterpret_cast<SampleType *>(buffers[idx]);
+	}
+
+	template <class SampleType>
+	void clearBuffer(mp_uint32 idx, mp_uint32 clearSize) {
+		memset(getBuffer<SampleType>(idx), 0, clearSize * sizeof(SampleType));
+	}
+
+	template <class SampleType>
+	void advanceBuffer(mp_uint32 idx, mp_uint32 offset) {
+		reinterpret_cast<SampleType **>(buffers)[idx] += offset;
+	}
+
+	template <class SampleType>
+	SampleType * getBuffer(mp_uint32 idx) const {
+		return (SampleType *) buffers[idx];
+	}
+
+	virtual bool lock(mp_uint32 bufferSize, mp_uint32 sampleShift) {
+		this->bufferSize = bufferSize;
+		this->sampleShift = sampleShift;
+
+		return true;
+	}
+
+	virtual void 			unlock(Mixable * filterHook) { }
 	virtual ProcessingType 	getProcessingType() const = 0;
 	virtual mp_uint32       getNumChannels() const = 0;
-	virtual Processor *     getProcessor() const { return processor; };
+	virtual Processor *     getProcessor() const { return processor; }
 
-	MixerProxy(mp_uint32 numChannels, mp_uint32 bufferSize, Processor * processor);
-	virtual ~MixerProxy() {};
+	mp_uint32 				getBufferSize() const { return bufferSize; }
+	mp_uint32 				getSampleShift() const { return sampleShift; }
+
+	MixerProxy(mp_uint32 numChannels, Processor * processor = 0);
+	virtual ~MixerProxy();
+};
+
+class MixerProxyMixDown : public MixerProxy
+{
+public:
+	enum {
+		MixBuffer = 0,
+		MixDownBuffer = 1
+	};
+
+	virtual bool 			lock(mp_uint32 bufferSize, mp_uint32 sampleShift);
+	virtual void 			unlock(Mixable * filterHook);
+	virtual ProcessingType	getProcessingType() const { return MixDown; }
+	virtual mp_uint32       getNumChannels() const { return numChannels; }
+
+	MixerProxyMixDown(mp_uint32 numChannels, Processor * processor = 0) : MixerProxy(numChannels, processor) {}
+	virtual ~MixerProxyMixDown();
 };
 
 class MixerProxyDirectOut : public MixerProxy
 {
-private:
 public:
-	virtual bool 			lock();
+	virtual bool 			lock(mp_uint32 bufferSize, mp_uint32 sampleShift);
 	virtual ProcessingType	getProcessingType() const { return DirectOut; }
 	virtual mp_uint32       getNumChannels() const { return numChannels; }
-	virtual void            setBuffer(mp_uint32 idx, mp_sword * buffer);
 
-	MixerProxyDirectOut(mp_uint32 numChannels, mp_uint32 bufferSize, Processor * processor);
-	virtual ~MixerProxyDirectOut();
+	MixerProxyDirectOut(mp_uint32 numChannels, Processor * processor = 0) : MixerProxy(numChannels, processor) {}
+	virtual ~MixerProxyDirectOut() {}
 };
 
 class MixerProxyHardwareOut : public MixerProxy
 {
-private:
 public:
-	virtual bool 			lock();
+	virtual bool 			lock(mp_uint32 bufferSize, mp_uint32 sampleShift);
 	virtual ProcessingType	getProcessingType() const { return HardwareOut; }
 	virtual mp_uint32       getNumChannels() const { return numChannels; }
 
-	MixerProxyHardwareOut(mp_uint32 numChannels, mp_uint32 bufferSize, Processor * processor);
+	MixerProxyHardwareOut(mp_uint32 numChannels, Processor * processor = 0) : MixerProxy(numChannels, processor) {}
 	virtual ~MixerProxyHardwareOut() {}
 };
 

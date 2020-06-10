@@ -119,8 +119,6 @@ mp_sint32 MasterMixer::openAudioDevice()
 		notifyListener(MasterMixerNotificationSampleRateChanged);
 	}
 
-	buffer = new mp_sint32[bufferSize*MP_NUMCHANNELS];
-
 	initialized = true;
 	return 0;
 }
@@ -144,6 +142,8 @@ mp_sint32 MasterMixer::closeAudioDevice()
 	{
 		initialized = false;
 	}
+
+	buffer = NULL;
 
 	return res;
 }
@@ -204,8 +204,6 @@ mp_sint32 MasterMixer::setBufferSize(mp_uint32 bufferSize)
 			return res;
 
 		this->bufferSize = bufferSize;
-		delete[] buffer;
-		buffer = NULL;
 
 		notifyListener(MasterMixerNotificationBufferSizeChanged);
 	}
@@ -380,20 +378,32 @@ bool MasterMixer::isDevicePaused(Mixable* device)
 
 void MasterMixer::mixerHandler(mp_sword* buffer, MixerProxy * mixerProxy)
 {
-	bool mixDown = mixerProxy == NULL || mixerProxy->getProcessingType() == MixerProxy::MixDown;
+	bool mixDown = buffer && !mixerProxy;
 
-	// Prepare the mix buffer(s)
-	if (!disableMixing) {
-		if(mixDown) {
-			prepareBuffer();
-		} else {
-			mixerProxy->lock();
+	// Create mix-down proxy for compatibility reasons
+	if(mixDown) {
+		//
+		// The mix-down proxy initializes (in lock()) an internal mix buffer (slot 0)
+		// which ChannelMixer and its resamplers write its samples to.
+		//
+		// In unlock() we clip and bounce this mix buffer (slot 0) to the
+		// mix-down buffer (slot 1)
+		//
+		if(!mixDownProxy) {
+			mixDownProxy = new MixerProxyMixDown(2);
 		}
+		mixerProxy = mixDownProxy;
+
+		// Set mix down buffer
+		mixerProxy->setBuffer<mp_sword>(MixerProxyMixDown::MixDownBuffer, buffer);
 	}
 
+	// Lock the mix buffer(s)
+	if (!disableMixing)
+		mixerProxy->lock(bufferSize, sampleShift);
+
+	// Perform mixing
 	const mp_sint32 numDevices = this->numDevices;
-	const mp_uint32 bufferSize = this->bufferSize;
-	mp_sint32* mixBuffer = this->buffer;
 
 	DeviceDescriptor* device = this->devices;
 	for (mp_sint32 i = 0; i < numDevices; i++, device++)
@@ -410,15 +420,16 @@ void MasterMixer::mixerHandler(mp_sword* buffer, MixerProxy * mixerProxy)
 		}
 		else if (device->mixable && !device->paused)
 		{
-			device->mixable->mix(mixBuffer, bufferSize, mixerProxy);
+			device->mixable->mix(mixerProxy);
 		}
 	}
 
+	// Unlock and obtain mix buffer
 	if (!disableMixing) {
-		if (mixDown) {
-			swapOutBuffer(buffer);
-		} else {
-			mixerProxy->unlock();
+		mixerProxy->unlock(filterHook);
+
+		if(mixDown) {
+			this->buffer = mixerProxy->getBuffer<mp_sint32>(MixerProxyMixDown::MixBuffer);
 		}
 	}
 }
@@ -437,36 +448,8 @@ void MasterMixer::cleanup()
 	if (initialized)
 		closeAudioDevice();
 
-	if (buffer)
-	{
-		delete[] buffer;
-		buffer = 0;
-	}
-}
-
-inline void MasterMixer::prepareBuffer()
-{
-	memset(buffer, 0, bufferSize*MP_NUMCHANNELS*sizeof(mp_sint32));
-}
-
-inline void MasterMixer::swapOutBuffer(mp_sword* bufferOut)
-{
-	if (filterHook)
-		filterHook->mix(buffer, bufferSize);
-
-	mp_sint32* bufferIn = buffer;
-	const mp_sint32 sampleShift = this->sampleShift;
-	const mp_sint32 lowerBound = -((128<<sampleShift)*256);
-	const mp_sint32 upperBound = ((128<<sampleShift)*256)-1;
-	const mp_sint32 bufferSize = this->bufferSize*MP_NUMCHANNELS;
-
-	for (mp_sint32 i = 0; i < bufferSize; i++)
-	{
-		mp_sint32 b = *bufferIn++;
-		if (b>upperBound) b = upperBound;
-		else if (b<lowerBound) b = lowerBound;
-		*bufferOut++ = b>>sampleShift;
-	}
+	delete mixDownProxy;
+	mixDownProxy = 0;
 }
 
 const char*	MasterMixer::getCurrentAudioDriverName() const
@@ -516,18 +499,19 @@ const AudioDriverManager* MasterMixer::getAudioDriverManager() const
 
 mp_sint32 MasterMixer::getCurrentSample(mp_sint32 position, mp_sint32 channel)
 {
+	if (!buffer)
+		return 0;
+
 	if (position < 0)
-	{
 		position = abs(position);
-	}
-	if (position > (mp_sint32)bufferSize-1)
-	{
+
+	if (position > (mp_sint32)bufferSize-1) {
 		position %= bufferSize*2;
 		position -= bufferSize;
 		position = bufferSize-1-position;
 	}
 
-	mp_sint32 val = (mp_sword)this->buffer[position*MP_NUMCHANNELS+channel];
+	mp_sint32 val = (mp_sword) this->buffer[position*MP_NUMCHANNELS+channel];
 	if (val < -32768)
 		val = -32768;
 	if (val > 32767)
@@ -538,6 +522,9 @@ mp_sint32 MasterMixer::getCurrentSample(mp_sint32 position, mp_sint32 channel)
 
 mp_sint32 MasterMixer::getCurrentSamplePeak(mp_sint32 position, mp_sint32 channel)
 {
+	if (!buffer)
+		return 0;
+
 	if (audioDriver == 0)
 		return 0;
 

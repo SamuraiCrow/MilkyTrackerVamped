@@ -172,7 +172,7 @@ AudioDriver_Paula::bufferAudioImpl()
         {
             if (isMixerActive()) {
                 for(i = 0; i < MAX_CHANNELS; i++)
-                    mixerProxy->setBuffer(i, chanFetch[i]);
+                    mixerProxy->setBuffer<mp_sword>(i, chanFetch[i]);
                 mixer->mixerHandler(NULL, mixerProxy);
 
                 for(i = 0; i < MAX_CHANNELS; i++) {

@@ -404,9 +404,11 @@ public:
 	virtual			~ChannelMixer();
 
 	mp_uint32		getMixBufferSize() const { return mixBufferSize; }
+
 	void			directOut(MixerProxy * mixerProxy);
 	void			hardwareOut(MixerProxy * mixerProxy);
-	void			mix(mp_sint32* buffer, mp_uint32 numSamples, MixerProxy * mixerProxy);
+	virtual void	mix(MixerProxy * mixerProxy);
+
 	void			updateSampleCounter(mp_sint32 numSamples) { sampleCounter+=numSamples; }
 	void			resetSampleCounter() { sampleCounter=0; }
 

@@ -892,11 +892,11 @@ struct PeakAutoAdjustFilter : public Mixable
 	{
 	}
 
-	virtual void mix(mp_sint32* buffer, mp_uint32 bufferSize, MixerProxy * mixerProxy = 0)
+	virtual void mix(MixerProxy * mixerProxy)
 	{
-		const mp_sint32* buffer32 = buffer;
+		const mp_sint32* buffer32 = mixerProxy->getBuffer<mp_sint32>(MixerProxyMixDown::MixBuffer);
 
-		for (mp_uint32 i = 0; i < bufferSize*MP_NUMCHANNELS; i++)
+		for (mp_uint32 i = 0; i < mixerProxy->getBufferSize() * MP_NUMCHANNELS; i++)
 		{
 			mp_sint32 b = *buffer32++;
 
