@@ -21,8 +21,9 @@ int main(int argc, char *argv[])
     ULONG currentstack = (ULONG) me->tc_SPUpper - (ULONG) me->tc_SPLower;
 
     if (currentstack < STACKSIZE) {
-        ULONG *MyStack;
-        if (MyStack = AllocVec(STACKSIZE, MEMF_PUBLIC)) {
+        ULONG * MyStack;
+        
+        if (MyStack = (ULONG *) AllocVec(STACKSIZE, MEMF_PUBLIC)) {
             MyStackSwap.stk_Lower = MyStack;
             MyStackSwap.stk_Upper = (ULONG)MyStack + STACKSIZE;
             MyStackSwap.stk_Pointer = (void *)(MyStackSwap.stk_Upper - 16);

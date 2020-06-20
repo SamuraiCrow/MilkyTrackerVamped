@@ -261,7 +261,7 @@ int main2(int argc, char * argv[])
 						}
 						CloseLibrary(P96Base);
 					} else {
-						fprintf(stderr, "Could not open %s V2!\n", P96NAME);
+						fprintf(stderr, "Could not open %s V2! This program needs RTG installed.\n", P96NAME);
 						ret = 1;
 					}
 					CloseLibrary(GfxBase);
@@ -269,6 +269,7 @@ int main2(int argc, char * argv[])
 					fprintf(stderr, "Could not open graphics.library V39!\n");
 					ret = 1;
 				}
+				CloseLibrary(IconBase);
 			} else {
 				fprintf(stderr, "Could not open icon.library V37!\n");
 				ret = 1;
@@ -278,6 +279,7 @@ int main2(int argc, char * argv[])
 			fprintf(stderr, "Could not open intuition.library V39!\n");
 			ret = 1;
 		}
+		CloseLibrary(KeymapBase);
 	} else {
 		fprintf(stderr, "Could not open keymap.library V39!\n");
 		ret = 1;

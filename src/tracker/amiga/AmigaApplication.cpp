@@ -187,7 +187,6 @@ int AmigaApplication::start()
                         P96SA_BlockPen              , 1,
                         P96SA_Quiet                 , FALSE,
                         P96SA_Type                  , CUSTOMSCREEN,
-                        P96SA_RGBFormat             , RGBFB_R5G6B5,
                         P96SA_BitMap                , FALSE,
                         P96SA_ConstantBytesPerRow   , TRUE,
                         P96SA_AutoScroll            , FALSE,

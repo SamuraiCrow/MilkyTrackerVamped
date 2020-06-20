@@ -1016,55 +1016,10 @@ static inline void storeTimeRecordData(mp_sint32 nb, ChannelMixer::TMixerChannel
 
 void ChannelMixer::hardwareOut(MixerProxy * mixerProxy)
 {
-	mp_uint32 nDriverChannels = mixerProxy->getNumChannels();
-	mp_uint32 nChannels = mixerNumActiveChannels < nDriverChannels ? mixerNumActiveChannels : nDriverChannels;
+	mp_uint32 nb;
 
-	mp_sint32 beatLength = beatPacketSize;
-	mp_sint32 mixSize = mixBufferSize;
-	mp_sint32 done = 0;
-	mp_uint32 c;
-
-	if (lastBeatRemainder) {
-		if (lastBeatRemainder > mixBufferSize) {
-			done = mixBufferSize;
-			lastBeatRemainder -= done;
-		} else {
-			mixSize -= lastBeatRemainder;
-			done = lastBeatRemainder;
-			lastBeatRemainder = 0;
-		}
-	}
-
-	if (done < (mp_sint32)mixBufferSize) {
-		const mp_sint32 numbeats = mixSize / beatLength;
-		mp_sint32 nb;
-
-		done += numbeats * beatLength;
-
-		for (nb = 0; nb < numbeats; nb++) {
-			timer(nb);
-
-			if (!disableMixing) {
-				for(c = 0; c < nChannels; c++) {
-					storeTimeRecordData(nb, &channel[c]);
-				}
-			}
-		}
-
-		if (done < (mp_sint32)mixBufferSize) {
-			timer(numbeats);
-
-			if (!disableMixing) {
-				for(c = 0; c < nChannels; c++) {
-					storeTimeRecordData(nb, &channel[c]);
-				}
-			}
-
-			mp_sint32 todo = mixBufferSize - done;
-			if (todo) {
-				lastBeatRemainder = beatLength - todo;
-			}
-		}
+	for(nb = 0; nb < 250 / 50; nb++) {
+		timer(nb);
 	}
 }
 
