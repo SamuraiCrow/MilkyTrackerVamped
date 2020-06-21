@@ -887,7 +887,8 @@ void PlayerSTD::doTickEffect(mp_sint32 chn, TModuleChannel* chnInf, mp_sint32 ef
 				}
 			}
 
-			setFreq(chn,getfreq(chn,getfinalperiod(chn,vmp),chnInf->freqadjust));
+			mp_sint32 finalper = getfinalperiod(chn,vmp);
+			setFreq(chn,getfreq(chn,finalper,chnInf->freqadjust),finalper);
 			break;
 		}
 
@@ -940,7 +941,8 @@ void PlayerSTD::doTickEffect(mp_sint32 chn, TModuleChannel* chnInf, mp_sint32 ef
 			if (ticker)
 				chnInf->vibpos[effcnt]+=chnInf->vibspeed[effcnt];
 
-			setFreq(chn,getfreq(chn,getfinalperiod(chn,chnInf->per+vm),chnInf->freqadjust));
+			mp_sint32 finalper = getfinalperiod(chn,chnInf->per+vm);
+			setFreq(chn,getfreq(chn,finalper,chnInf->freqadjust),finalper);
 
 			x = chnInf->old[effcnt].volslide>>4;
 			y = chnInf->old[effcnt].volslide&0xf;
@@ -1286,7 +1288,9 @@ void PlayerSTD::doTickEffect(mp_sint32 chn, TModuleChannel* chnInf, mp_sint32 ef
 				if (module->header.flags & XModule::MODULE_STMARPEGGIO)
 				{
 					chnInf->per = getperiod(note,relnote,finetune);
-					setFreq(chn,getfreq(chn,getfinalperiod(chn,chnInf->per),chnInf->freqadjust));
+
+					mp_sint32 finalper = getfinalperiod(chn,chnInf->per);
+					setFreq(chn,getfreq(chn,finalper,chnInf->freqadjust),finalper);
 				}
 				else
 				{
@@ -1299,7 +1303,8 @@ void PlayerSTD::doTickEffect(mp_sint32 chn, TModuleChannel* chnInf, mp_sint32 ef
 					nper-=per;
 					nper+=chnInf->per;
 
-					setFreq(chn,getfreq(chn,getfinalperiod(chn,nper),chnInf->freqadjust));
+					mp_sint32 finalper = getfinalperiod(chn,nper);
+					setFreq(chn,getfreq(chn,finalper,chnInf->freqadjust),finalper);
 				}
 			}
 			break;
@@ -1465,7 +1470,8 @@ void PlayerSTD::doTickEffect(mp_sint32 chn, TModuleChannel* chnInf, mp_sint32 ef
 			if (ticker)
 				chnInf->vibpos[effcnt]+=chnInf->vibspeed[effcnt];
 
-			setFreq(chn,getfreq(chn,getfinalperiod(chn,vmp),chnInf->freqadjust));
+			mp_sint32 finalper = getfinalperiod(chn,vmp);
+			setFreq(chn,getfreq(chn,finalper,chnInf->freqadjust),finalper);
 			break;
 		}
 
@@ -1600,7 +1606,8 @@ void PlayerSTD::doTickEffect(mp_sint32 chn, TModuleChannel* chnInf, mp_sint32 ef
 				nper-=per;
 				nper+=chnInf->per;
 
-				setFreq(chn,getfreq(chn,getfinalperiod(chn,nper),chnInf->freqadjust));
+				mp_sint32 finalper = getfinalperiod(chn,nper);
+				setFreq(chn,getfreq(chn,finalper,chnInf->freqadjust),finalper);
 			}
 			break;
 		}
@@ -2598,8 +2605,10 @@ void PlayerSTD::update()
 
 		mp_sint32 dfs = chnInf->flags & CHANNEL_FLAGS_DFS, dvs = chnInf->flags & CHANNEL_FLAGS_DVS;
 
-		if ((chnInf->per)&&(!dfs))
-			setFreq(c,getfreq(c,getfinalperiod(c,chnInf->hasVibrato ? chnInf->finalVibratoPer : chnInf->per),chnInf->freqadjust));
+		if ((chnInf->per)&&(!dfs)) {
+			mp_sint32 finalper = getfinalperiod(c,chnInf->hasVibrato ? chnInf->finalVibratoPer : chnInf->per);
+			setFreq(c,getfreq(c,finalper,chnInf->freqadjust),finalper);
+		}
 
 		if (!dvs)
 			setVol(c,getvolume(c,chnInf-> hasTremolo ? chnInf->finalTremoloVol : chnInf->vol));
@@ -2707,8 +2716,10 @@ void PlayerSTD::updateBPMIndependent()
 			if (dummy>>32)
 			{
 				prenvelope(c,&chnInf->fenv,chnInf->keyon);
-				if ((chnInf->per)&&(!dfs))
-					setFreq(c,getfreq(c,getfinalperiod(c,chnInf->per),chnInf->freqadjust));
+				if ((chnInf->per)&&(!dfs)) {
+					mp_sint32 finalper = getfinalperiod(c,chnInf->per);
+					setFreq(c,getfreq(c,finalper,chnInf->freqadjust),finalper);
+				}
 			}
 		}
 
@@ -2723,8 +2734,10 @@ void PlayerSTD::updateBPMIndependent()
 			if (dummy>>32)
 			{
 				prenvelope(c,&chnInf->vibenv,chnInf->keyon);
-				if ((chnInf->per)&&(!dfs))
-					setFreq(c,getfreq(c,getfinalperiod(c,chnInf->per),chnInf->freqadjust));
+				if ((chnInf->per)&&(!dfs)) {
+					mp_sint32 finalper = getfinalperiod(c,chnInf->per);
+					setFreq(c,getfreq(c,finalper,chnInf->freqadjust),finalper);
+				}
 			}
 		}
 

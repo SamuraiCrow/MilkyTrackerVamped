@@ -49,12 +49,12 @@ void RecorderLogic::reset()
 
 RecorderLogic::RecorderLogic(Tracker& tracker) :
 	tracker(tracker),
-	recordMode(false), recordKeyOff(true), recordNoteDelay(false)	
+	recordMode(false), recordKeyOff(true), recordNoteDelay(false)
 {
 	keys = new TKeyInfo[TrackerConfig::MAXNOTES];
-	
+
 	reset();
-	
+
 	keyVolume = -1;
 }
 
@@ -69,35 +69,35 @@ void RecorderLogic::sendNoteDownToPatternEditor(PPEvent* event, pp_int32 note, P
 	PatternEditor* patternEditor = patternEditorControl->getPatternEditor();
 
 	pp_int32 i;
-	
+
 	if (note >= 1 && note != PatternTools::getNoteOffNote() /* Key Off */)
 	{
 		// get current channel from pattern editor (= channel to play)
-		pp_int32 chn = patternEditorControl->getCurrentChannel();	
-		
+		pp_int32 chn = patternEditorControl->getCurrentChannel();
+
 		// if this is a valid note
 		pp_int32 ins = tracker.getInstrumentToPlay(note, playerController);
-		
+
 		if (ins < 0)
 		{
 			if (event)
 				event->cancel();
 			return;
 		}
-		
+
 		bool record = (tracker.editMode == EditModeMilkyTracker ? tracker.screen->hasFocus(patternEditorControl) : recordMode);
 		bool releasePlay = false;
-		bool isLiveRecording = playerController->isPlaying() && 
+		bool isLiveRecording = playerController->isPlaying() &&
 							   !playerController->isPlayingRowOnly() &&
-							   record && 
+							   record &&
 							   tracker.shouldFollowSong();
-		
+
 		// when we're not live recording, we need to decide if we're editing
 		if (!isLiveRecording)
 		{
 			releasePlay = !record;
 		}
-		// if we're live recording this is a "release" play, it means that the 
+		// if we're live recording this is a "release" play, it means that the
 		// note will not be repeated on a key being pressed, it will stay on
 		// 'till the key is released, but only when the current selected column
 		// is the note column
@@ -105,14 +105,14 @@ void RecorderLogic::sendNoteDownToPatternEditor(PPEvent* event, pp_int32 note, P
 		{
 			releasePlay = patternEditorControl->getCursorPosInner() == 0;
 		}
-		
+
 		if (releasePlay)
 		{
 			// Somewhere editing of text in an edit field takes place,
 			// in that case we don't want to be playing anything
 			if (tracker.isActiveEditing())
 				return;
-			
+
 			// take a look if this key is already pressed
 			bool isPressed = false;
 			for (i = 0; i < TrackerConfig::MAXNOTES; i++)
@@ -132,7 +132,7 @@ void RecorderLogic::sendNoteDownToPatternEditor(PPEvent* event, pp_int32 note, P
 					event->cancel();
 				return;
 			}
-			
+
 			// if we're not recording, cycle through the channels
 			// use jam-channels for playing if requested
 			if (!isLiveRecording)
@@ -141,15 +141,15 @@ void RecorderLogic::sendNoteDownToPatternEditor(PPEvent* event, pp_int32 note, P
 			}
 			else
 			{
-				// Get next recording channel: The base for selection of the 
+				// Get next recording channel: The base for selection of the
 				// next channel is the current channel within the pattern editor
 				chn = playerController->getNextRecordingChannel(chn);
 			}
-			
+
 		}
 		else
 		{
-			// The cursor in the pattern editor must be located in the note column, 
+			// The cursor in the pattern editor must be located in the note column,
 			// if not abort
 			if (patternEditorControl->getCursorPosInner() != 0)
 			{
@@ -163,12 +163,12 @@ void RecorderLogic::sendNoteDownToPatternEditor(PPEvent* event, pp_int32 note, P
 					ins = newIns;
 			}
 		}
-		
-		
+
+
 		RecPosProvider recPosProvider(*playerController);
 		// key is not pressed, play note and remember key + channel + position within module
 		pp_int32 pos = -1, row = 0, ticker = 0;
-		
+
 		// if we are recording we are doing a query on the current position
 		if (isLiveRecording)
 			recPosProvider.getPosition(pos, row, ticker);
@@ -176,7 +176,7 @@ void RecorderLogic::sendNoteDownToPatternEditor(PPEvent* event, pp_int32 note, P
 		{
 			pos = row = -1;
 		}
-		
+
 		if (chn != -1)
 		{
 			for (i = 0; i < TrackerConfig::MAXNOTES; i++)
@@ -199,11 +199,11 @@ void RecorderLogic::sendNoteDownToPatternEditor(PPEvent* event, pp_int32 note, P
 				//	keys[i].note = keys[i].channel = 0;
 				//}
 			}
-			
+
 			// play it
-			tracker.playerLogic->playNote(*playerController, (mp_ubyte)chn, note, 
+			tracker.playerLogic->playNote(*playerController, (mp_ubyte)chn, note,
 										  (mp_ubyte)ins, keyVolume);
-			
+
 			// if we're recording send the note to the pattern editor
 			if (isLiveRecording)
 			{
@@ -217,18 +217,18 @@ void RecorderLogic::sendNoteDownToPatternEditor(PPEvent* event, pp_int32 note, P
 				if (ticker && recordNoteDelay)
 					patternEditor->writeDirectEffect(1, 0x3D, ticker > 0xf ? 0xf : ticker,
 													 chn, row, pos);
-				
+
 				if (keyVolume != -1 && keyVolume >= 0 && keyVolume <= 255)
 					patternEditor->writeDirectEffect(0, 0xC, (pp_uint8)keyVolume,
 													 chn, row, pos);
-				
+
 				patternEditor->writeDirectNote(note, chn, row, pos);
-				
+
 				tracker.screen->paintControl(patternEditorControl);
-				
+
 				// update cursor to song position in case we're blocking refresh timer
 				//updateSongPosition(-1, -1, true);
-				
+
 				if (event)
 					event->cancel();
 			}
@@ -237,7 +237,7 @@ void RecorderLogic::sendNoteDownToPatternEditor(PPEvent* event, pp_int32 note, P
 		{
 			event->cancel();
 		}
-		
+
 	}
 }
 
@@ -245,13 +245,13 @@ void RecorderLogic::sendNoteUpToPatternEditor(PPEvent* event, pp_int32 note, Pat
 {
 	// if this is a valid note look if we're playing something and release note by sending key-off
 	if (note >= 1 && note <= ModuleEditor::MAX_NOTE)
-	{	
+	{
 		PatternEditor* patternEditor = patternEditorControl->getPatternEditor();
 
 		pp_int32 pos = -1, row = 0, ticker = 0;
-		
-		bool record = (tracker.editMode == EditModeMilkyTracker ? tracker.screen->hasFocus(patternEditorControl) : recordMode);	
-		
+
+		bool record = (tracker.editMode == EditModeMilkyTracker ? tracker.screen->hasFocus(patternEditorControl) : recordMode);
+
 		for (mp_sint32 i = 0; i < TrackerConfig::MAXNOTES; i++)
 		{
 			// found a playing channel
@@ -260,12 +260,12 @@ void RecorderLogic::sendNoteUpToPatternEditor(PPEvent* event, pp_int32 note, Pat
 				PlayerController* playerController = tracker.playerController;
 				if (keys[i].playerController)
 					playerController = keys[i].playerController;
-			
-				bool isLiveRecording = playerController->isPlaying() && 
+
+				bool isLiveRecording = playerController->isPlaying() &&
 									   !playerController->isPlayingRowOnly() &&
-									   record && 
+									   record &&
 									   tracker.shouldFollowSong();
-							   				
+
 				bool recPat = false;
 				RecPosProvider recPosProvider(*playerController);
 				if (isLiveRecording)
@@ -278,14 +278,14 @@ void RecorderLogic::sendNoteUpToPatternEditor(PPEvent* event, pp_int32 note, Pat
 				{
 					pos = row = -1;
 				}
-							
+
 				// send key off
-				tracker.playerLogic->playNote(*playerController, (mp_ubyte)keys[i].channel, 
-											  PatternTools::getNoteOffNote(), 
+				tracker.playerLogic->playNote(*playerController, (mp_ubyte)keys[i].channel,
+											  PatternTools::getNoteOffNote(),
 											  keys[i].ins);
-				
+
 				if (isLiveRecording && recordKeyOff)
-				{														
+				{
 					tracker.setChanged();
 					// update cursor to song position in case we're blocking refresh timer
 					tracker.updateSongPosition(pos, row, true);
@@ -309,29 +309,29 @@ void RecorderLogic::sendNoteUpToPatternEditor(PPEvent* event, pp_int32 note, Pat
 							patternEditor->writeDirectNote(PatternTools::getNoteOffNote(),
 														   keys[i].channel, row, pos);
 					}
-				
+
 					tracker.screen->paintControl(patternEditorControl);
 
 					// update cursor to song position in case we're blocking refresh timer
 					//updateSongPosition(-1, -1, true);
 				}
-				
+
 				keys[i].note = 0;
 				keys[i].channel = -1;
 			}
 		}
-		
+
 	}
 }
 
 void RecorderLogic::init()
 {
 	if (recordMode)
-		tracker.playerController->initRecording();					
+		tracker.playerController->initRecording();
 }
 
 void RecorderLogic::initToggleEdit()
 {
 	if (recordMode && (tracker.playerController->isPlaying()))
-		tracker.playerController->initRecording();							
+		tracker.playerController->initRecording();
 }

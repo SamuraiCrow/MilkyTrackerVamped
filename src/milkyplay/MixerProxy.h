@@ -56,6 +56,7 @@ public:
 
 	class Processor {
 	public:
+		//virtual void play
 	};
 
 protected:

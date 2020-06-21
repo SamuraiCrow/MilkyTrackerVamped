@@ -31,7 +31,7 @@
  *  PlayerGeneric.h
  *  MilkyPlay
  *
- *	This class is meant to be a wrapper class that handles all 
+ *	This class is meant to be a wrapper class that handles all
  *	different sorts of players for different Module types.
  *
  *  Created by Peter Barth on 21.01.05.
@@ -54,12 +54,12 @@ class PlayerGeneric : public MixerSettings, public PlayModeSettings
 private:
 	class MasterMixer* mixer;
 	class MixerNotificationListener* listener;
-	
+
 	// the current PlayerBase instance
 	PlayerBase*			player;
 
 	// ----------------------------------------------------------
-	// Since we are destroying and creating PlayerBase instances 
+	// Since we are destroying and creating PlayerBase instances
 	// within this class there is no way to keep the settings
 	// we set for this special instance, so we need to store them
 	// not only in the instance but also in this class:
@@ -75,7 +75,7 @@ private:
 	// remember sample shift
 	mp_uint32			sampleShift;
 	// this flag indicates if audiodriver tries to compensate for 2^n buffer sizes
-	bool				compensateBufferFlag;		
+	bool				compensateBufferFlag;
 	// This contains the string of the selected audio driver
 	char*				audioDriverName;
 
@@ -93,7 +93,7 @@ private:
 	bool				repeat;
 	// remember to reset on stop
 	bool				resetOnStopFlag;
-	// remember to reset main volume on start 
+	// remember to reset main volume on start
 	bool				resetMainVolumeOnStartPlayFlag;
 	// remember to auto adjust the peak
 	bool				autoAdjustPeak;
@@ -107,7 +107,7 @@ private:
 	void				adjustSettings();
 
 	/**
-	 * Determine the best player type for a given module 
+	 * Determine the best player type for a given module
 	 * @param  module	the module which should be played
 	 * @return			an enum with identifies the player type
 	 */
@@ -127,25 +127,25 @@ public:
 	 * Construct a PlayerGeneric object for a given output frequency
 	 * @param  frequency	output frequency for the mixer
 	 */
-						PlayerGeneric(mp_sint32 frequency, 
+						PlayerGeneric(mp_sint32 frequency,
 									  AudioDriverInterface* audioDriver = NULL);
 	/**
 	 * Destructor
-	 */	
+	 */
 						~PlayerGeneric();
 
 	///////////////////////////////////////////////////////////////////////////////////////////
 	// -------------------------- wrapping mixer specific stuff -------------------------------
 	///////////////////////////////////////////////////////////////////////////////////////////
 	/**
-	 * Specify mixer type. This basically selects the output quality 
+	 * Specify mixer type. This basically selects the output quality
 	 * @param  type		mixer type
 	 * @see				MixerSettings
 	 */
 	void				setResamplerType(ResamplerTypes type);
 
 	/**
-	 * Specify mixer type with two flags indicating whether to interpolate or to do volume ramping. 
+	 * Specify mixer type with two flags indicating whether to interpolate or to do volume ramping.
 	 * @param  type		mixer type
 	 * @see				MixerSettings
 	 */
@@ -157,7 +157,7 @@ public:
 	 * @see				setResamplerType
 	 */
 	ChannelMixer::ResamplerTypes	getResamplerType() const;
-	
+
 	/**
 	 * Specify the amount of which the sample data is right-shifted before sent to the sound driver
 	 * This is an amplify in the opposite direction (shift value of 2 means 25% of the original volume)
@@ -171,13 +171,13 @@ public:
 	 * @see				setSampleShift
 	 */
 	mp_sint32			getSampleShift() const;
-	
+
 	/**
 	 * Doesn't work. Don't call.
 	 * @param  b		true or false
 	 */
 	void				setPeakAutoAdjust(bool b);
-	
+
 	/**
 	 * Set the desired output frequency
 	 * It's up the the driver if the wanted frequency is possible or not
@@ -189,22 +189,22 @@ public:
 
 	/**
 	 * Get the current mixer output frequency
-	 * @return			output frequency 
+	 * @return			output frequency
 	 * @see				adjustFrequency
 	 */
 	mp_sint32			getMixFrequency() const;
-	
+
 	/**
 	 * Convert number of beat backets to buffer size:
 	 * The ChannelMixer class uses a fixed 250Hz timer so the mixer size is
 	 * always a multiple of CurrentOutputFrequency / 250
 	 * E.g. if you're mixing at 44100Hz the buffer size is always a multiple
-	 * of 176 samples. 
+	 * of 176 samples.
 	 * Thus specifying a value of 10 will result in a buffer of 1760 samples size.
 	 * Important: Some sound device drivers don't allow buffer sizes which are
-	 * not multiple of 2^n that's why on some systems setting up the sound 
+	 * not multiple of 2^n that's why on some systems setting up the sound
 	 * device with such a buffer size might not work. Use adjustBufferSize with
-	 * a 2^n buffer size or call setPowerOfTwoCompensationFlag(true).	 
+	 * a 2^n buffer size or call setPowerOfTwoCompensationFlag(true).
 	 *
 	 * @param  numBeats     The number of beat "packets"
 	 */
@@ -219,10 +219,10 @@ public:
 	/**
 	 * Set the desired buffer size
 	 * Important: Some sound device drivers don't allow buffer sizes which are
-	 * not multiple of 2^n that's why on some systems you might call 
+	 * not multiple of 2^n that's why on some systems you might call
 	 * setPowerOfTwoCompensationFlag(true) to always round to the next 2^n buffer size
 	 *
-	 * @param  bufferSize	buffer size description 
+	 * @param  bufferSize	buffer size description
 	 */
 	mp_sint32			setBufferSize(mp_uint32 bufferSize);
 
@@ -232,7 +232,7 @@ public:
 	 * @see				getPowerOfTwoCompensationFlag, audioDriverSupportsPowerOfTwoCompensation
 	 */
 	mp_sint32			setPowerOfTwoCompensationFlag(bool b);
-	
+
 	/**
 	 * Query if the sound driver is currently forcing 2^n buffer blocks
 	 * @return			true or false
@@ -245,7 +245,7 @@ public:
 	 * @return			Name of the audio driver. Do NOT save this value. It's only temporary and may change.
 	 */
 	const char*			getCurrentAudioDriverName() const;
-	
+
 	/**
 	 * Select an audio driver from the available list of audio drivers
 	 * specified by the given name
@@ -268,7 +268,7 @@ public:
 	 * @return			true or false
 	 */
 	bool				isPlaying() const;
-	
+
 	/**
 	 * Get how many samples have been played since the player has started playing
 	 * this is only 32 bit and might overflow quickly depending on your output frequency
@@ -281,9 +281,9 @@ public:
 	 * @see				getSampleCounter
 	 */
 	void				resetSampleCounter();
-	
+
 	/**
-	 * For hi latency audio drivers this might return 
+	 * For hi latency audio drivers this might return
 	 * a pointer to the sample which is currently played
 	 * in the mixing BUFFER!!! Don't depend on this function
 	 * it might not work on your system
@@ -292,7 +292,7 @@ public:
 	mp_sint32			getCurrentSamplePosition() const;
 
 	mp_sint32			getCurrentBeatIndex();
-	
+
 	/**
 	 * Get a sample from the current mixing buffer
 	 * a pointer to the sample which is currently played
@@ -338,7 +338,7 @@ public:
 	 * @see				PlayModeSettings
 	 */
 	void				setPlayMode(PlayModes mode);
-	
+
 	/**
 	 * Get current selected play mode
 	 * @return			current play mode
@@ -360,7 +360,7 @@ public:
 	 * @return			true if option is enabled, false otherwise
 	 */
 	bool				isEnabled(PlayModeOptions option) const;
-	
+
 	/**
 	 * Restart playback
 	 * @param  startPosition		start position within the song
@@ -370,15 +370,15 @@ public:
 	 * @param  playOneRowOnly		stop after playing exactly ONE row
 	 */
 	void				restart(mp_uint32 startPosition = 0, mp_uint32 startRow = 0, bool resetMixer = true, const mp_ubyte* customPanningTable = NULL, bool playOneRowOnly = false);
-	
+
 	/**
 	 * Reset everything. Includes audio device if there is one.
 	 */
 	void				reset();
-	
+
 	/**
-	 * Reset speed settings to the default. 
-	 */	
+	 * Reset speed settings to the default.
+	 */
 	void				resetAllSpeed();
 
 	/**
@@ -392,11 +392,11 @@ public:
 	 * @param  idle					whether or not to start in idle mode
 	 * @param  patternIndex			this specifies to play a given pattern only, supply -1 to play entire song instead of just one pattern
 	 */
-	mp_sint32			startPlaying(XModule* module, 
-									 bool repeat = false, 
-									 mp_uint32 startPosition = 0, 
+	mp_sint32			startPlaying(XModule* module,
+									 bool repeat = false,
+									 mp_uint32 startPosition = 0,
 									 mp_uint32 startRow = 0,
-									 mp_sint32 numChannels = -1, 
+									 mp_sint32 numChannels = -1,
 									 const mp_ubyte* customPanningTable = NULL,
 									 bool idle = false,
 									 mp_sint32 patternIndex = -1,
@@ -413,12 +413,12 @@ public:
 	 * @return			error code (0 = everything is fine)
 	 */
 	mp_sint32			stopPlaying();
-	
+
 	/**
 	 * Check if song has been stopped (either the song did something stupid or it played once and repeat is false)
-	 * NOTE: This will not mean that audio streaming has stopped, it only tells you that the song hit a position 
-	 * that was already played and if it's not in repeat mode it will halt. 
-	 * If the player is in repeat mode this will most probably always return false and even if it is true you need 
+	 * NOTE: This will not mean that audio streaming has stopped, it only tells you that the song hit a position
+	 * that was already played and if it's not in repeat mode it will halt.
+	 * If the player is in repeat mode this will most probably always return false and even if it is true you need
 	 * to still call stopPlaying() if you want to play another song.
 	 * @return			true or false
 	 */
@@ -427,7 +427,7 @@ public:
 	/**
 	 * This is probably only used by MilkyTracker
 	 * You can tell the core not to play any song, but the mixer is still active
-	 * So if you play samples on the channels manually they will still be mixed 
+	 * So if you play samples on the channels manually they will still be mixed
 	 * @param  idle		true = go into idle mode stop song but mixer stays active, false = start playing the song again
 	 */
 	void				setIdle(bool idle);
@@ -451,11 +451,11 @@ public:
 	 * @see				setRepeat
 	 */
 	bool				isRepeating() const;
-		
+
 	/**
 	 * Pause the player
 	 */
-	mp_sint32			pausePlaying();	
+	mp_sint32			pausePlaying();
 
 	/**
 	 * Resume from paused state
@@ -469,18 +469,18 @@ public:
 	 * @see				pausePlaying
 	 */
 	bool				isPaused() const;
-	
+
 	/**
 	 * Turn mixer off, but song is still played
 	 * This is used for calculating the song length:
-	 * Song is played internally but the entire mixer 
+	 * Song is played internally but the entire mixer
 	 * is disabled so playing will be really fast
 	 * @param  b		true or false
 	 */
 	void				setDisableMixing(bool b);
 
 	/**
-	 * Allow DSP filters. 
+	 * Allow DSP filters.
 	 * IT uses a low pass resonanance IIR filter
 	 * which can be disabled to save CPU power.
 	 * @param  b		true or false
@@ -493,7 +493,7 @@ public:
 	 * @see				setAllowFilters
 	 */
 	bool				getAllowFilters() const;
-	
+
 	/**
 	 * Set master volume for the mixer
 	 * @param  vol		Master volume between 0 and 256
@@ -519,7 +519,7 @@ public:
 	 * @see				setPanningSeparation
 	 */
 	mp_sint32			getPanningSeparation() const;
-	
+
 	/**
 	 * Return the main volume of the currently played song, this is NOT the mixer master volume
 	 * @return			main volume between 0 and 255
@@ -528,7 +528,7 @@ public:
 
 	/**
 	 * Which row in the current pattern is the player at?
-	 * @return			current row in current pattern 
+	 * @return			current row in current pattern
 	 */
 	mp_sint32			getRow() const;
 
@@ -539,7 +539,7 @@ public:
 	mp_sint32			getOrder() const;
 
 	/**
-	 * Return both, order and row at the same time, 
+	 * Return both, order and row at the same time,
 	 * might be needed for sync reasons (MilkyTracker)
 	 * Retrieving the row requires very low latency output, so it might
 	 * not be as precise as you want to have it
@@ -551,7 +551,7 @@ public:
 	mp_sint32			getLastUnvisitedPosition() const;
 
 	/**
-	 * Return order, row and ticker at the same time, 
+	 * Return order, row and ticker at the same time,
 	 * might be needed for sync reasons (MilkyTracker)
 	 * Retrieving the ticker/row requires very low latency output, so it might
 	 * not be as precise as you want to have it
@@ -569,24 +569,15 @@ public:
 	mp_int64			getSyncCount() const;
 
 	/**
-	 * Return number of samples played but this time the
-	 * audio driver will return this value.
-	 * This is also used for VERY accurate synching especially
-	 * using MMSYSTEM. The value will be resettet on calling stopPlaying()
-	 * @return			number of samples the audiodriver has played since start
-	 */
-	mp_uint32			getSyncSampleCounter() const;
-	
-	/**
 	 * Jump to next pattern
 	 */
 	void				nextPattern();
-	
+
 	/**
 	 * Jump to previous pattern
 	 */
 	void				lastPattern();
-	
+
 	/**
 	 * Select a new position within the song
 	 * @param  pos				new order position
@@ -594,7 +585,7 @@ public:
 	 * @param  resetChannels	reset channels, yes or no
 	 */
 	void				setPatternPos(mp_uint32 pos, mp_uint32 row = 0, bool resetChannels = true, bool resetFXMemory = true);
-	
+
 	/**
 	 * Return the tempo of the song at the current position (in BPM)
 	 * When there is no song playing the last active tempo will be returned
@@ -608,22 +599,22 @@ public:
 	 * @return			current speed in ticks
 	 */
 	mp_sint32			getSpeed() const;
-	
+
 	/**
 	 * Tell the player to reset the channels when the song stops (= is played once)
 	 * When the player is in repeat mode the channels will never be resettet, not
 	 * even when the song loops
 	 * @param  b		reset on stop, yes or no
-	 */	
+	 */
 	void				resetOnStop(bool b);
 
 	/**
 	 * Tell the player to reset the main volume of the player (not the mixer master volume)
 	 * when the song is restarted (MilkyTracker does not want the volume to be reset)
 	 * @param  b		reset volume on start, yes or no
-	 */	
+	 */
 	void				resetMainVolumeOnStartPlay(bool b);
-	
+
 	/**
 	 * Export the song as WAV file
 	 * @param  fileName				the path and the filename to export to
@@ -634,29 +625,29 @@ public:
 	 * @param  mutingNumChannels	optional: many channels does the muting array contain?
 	 * @param  customPanningTable	When specifying a custom panning table the panning default from the module is ignored
 	 * @param  preferredDriver		optional: specify another output audio driver here (NULL = WAV driver)
-	 * @param  timingLUT			optional: specify a pointer to a buffer which will hold the 
+	 * @param  timingLUT			optional: specify a pointer to a buffer which will hold the
 	 *										  number of samples played up to this position in the orderlist
 	 *										  the buffer needs at least module->header.ordnum entries
-	 */	
-	mp_sint32			exportToWAV(const SYSCHAR* fileName, 
-									XModule* module, 
-									mp_sint32 startOrder = 0, mp_sint32 endOrder = -1, 
+	 */
+	mp_sint32			exportToWAV(const SYSCHAR* fileName,
+									XModule* module,
+									mp_sint32 startOrder = 0, mp_sint32 endOrder = -1,
 									const mp_ubyte* mutingArray = NULL, mp_uint32 mutingNumChannels = 0,
 									const mp_ubyte* customPanningTable = NULL,
 									AudioDriverBase* preferredDriver = NULL,
 									mp_sint32* timingLUT = NULL);
-	
+
 	/**
 	 * Grab current channel data from a module channel
 	 * @param  chn					the channel index to grab the data from
 	 * @param  channelInfo			reference to a channelInfo structure to be filled
 	 */
 	bool				grabChannelInfo(mp_sint32 chn, TPlayerChannelInfo& channelInfo) const;
-	
+
 	/**
 	 * Set the maximum number of virtual channels to be allocated while playing.
 	 * This might reduce CPU consumption a lot but only if the current player is using
-	 * virtual channels (like PlayerIT for example). If the current player doesn't 
+	 * virtual channels (like PlayerIT for example). If the current player doesn't
 	 * support virtual channels, this function has no effect.
 	 *
 	 * IMPORTANT: call this only before startPlaying, otherwise it will have no effect.
@@ -676,15 +667,15 @@ public:
 	 * Change panning of a current playing channel
 	 * @param  chn	the channel
 	 * @param  pan	new panning value Left(0..255)Right
-	 */	
+	 */
 	void				setPanning(mp_ubyte chn, mp_ubyte pan);
 
 	/**
 	 * Return the currently used player instance (handle with care)
 	 * @return				a PlayerBase instance is returned or NULL if there is none right now
 	 */
-	PlayerBase*			getPlayerInstance() { return player; }	
-	
+	PlayerBase*			getPlayerInstance() { return player; }
+
 	friend class MixerNotificationListener;
 };
 

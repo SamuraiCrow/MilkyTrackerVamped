@@ -57,7 +57,7 @@
 	}
 
 class ChannelMixer;
-typedef void (ChannelMixer::*TSetFreq)(mp_sint32 c, mp_sint32 f);
+typedef void (ChannelMixer::*TSetFreq)(mp_sint32 c, mp_sint32 f, mp_sint32 per);
 
 class MixerSettings
 {
@@ -194,6 +194,7 @@ public:
 		mp_sint32			smpposfrac;				// 16 bit fractional part of sample position
 		mp_sint32			smpadd;					// 16:16 fixed point increment
 		mp_sint32			rsmpadd;				// fixed point reciprocal of the increment
+		mp_sint32			period;					// raw period which can be used for DMA playback on Amiga hardware
 		mp_sint32			loopend;				// loop end
 		mp_sint32			loopendcopy;			// Temporary placeholder for one-shot looping
 		mp_sint32			loopstart;				// loop start
@@ -407,6 +408,7 @@ public:
 
 	void			mixDown(MixerProxy * mixerProxy);
 	void			directOut(MixerProxy * mixerProxy);
+	void			hardwareOutChannel(MixerProxy * mixerProxy, mp_uint32 c);
 	void			hardwareOut(MixerProxy * mixerProxy);
 
 	virtual void	mix(MixerProxy * mixerProxy);
@@ -478,13 +480,13 @@ public:
 
 	void			setPan(mp_sint32 c,mp_sint32 p)	{ channel[c].pan = p; }
 
-	void			setFreq(mp_sint32 c,mp_sint32 f)
+	void			setFreq(mp_sint32 c,mp_sint32 f, mp_sint32 per = 0)
 	{
-		(this->*setFreqFuncTable[resamplerType])(c,f);
+		(this->*setFreqFuncTable[resamplerType])(c, f, per);
 	}
 
 	// Default low precision calculations
-	void			setChannelFrequency(mp_sint32 c, mp_sint32 f);
+	void			setChannelFrequency(mp_sint32 c, mp_sint32 f, mp_sint32 per);
 
 	void			setFilterAttributes(mp_sint32 c, mp_sint32 cutoff, mp_sint32 resonance);
 
@@ -538,8 +540,6 @@ public:
 	void			muteChannel(mp_sint32 c, bool m);
 
 	bool			isChannelMuted(mp_sint32 c);
-
-	mp_uint32		getSyncSampleCounter();
 
 protected:
 	// timer procedure for mixing

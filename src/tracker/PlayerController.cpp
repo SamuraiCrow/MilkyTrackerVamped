@@ -161,7 +161,7 @@ private:
 		pp_int32 period = player.getlogperiod(currentSamplePlayNote+1, smp->relnote, smp->finetune) << 8;
 		pp_int32 freq = player.getlogfreq(period);
 
-		player.setFreq(chn,freq);
+		player.setFreq(chn, freq, period);
 		player.setVol(chn, (smp->vol*512)/255);
 		player.setPan(chn, 128);
 

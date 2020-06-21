@@ -63,7 +63,7 @@ static inline mp_sint32 myMod(mp_sint32 a, mp_sint32 b)
   - Saga_Musix @ http://modarchive.org/forums/index.php?topic=3517.0
 */
 mp_sint32 ChannelMixer::panLUT[257];
-void ChannelMixer::panToVol (ChannelMixer::TMixerChannel *chn, mp_sint32 &volL, mp_sint32 &volR)
+void ChannelMixer::panToVol(ChannelMixer::TMixerChannel *chn, mp_sint32 &volL, mp_sint32 &volR)
 {
 	mp_sint32 pan = (((chn->pan - 128)*panningSeparation) >> 8) + 128;
 	if (pan < 0) pan = 0;
@@ -742,9 +742,10 @@ void ChannelMixer::setActiveChannels(mp_uint32 num)
 }
 
 // Default lo precision calculations
-void ChannelMixer::setChannelFrequency(mp_sint32 c, mp_sint32 f)
+void ChannelMixer::setChannelFrequency(mp_sint32 c, mp_sint32 f, mp_sint32 per)
 {
 	channel[c].smpadd = ((mp_sint32)(((mp_int64)((mp_int64)f*(mp_int64)rMixFrequency))>>15))<<0;
+	channel[c].period = per;
 
 	if (channel[c].smpadd)
 		channel[c].rsmpadd = 0xFFFFFFFF/channel[c].smpadd;
@@ -1014,12 +1015,66 @@ static inline void storeTimeRecordData(mp_sint32 nb, ChannelMixer::TMixerChannel
 	}
 }
 
+void ChannelMixer::hardwareOutChannel(MixerProxy * mixerProxy, mp_uint32 c)
+{
+	MixerProxy::Processor * processor = mixerProxy->getProcessor();
+	TMixerChannel * chn = &channel[c];
+	TMixerChannel * newChannel = &newChannel[c];
+
+	chn->index = c;
+
+	// Playing?
+	if(chn->flags & MP_SAMPLE_PLAY) {
+		switch (chn->flags&(MP_SAMPLE_FADEOUT|MP_SAMPLE_FADEIN|MP_SAMPLE_FADEOFF))
+		{
+			case MP_SAMPLE_FADEIN:
+				chn->flags &= ~MP_SAMPLE_FADEIN;
+				printf("ch %ld: play %lx %ld\n", c, chn->sample, chn->period);
+				break;
+
+			// Fade off = *stop* sample actively
+			case MP_SAMPLE_FADEOFF:
+				chn->flags &= ~(MP_SAMPLE_PLAY | MP_SAMPLE_FADEOFF);
+				printf("ch %ld: stop\n", c);
+				//processor->stop(c);
+				return;
+
+			// Fade out = basically switching sample on running channel
+			case MP_SAMPLE_FADEOUT:
+				chn->sample = newChannel[c].sample;
+				chn->smplen = newChannel[c].smplen;
+				chn->loopstart = newChannel[c].loopstart;
+				chn->loopend = newChannel[c].loopend;
+				chn->smppos = newChannel[c].smppos;
+				chn->smpposfrac = newChannel[c].smpposfrac;
+				chn->flags = newChannel[c].flags;
+				chn->loopendcopy = newChannel[c].loopendcopy;
+				//chn->fixedtime = newChannel[c].fixedtimefrac;
+				//chn->fixedtimefrac = newChannel[c].fixedtimefrac;
+				printf("ch %ld: change %lx %ld\n", c, chn->sample, chn->period);
+				/* Fallthrough */
+
+			default:
+				panToVol(chn, chn->finalvoll, chn->finalvolr);
+				break;
+		}
+
+		//processor->play(c, )
+	}
+}
+
 void ChannelMixer::hardwareOut(MixerProxy * mixerProxy)
 {
-	mp_uint32 nb;
+	mp_uint32 nb, c;
+	mp_uint32 nDriverChannels = mixerProxy->getNumChannels();
+	mp_uint32 nChannels = mixerNumActiveChannels < nDriverChannels ? mixerNumActiveChannels : nDriverChannels;
 
 	for(nb = 0; nb < 250 / 50; nb++) {
 		timer(nb);
+
+		for(c = 0; c < nChannels; c++) {
+			hardwareOutChannel(mixerProxy, c);
+		}
 	}
 }
 
@@ -1412,10 +1467,6 @@ mp_sint32 ChannelMixer::getBeatIndexFromSamplePos(mp_uint32 smpPos) const
 	return smpPos / getBeatPacketSize();
 }
 
-mp_uint32 ChannelMixer::getSyncSampleCounter()
-{
-	return 0;
-}
 
 #ifdef __MPTIMETRACKING__
 

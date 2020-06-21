@@ -817,14 +817,6 @@ mp_int64 PlayerGeneric::getSyncCount() const
 	return 0;
 }
 
-mp_uint32 PlayerGeneric::getSyncSampleCounter() const
-{
-	if (player)
-		return player->getSyncSampleCounter();
-
-	return 0;
-}
-
 void PlayerGeneric::nextPattern()
 {
 	if (player)

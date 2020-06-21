@@ -409,7 +409,7 @@ AmigaApplication::loop()
 
                             keyUp = key.code >= 0x80;
                             if(keyUp)
-                                key.code &= 0x80;
+                                key.code &= 0x7f;
 
                             pp_uint16 chr[3] = {toVK(key), toSC(key), key.sym == -1 ? 0 : key.sym};
 
