@@ -92,6 +92,7 @@ add_library(milkyplay STATIC
     PlayerGeneric.h
     PlayerIT.h
     PlayerSTD.h
+    ProxyProcessor.h
     ResamplerAmiga.h
     ResamplerCubic.h
     ResamplerFactory.h

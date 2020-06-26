@@ -38,6 +38,8 @@
 
 #include "XMFile.h"
 
+#include <clib/exec_protos.h>
+
 #define MP_MAXTEXT 32
 #define MP_MAXORDERS 256
 #define MP_MAXINS 255
@@ -193,7 +195,8 @@ public:
 
 	static mp_ubyte* allocPaddedMem(mp_uint32 size)
 	{
-		mp_ubyte* result = new mp_ubyte[getPaddedSize(size)];
+		//mp_ubyte* result = new mp_ubyte[getPaddedSize(size)];
+		mp_ubyte* result = (mp_ubyte *)AllocMem(getPaddedSize(size), MEMF_CHIP | MEMF_CLEAR);
 
 		if (result == NULL)
 			return NULL;
@@ -214,7 +217,8 @@ public:
 		if (mem == NULL)
 			return;
 
-		delete[] getPadStartAddr(mem);
+		//delete[] getPadStartAddr(mem);
+
 	}
 
 	static void copyPaddedMem(void* dst, const void* src, mp_uint32 size)

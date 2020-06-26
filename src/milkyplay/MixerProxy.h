@@ -44,6 +44,7 @@
 //
 
 struct Mixable;
+class ProxyProcessor;
 
 class MixerProxy
 {
@@ -54,17 +55,12 @@ public:
 		HardwareOut
 	};
 
-	class Processor {
-	public:
-		//virtual void play
-	};
-
 protected:
-	mp_uint32 	numChannels;
-	void **		buffers;
-	Processor * processor;
-	mp_uint32 	bufferSize;
-	mp_uint32 	sampleShift;
+	ProxyProcessor * 	processor;
+	mp_uint32 			numChannels;
+	void **				buffers;
+	mp_uint32 			bufferSize;
+	mp_uint32 			sampleShift;
 
 public:
 	template <class SampleType>
@@ -102,12 +98,12 @@ public:
 	virtual void 			unlock(Mixable * filterHook) { }
 	virtual ProcessingType 	getProcessingType() const = 0;
 	virtual mp_uint32       getNumChannels() const = 0;
-	virtual Processor *     getProcessor() const { return processor; }
 
+	ProxyProcessor *     	getProcessor() { return processor; }
 	mp_uint32 				getBufferSize() const { return bufferSize; }
 	mp_uint32 				getSampleShift() const { return sampleShift; }
 
-	MixerProxy(mp_uint32 numChannels, Processor * processor = 0);
+	MixerProxy(mp_uint32 numChannels, ProxyProcessor * processor);
 	virtual ~MixerProxy();
 };
 
@@ -124,7 +120,7 @@ public:
 	virtual ProcessingType	getProcessingType() const { return MixDown; }
 	virtual mp_uint32       getNumChannels() const { return numChannels; }
 
-	MixerProxyMixDown(mp_uint32 numChannels = 2) : MixerProxy(numChannels) {}
+	MixerProxyMixDown(mp_uint32 numChannels = 2, ProxyProcessor * processor = 0) : MixerProxy(numChannels, processor) {}
 	virtual ~MixerProxyMixDown();
 };
 
@@ -135,7 +131,7 @@ public:
 	virtual ProcessingType	getProcessingType() const { return DirectOut; }
 	virtual mp_uint32       getNumChannels() const { return numChannels; }
 
-	MixerProxyDirectOut(mp_uint32 numChannels, Processor * processor = 0) : MixerProxy(numChannels, processor) {}
+	MixerProxyDirectOut(mp_uint32 numChannels, ProxyProcessor * processor = 0) : MixerProxy(numChannels, processor) {}
 	virtual ~MixerProxyDirectOut() {}
 };
 
@@ -146,7 +142,7 @@ public:
 	virtual ProcessingType	getProcessingType() const { return HardwareOut; }
 	virtual mp_uint32       getNumChannels() const { return numChannels; }
 
-	MixerProxyHardwareOut(mp_uint32 numChannels, Processor * processor = 0) : MixerProxy(numChannels, processor) {}
+	MixerProxyHardwareOut(mp_uint32 numChannels, ProxyProcessor * processor = 0) : MixerProxy(numChannels, processor) {}
 	virtual ~MixerProxyHardwareOut() {}
 };
 

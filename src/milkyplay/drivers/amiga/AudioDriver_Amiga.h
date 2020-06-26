@@ -10,6 +10,7 @@
 
 #include "AudioDriverBase.h"
 #include "MixerProxy.h"
+#include "ProxyProcessor.h"
 
 #include <exec/exec.h>
 #include <clib/exec_protos.h>
@@ -36,6 +37,9 @@
 #define SCANLINES               312
 #define REFRESHRATE				50
 
+extern volatile struct Custom custom;
+extern volatile struct CIA ciaa, ciab;
+
 class AudioDriverInterface_Amiga : public AudioDriverBase
 {
 public:
@@ -43,7 +47,7 @@ public:
 };
 
 template<typename SampleType>
-class AudioDriver_Amiga : public AudioDriverInterface_Amiga
+class AudioDriver_Amiga : public AudioDriverInterface_Amiga, public ProxyProcessor
 {
 protected:
 	enum OutputMode {

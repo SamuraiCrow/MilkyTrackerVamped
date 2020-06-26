@@ -42,6 +42,7 @@
 #include "ResamplerFactory.h"
 #include "ResamplerMacros.h"
 #include "AudioDriverManager.h"
+#include "ProxyProcessor.h"
 #include <math.h>
 
 // Ramp out will last (THEBEATLENGTH*RAMPDOWNFRACTION)>>8 samples
@@ -1017,29 +1018,27 @@ static inline void storeTimeRecordData(mp_sint32 nb, ChannelMixer::TMixerChannel
 
 void ChannelMixer::hardwareOutChannel(MixerProxy * mixerProxy, mp_uint32 c)
 {
-	MixerProxy::Processor * processor = mixerProxy->getProcessor();
+	ProxyProcessor * processor = mixerProxy->getProcessor();
 	TMixerChannel * chn = &channel[c];
-	TMixerChannel * newChannel = &newChannel[c];
 
+	// Important: used by MixerProxy to know hardware output channel
 	chn->index = c;
 
-	// Playing?
+	// Is a sample playing on the channel?
 	if(chn->flags & MP_SAMPLE_PLAY) {
-		switch (chn->flags&(MP_SAMPLE_FADEOUT|MP_SAMPLE_FADEIN|MP_SAMPLE_FADEOFF))
+		switch (chn->flags & (MP_SAMPLE_FADEIN | MP_SAMPLE_FADEOUT | MP_SAMPLE_FADEOFF))
 		{
+			// Fade in = set when sample starts
 			case MP_SAMPLE_FADEIN:
 				chn->flags &= ~MP_SAMPLE_FADEIN;
-				printf("ch %ld: play %lx %ld\n", c, chn->sample, chn->period);
+
+				panToVol(chn, chn->finalvoll, chn->finalvolr);
+
+				processor->playSample(chn);
+
 				break;
 
-			// Fade off = *stop* sample actively
-			case MP_SAMPLE_FADEOFF:
-				chn->flags &= ~(MP_SAMPLE_PLAY | MP_SAMPLE_FADEOFF);
-				printf("ch %ld: stop\n", c);
-				//processor->stop(c);
-				return;
-
-			// Fade out = basically switching sample on running channel
+			// Fade out = switch sample while playing
 			case MP_SAMPLE_FADEOUT:
 				chn->sample = newChannel[c].sample;
 				chn->smplen = newChannel[c].smplen;
@@ -1049,17 +1048,32 @@ void ChannelMixer::hardwareOutChannel(MixerProxy * mixerProxy, mp_uint32 c)
 				chn->smpposfrac = newChannel[c].smpposfrac;
 				chn->flags = newChannel[c].flags;
 				chn->loopendcopy = newChannel[c].loopendcopy;
-				//chn->fixedtime = newChannel[c].fixedtimefrac;
-				//chn->fixedtimefrac = newChannel[c].fixedtimefrac;
-				printf("ch %ld: change %lx %ld\n", c, chn->sample, chn->period);
-				/* Fallthrough */
+				chn->fixedtime = newChannel[c].fixedtimefrac;
+				chn->fixedtimefrac = newChannel[c].fixedtimefrac;
 
+				panToVol(chn, chn->finalvoll, chn->finalvolr);
+
+				processor->playSample(chn);
+
+				break;
+
+			// Fade off = *stop* sample actively
+			case MP_SAMPLE_FADEOFF:
+				chn->flags &= ~(MP_SAMPLE_PLAY | MP_SAMPLE_FADEOFF);
+
+				processor->stopSample(chn);
+
+				break;
+
+			// All other cases = just pass volume
 			default:
 				panToVol(chn, chn->finalvoll, chn->finalvolr);
+
+				processor->setChannelVolume(chn);
+
 				break;
 		}
 
-		//processor->play(c, )
 	}
 }
 
@@ -1076,6 +1090,7 @@ void ChannelMixer::hardwareOut(MixerProxy * mixerProxy)
 			hardwareOutChannel(mixerProxy, c);
 		}
 	}
+	mixerProxy->getProcessor()->tickDone();
 }
 
 void ChannelMixer::directOut(MixerProxy * mixerProxy)

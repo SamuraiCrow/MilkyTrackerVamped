@@ -30,17 +30,22 @@
 #include "MixerProxy.h"
 #include "Mixable.h"
 #include "AudioDriverBase.h"
+#include "ProxyProcessor.h"
 
 #include <stdio.h>
 
-MixerProxy::MixerProxy(mp_uint32 numChannels, Processor * processor)
+MixerProxy::MixerProxy(mp_uint32 numChannels, ProxyProcessor * processor)
 : numChannels(numChannels)
-, processor(processor)
 {
     //printf("MixerProxy: Create %ld channels (* = %lx)\n", numChannels, this);
 
     buffers = new void* [numChannels];
     memset(buffers, 0, numChannels * sizeof(void *));
+
+    if(processor)
+        this->processor = processor;
+    else
+        this->processor = new ProxyProcessor;
 }
 
 MixerProxy::~MixerProxy()

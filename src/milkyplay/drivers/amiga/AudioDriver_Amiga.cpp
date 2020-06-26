@@ -1,8 +1,6 @@
 #include "AudioDriver_Amiga.h"
 #include "MasterMixer.h"
 
-extern volatile struct Custom custom;
-
 static mp_uint32
 getVerticalBeamPosition() {
     struct vpos {
@@ -152,7 +150,7 @@ AudioDriver_Amiga<SampleType>::alloc(mp_sint32 bufferSize)
 
         break;
     case ResampleHW:
-        mixerProxy = new MixerProxyHardwareOut(nChannels);
+        mixerProxy = new MixerProxyHardwareOut(nChannels, this);
         break;
     }
 
@@ -275,12 +273,17 @@ template<typename SampleType>
 void
 AudioDriver_Amiga<SampleType>::disableIRQ()
 {
-    custom.intena = INTF_AUD0;
+    switch(outputMode) {
+    case Mix:
+    case DirectOut:
+        custom.intena = INTF_AUD0;
 
-    if(irqEnabled) {
-        SetIntVector(INTB_AUD0, irqAudioOld);
-        irqAudioOld = NULL;
-        irqEnabled = false;
+        if(irqEnabled) {
+            SetIntVector(INTB_AUD0, irqAudioOld);
+            irqAudioOld = NULL;
+            irqEnabled = false;
+        }
+        break;
     }
 }
 
@@ -288,12 +291,17 @@ template<typename SampleType>
 void
 AudioDriver_Amiga<SampleType>::enableIRQ()
 {
-    if(!irqEnabled) {
-        irqAudioOld = SetIntVector(INTB_AUD0, irqPlayAudio);
-        irqEnabled = true;
-    }
+    switch(outputMode) {
+    case Mix:
+    case DirectOut:
+        if(!irqEnabled) {
+            irqAudioOld = SetIntVector(INTB_AUD0, irqPlayAudio);
+            irqEnabled = true;
+        }
 
-    custom.intena = INTF_SETCLR | INTF_AUD0;
+        custom.intena = INTF_SETCLR | INTF_AUD0;
+        break;
+    }
 }
 
 template<typename SampleType>
