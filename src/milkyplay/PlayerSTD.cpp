@@ -627,6 +627,9 @@ void PlayerSTD::playInstrument(mp_sint32 chn, TModuleChannel* chnInf, bool bNoRe
 			if (chnInf->flags & CHANNEL_FLAGS_FORCE_BACKWARD)
 				flags |= 128;
 
+			if (!bNoRestart)
+				flags |= MP_SAMPLE_RESTART;
+
 			if (flags&3)
 			{
 

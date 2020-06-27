@@ -126,6 +126,7 @@ public:
 		// period in samples for MP_TIMERFREQ
 		MP_BEATLENGTH		= (MP_BASEFREQ/MP_TIMERFREQ),
 		// mixer state flags
+		MP_SAMPLE_RESTART   = 131072,
 		MP_SAMPLE_FILTERLP	= 65536,
 		MP_SAMPLE_MUTE		= 32768,
 		MP_SAMPLE_ONESHOT	= 8192,

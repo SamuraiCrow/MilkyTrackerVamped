@@ -1070,6 +1070,7 @@ void ChannelMixer::hardwareOutChannel(MixerProxy * mixerProxy, mp_uint32 c)
 				panToVol(chn, chn->finalvoll, chn->finalvolr);
 
 				processor->setChannelVolume(chn);
+				processor->setChannelFrequency(chn);
 
 				break;
 		}

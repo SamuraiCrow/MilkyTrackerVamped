@@ -29,6 +29,8 @@ AudioDriver_Paula::AudioDriver_Paula()
     for(int i = 0; i < 4; i++) {
         hwChannelLoopStart[i] = 0;
         hwChannelRepeatLength[i] = 1;
+        hwChannelPos[i] = 0;
+        hwPeriod[i] = 1;
     }
 }
 
@@ -324,6 +326,7 @@ AudioDriver_Paula::setChannelFrequency(ChannelMixer::TMixerChannel * chn)
     //printf("ch %ld per = %ld\n", chn->index, chn->period);
 
     *((volatile mp_uword *) AUDIO_PERIOD(chn->index)) = chn->period >> 10;
+    hwPeriod[chn->index] = chn->period >> 10;
 }
 
 void
@@ -347,16 +350,24 @@ AudioDriver_Paula::setChannelVolume(ChannelMixer::TMixerChannel * chn)
 void
 AudioDriver_Paula::playSample(ChannelMixer::TMixerChannel * chn)
 {
-    printf("ch %ld play = $%08lx smppos = $%08lx loopend = $%08lx\n", chn->index, chn->sample, chn->smppos, chn->loopend);
+    //printf("ch %ld play = $%08lx smppos = $%08lx loopend = $%08lx\n", chn->index, chn->sample, chn->smppos, chn->loopend);
 
     ciab.ciacrb = CIACRBF_LOAD;
 
     // Stop running sample
     *((volatile mp_uword *) CUSTOM_DMACON) = DMAF_AUD0 << chn->index;
 
+    // Get sample position
+    mp_sint32 smppos = (chn->flags & 131072) ? chn->smppos : hwChannelPos[chn->index];
+
+    // @todo wrap around sample pos when changing samples
+    //if(hwChannelPos[chn->index] > )
+
     // Set sample
-    *((volatile mp_uint32 *) AUDIO_LOCHI(chn->index)) = (mp_uint32) (chn->sample + chn->smppos);
-    *((volatile mp_uword *) AUDIO_LENGTH(chn->index)) = (mp_uword) (((chn->loopend - chn->smppos) >> 1) & 0xffff);
+    *((volatile mp_uint32 *) AUDIO_LOCHI(chn->index)) = (mp_uint32) (chn->sample + smppos);
+    *((volatile mp_uword *) AUDIO_LENGTH(chn->index)) = (mp_uword) (((chn->loopend - smppos) >> 1) & 0xffff);
+    hwChannelPos[chn->index] = smppos;
+
     setChannelFrequency(chn);
     setChannelVolume(chn);
 
@@ -380,10 +391,15 @@ AudioDriver_Paula::playSample(ChannelMixer::TMixerChannel * chn)
 void
 AudioDriver_Paula::stopSample(ChannelMixer::TMixerChannel * chn)
 {
-    printf("ch %ld stop = %ld\n", chn->index, chn->sample);
+    //printf("ch %ld stop = %ld\n", chn->index, chn->sample);
 
     // Stop running sample
     *((volatile mp_uword *) CUSTOM_DMACON) = DMAF_AUD0 << chn->index;
+
+    hwChannelPos[chn->index] = 0;
+    hwChannelLoopStart[chn->index] = 0;
+    hwChannelRepeatLength[chn->index] = 1;
+    hwPeriod[chn->index] = 1;
 
     //
     // See playSample what happens next!
@@ -393,9 +409,15 @@ AudioDriver_Paula::stopSample(ChannelMixer::TMixerChannel * chn)
 void
 AudioDriver_Paula::tickDone()
 {
+    int i;
+
     // If there are new samples playing on a channel, let irqEnableChannels enable the DMA for us
     if(hwDMACON) {
         // Enable one-shot timer to set repeat
         ciab.ciacrb = CIACRBF_LOAD | CIACRBF_RUNMODE | CIACRBF_START;
+    }
+
+    for(i = 0; i < 4; i++) {
+        hwChannelPos[i] += (3546895 / 50) / hwPeriod[i];
     }
 }

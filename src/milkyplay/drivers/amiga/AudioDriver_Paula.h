@@ -17,6 +17,8 @@ protected:
 	mp_uword			hwDMACON;
 	mp_uint32			hwChannelLoopStart[4];
 	mp_uword			hwChannelRepeatLength[4];
+	mp_sint32           hwChannelPos[4];
+	mp_sint32          	hwPeriod[4];
 	struct Interrupt *	irqChannelPlayback;
 
 	virtual void        initHardware();
