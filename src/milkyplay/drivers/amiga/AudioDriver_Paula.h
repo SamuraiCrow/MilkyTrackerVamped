@@ -13,7 +13,6 @@
 class AudioDriver_Paula : public AudioDriver_Amiga<mp_sbyte>
 {
 protected:
-	mp_ubyte			hwOldTimerLo, hwOldTimerHi;
 	mp_uword			hwDMACON;
 	mp_uint32			hwChannelLoopStart[4];
 	mp_uword			hwChannelRepeatLength[4];

@@ -22,9 +22,7 @@ channelPlaybackService(register AudioDriver_Paula * that __asm("a1"))
 }
 
 AudioDriver_Paula::AudioDriver_Paula()
-: hwOldTimerLo(0)
-, hwOldTimerHi(0)
-, hwDMACON(0)
+: hwDMACON(0)
 {
     for(int i = 0; i < 4; i++) {
         hwChannelLoopStart[i] = 0;
@@ -236,9 +234,11 @@ AudioDriver_Paula::getPreferredBufferSize() const
 mp_sint32
 AudioDriver_Paula::bufferAudio()
 {
-    if(outputMode == ResampleHW) {
-        bufferAudioImpl();
-    } else {
+    switch(outputMode) {
+    case ResampleHW:
+        //bufferAudioImpl();
+        return 0;
+    default:
         return AudioDriver_Amiga<mp_sbyte>::bufferAudio();
     }
 }
@@ -258,8 +258,15 @@ AudioDriver_Paula::disableIRQ()
 mp_sint32
 AudioDriver_Paula::channelPlayback()
 {
+    UBYTE icr = ciab.ciaicr; // Get and clear
+
+    // If Timer-A has been fired
+    if(icr & CIAICRF_TA) {
+        bufferAudioImpl();
+    }
+
     // If Timer-B has been fired
-    if(ciab.ciaicr & CIAICRF_TB) {
+    if(icr & CIAICRF_TB) {
         if(hwDMACON) {
             //
             // First round
@@ -300,14 +307,17 @@ AudioDriver_Paula::enableIRQ()
         ciab.ciaicr = CIAICRF_IR | CIAICRF_FLG | CIAICRF_SP | CIAICRF_ALRM | CIAICRF_TB | CIAICRF_TA;
 
         // Reset Timer A
+        ciab.ciacra = CIACRAF_LOAD | CIACRAF_START;
+        ciab.ciatalo = (1773447/125)&0xff;
+        ciab.ciatahi = (1773447/125)>>8;
+
+        // Reset Timer B
         ciab.ciacrb = CIACRBF_LOAD;
-        hwOldTimerLo = ciab.ciatblo;
-        hwOldTimerHi = ciab.ciatbhi;
         ciab.ciatblo = 576&0xff;
         ciab.ciatbhi = 576>>8;
 
         // Enable CIA interrupt
-        ciab.ciaicr = CIAICRF_SETCLR | CIAICRF_TB;
+        ciab.ciaicr = CIAICRF_SETCLR | CIAICRF_TA | CIAICRF_TB;
 
         // Enable channel playback interrupt
         AddIntServer(INTB_EXTER, irqChannelPlayback);
@@ -350,8 +360,6 @@ AudioDriver_Paula::setChannelVolume(ChannelMixer::TMixerChannel * chn)
 void
 AudioDriver_Paula::playSample(ChannelMixer::TMixerChannel * chn)
 {
-    //printf("ch %ld play = $%08lx smppos = $%08lx loopend = $%08lx\n", chn->index, chn->sample, chn->smppos, chn->loopend);
-
     ciab.ciacrb = CIACRBF_LOAD;
 
     // Stop running sample
@@ -360,8 +368,18 @@ AudioDriver_Paula::playSample(ChannelMixer::TMixerChannel * chn)
     // Get sample position
     mp_sint32 smppos = (chn->flags & 131072) ? chn->smppos : hwChannelPos[chn->index];
 
-    // @todo wrap around sample pos when changing samples
-    //if(hwChannelPos[chn->index] > )
+    /*printf("ch %ld play = $%08lx smppos = $%08lx, $%08lx, $%08lx, loopend = $%08lx\n",
+        chn->index, chn->sample, chn->smppos, smppos, hwChannelPos[chn->index], chn->loopend);*/
+
+    // When end of sample is reached, either loop
+    if(smppos >= chn->loopend) {
+        if ((chn->flags & 3) == 0) {
+            stopSample(chn);
+            return;
+        } else {
+            smppos = ((smppos - chn->loopstart) % (chn->loopend - chn->loopstart)) + chn->loopstart;
+        }
+    }
 
     // Set sample
     *((volatile mp_uint32 *) AUDIO_LOCHI(chn->index)) = (mp_uint32) (chn->sample + smppos);
@@ -418,6 +436,7 @@ AudioDriver_Paula::tickDone()
     }
 
     for(i = 0; i < 4; i++) {
+        // Period is bound to Paula/Video clock !
         hwChannelPos[i] += (3546895 / 50) / hwPeriod[i];
     }
 }
