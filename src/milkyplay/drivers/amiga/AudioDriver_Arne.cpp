@@ -33,7 +33,7 @@ AudioDriver_Arne::~AudioDriver_Arne()
 {
 }
 
-mp_uint32
+mp_sint32
 AudioDriver_Arne::getChannels() const
 {
     return MAX_CHANNELS;

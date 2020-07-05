@@ -20,11 +20,13 @@ protected:
 	mp_sint32          	hwPeriod[4];
 	struct Interrupt *	irqChannelPlayback;
 
+	void                stopChannel(mp_sint32 c);
+
 	virtual void        initHardware();
 	virtual void        bufferAudioImpl();
 	virtual void 		playAudioImpl();
 
-	virtual mp_uint32   getChannels() const;
+	virtual mp_sint32   getChannels() const;
 	virtual mp_uint32   getSampleSize() const;
 
 	virtual void		setGlobalVolume(mp_ubyte volume);

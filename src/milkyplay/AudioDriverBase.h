@@ -109,6 +109,7 @@ public:
 	virtual		void		setIdle(bool idle) = 0;
 
 	virtual     mp_sint32   getStatValue(mp_uint32 key) = 0;
+	virtual     mp_sint32   getChannels() const = 0;
 };
 
 // -------------------------------------------------------------------------
@@ -174,6 +175,7 @@ public:
 	virtual		void		setIdle(bool idle);
 
 	virtual     mp_sint32   getStatValue(mp_uint32 key) { return 0; }
+	virtual     mp_sint32   getChannels() const { return -1; };
 };
 
 #endif

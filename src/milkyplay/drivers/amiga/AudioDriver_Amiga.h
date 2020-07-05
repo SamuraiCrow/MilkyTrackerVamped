@@ -99,7 +99,6 @@ protected:
 	virtual void        bufferAudioImpl() = 0;
 	virtual void 		playAudioImpl() = 0;
 
-	virtual mp_uint32   getChannels() const = 0;
 	virtual mp_uint32   getSampleSize() const = 0;
 
 	virtual void		setGlobalVolume(mp_ubyte volume) = 0;

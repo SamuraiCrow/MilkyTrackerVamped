@@ -249,7 +249,8 @@ void Tracker::initUI()
 
 	patternEditorControl = new PatternEditorControl(PATTERN_EDITOR, screen, this,
 													PPPoint(0,0),
-													PPSize(screen->getWidth(),peCtrlHeight));
+													PPSize(screen->getWidth(),peCtrlHeight),
+													playerMaster);
 
 	initInputContainerDefault(0, screen->getHeight()-UPPERSECTIONDEFAULTHEIGHT()-INPUTCONTAINERHEIGHT_DEFAULT);
 	initInputContainerExtended(0, screen->getHeight()-UPPERSECTIONDEFAULTHEIGHT()-INPUTCONTAINERHEIGHT_EXTENDED);
@@ -391,10 +392,10 @@ void Tracker::initUI()
 	screen->addControl(tabHeader);
 
 #endif
-
 	patternEditorControl = new PatternEditorControl(PATTERN_EDITOR, screen, this,
 													PPPoint(0,UPPERSECTIONDEFAULTHEIGHT()),
-													PPSize(screen->getWidth(),MAXEDITORHEIGHT()-UPPERSECTIONDEFAULTHEIGHT()));
+													PPSize(screen->getWidth(),MAXEDITORHEIGHT()-UPPERSECTIONDEFAULTHEIGHT()),
+													playerMaster);
 #endif
 	// first thing to do is, attach pattern editor
 	patternEditorControl->attachPatternEditor(moduleEditor->getPatternEditor());

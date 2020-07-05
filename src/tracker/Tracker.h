@@ -612,6 +612,7 @@ private:
 	friend class SectionSwitcher;
 
 	friend class AmigaApplication;
+	friend class PatternEditorControl;
 };
 
 #endif

@@ -36,6 +36,7 @@
 #include "PatternTools.h"
 #include "EditModes.h"
 #include "TrackerConfig.h"
+#include "PlayerMaster.h"
 
 // Forwards ------------------------------------------------------
 class PPScrollbar;
@@ -49,10 +50,10 @@ typedef pp_int32 (PatternEditor::*TTransposeFunc)(const PatternEditorTools::Tran
 
 template<class Type> class PPKeyBindings;
 
-class PatternEditorControl : 
-	public PPControl, 
-	public EventListenerInterface, 
-	public EditorBase::EditorNotificationListener, 
+class PatternEditorControl :
+	public PPControl,
+	public EventListenerInterface,
+	public EditorBase::EditorNotificationListener,
 	public PatternEditor::PatternAdvanceInterface
 {
 private:
@@ -65,13 +66,13 @@ private:
 	{
 		pp_int32 startIndex;
 		pp_int32 startPos;
-		
+
 		UndoInfo()
 		{
 		}
-		
+
 		UndoInfo(pp_int32 startIndex, pp_int32 startPos) :
-			startIndex(startIndex), 
+			startIndex(startIndex),
 			startPos(startPos)
 		{
 		}
@@ -83,7 +84,7 @@ private:
 	const PPColor* selectionColor;
 
 	bool border;
-	
+
 	struct Properties
 	{
 		bool showFocus;
@@ -104,21 +105,21 @@ private:
 		pp_uint32 muteFade;
 		char zeroEffectCharacter;
 		bool ptNoteLimit;
-		
+
 		Properties() :
-			showFocus(true), 
+			showFocus(true),
 			rowAdvance(true),
 			rowInsertAdd(1),
-			spacing(0), 
-			highlightSpacingPrimary(4), 
+			spacing(0),
+			highlightSpacingPrimary(4),
 			highlightSpacingSecondary(8),
-			highLightRowPrimary(false), 
+			highLightRowPrimary(false),
 			highLightRowSecondary(false),
-			hexCount(true), 
-			wrapAround(true), 
-			prospective(false), 
-			tabToNote(true), 
-			clickToCursor(true), 
+			hexCount(true),
+			wrapAround(true),
+			prospective(false),
+			tabToNote(true),
+			clickToCursor(true),
 			multiChannelEdit(false),
 			scrollMode(ScrollModeToEnd),
 			invertMouseVscroll(false),
@@ -128,9 +129,9 @@ private:
 		{
 		}
 	} properties;
-	
+
 	PPFont* font;
-		
+
 	PPScrollbar* hTopScrollbar;
 	PPScrollbar* hBottomScrollbar;
 	PPScrollbar* vLeftScrollbar;
@@ -160,13 +161,13 @@ private:
 	// Cursor position within editor
 	pp_int32 cursorPositions[9];
 	pp_int32 cursorSizes[8];
-	
+
 	PatternEditorTools::Position cursorCopy, preCursor, *ppreCursor;
-	
+
 	bool startSelection;
 	bool keyboardStartSelection;
 	bool assureUpdate, assureCursor;
-	
+
 	pp_int32 selectionTicker;
 
 	bool hasDragged;
@@ -192,14 +193,18 @@ private:
 	// Edit mode
 	EditModes editMode;
 	pp_int32 selectionKeyModifier;
-	
+
+	// Player Master
+	PlayerMaster * playerMaster;
+
 public:
-	PatternEditorControl(pp_int32 id, PPScreen* parentScreen, EventListenerInterface* eventListener, 
-						 const PPPoint& location, const PPSize& size, 
+	PatternEditorControl(pp_int32 id, PPScreen* parentScreen, EventListenerInterface* eventListener,
+						 const PPPoint& location, const PPSize& size,
+						 PlayerMaster * playerMaster,
 						 bool border = true);
-	
+
 	virtual ~PatternEditorControl();
-	
+
 	void setColor(PPColor color) { bgColor = color; }
 	void setFont(PPFont* font);
 
@@ -214,17 +219,17 @@ public:
 	virtual bool gainsFocus() const { return true; }
 	virtual bool gainedFocusByMouse() const { return caughtControl == NULL; }
 	virtual pp_int32 dispatchEvent(PPEvent* event);
-	
+
 	// from EventListenerInterface
 	pp_int32 handleEvent(PPObject* sender, PPEvent* event);
 
 	void attachPatternEditor(PatternEditor* patternEditor);
 
 	void reset();
-	
-	bool isDraggingVertical() const 
-	{ 
-		return (caughtControl == vLeftScrollbar) || (caughtControl == vRightScrollbar); 
+
+	bool isDraggingVertical() const
+	{
+		return (caughtControl == vLeftScrollbar) || (caughtControl == vRightScrollbar);
 	}
 
 	// set number of visible channels, if this is -1 it will dynamically adjust it
@@ -232,10 +237,10 @@ public:
 
 	pp_int32 getRowInsertAdd() { return properties.rowInsertAdd; }
 	void setRowInsertAdd(pp_int32 rowInsertAdd) { properties.rowInsertAdd = rowInsertAdd; }
-	
+
 	void increaseRowInsertAdd() { properties.rowInsertAdd = (properties.rowInsertAdd+1) % 17; }
 	void decreaseRowInsertAdd() { properties.rowInsertAdd--; if (properties.rowInsertAdd == -1) properties.rowInsertAdd = 16; }
-	
+
 	void setOrderlistIndex(pp_int32 currentOrderlistIndex) { this->currentOrderlistIndex = currentOrderlistIndex; }
 	void setRow(pp_int32 row, bool bAssureCursorVisible = true);
 	pp_int32 getRow() { return patternEditor->getCursor().row; }
@@ -289,17 +294,17 @@ public:
 	void setPtNoteLimit(bool l) { properties.ptNoteLimit = l; }
 
 	void setRowAdvance(bool b) { properties.rowAdvance = b; }
-	
+
 	void switchEditMode(EditModes mode);
 
 	void setMuteFade(pp_int32 fade) { if (fade > 65536) fade = 65536; if (fade < 0) fade = 0; properties.muteFade = fade; }
-	
+
 	void muteChannel(pp_int32 index, bool b) { muteChannels[index] = (b ? 1 : 0); }
 	void recordChannel(pp_int32 index, bool b) { recChannels[index] = (b ? 1 : 0); }
-	void unmuteAll();	
-	
+	void unmuteAll();
+
 	void setRecordMode(bool b);
-	
+
 	void advanceRow(bool assureCursor = true, bool repaint = true);
 
 	PatternEditor* getPatternEditor() const { return patternEditor; }
@@ -308,8 +313,8 @@ public:
 	void showNoteTransposeWarningMessageBox(pp_int32 fuckups);
 	pp_int32 noteTransposeTrack(const PatternEditorTools::TransposeParameters& transposeParameters);
 	pp_int32 noteTransposePattern(const PatternEditorTools::TransposeParameters& transposeParameters);
-	pp_int32 noteTransposeSelection(const PatternEditorTools::TransposeParameters& transposeParameters);	
-	
+	pp_int32 noteTransposeSelection(const PatternEditorTools::TransposeParameters& transposeParameters);
+
 private:
 	// --- Transpose handler
 	class TransposeHandlerResponder : public DialogResponder
@@ -318,13 +323,13 @@ private:
 		PatternEditorControl& patternEditorControl;
 		PatternEditorTools::TransposeParameters transposeParameters;
 		TTransposeFunc transposeFunc;
-		
+
 	public:
 		TransposeHandlerResponder(PatternEditorControl& thePatternEditorControl);
-		
+
 		void setTransposeParameters(const PatternEditorTools::TransposeParameters& transposeParameters) { this->transposeParameters = transposeParameters; }
 		void setTransposeFunc(TTransposeFunc transposeFunc) { this->transposeFunc = transposeFunc; }
-		
+
 		virtual pp_int32 ActionOkay(PPObject* sender);
 		virtual pp_int32 ActionCancel(PPObject* sender);
 	};
@@ -358,7 +363,7 @@ private:
 
 	void validate();
 
-	// ------- menu stuff ------------------------------------------ 
+	// ------- menu stuff ------------------------------------------
 	enum MenuCommandIDs
 	{
 		MenuCommandIDMuteChannel = 100,
@@ -368,18 +373,18 @@ private:
 		MenuCommandIDPorousPaste,
 		MenuCommandIDSwapChannels,
 	};
-	
+
 	void invokeMenu(pp_int32 channel, const PPPoint& p);
-	
+
 	void executeMenuCommand(pp_int32 commandId);
-	
+
 	void handleDeleteKey(pp_uint16 keyCode, pp_int32& result);
 	void handleKeyChar(pp_uint8 character);
 	void handleKeyDown(pp_uint16 keyCode, pp_uint16 scanCode, pp_uint16 character);
 
 	// mark channel
 	void markChannel(pp_int32 channel, bool invert = true);
-	
+
 	// select ALL
 	void selectAll();
 
@@ -393,13 +398,13 @@ private:
 		RMouseDownActionFirstLClick,
 		RMouseDownActionSecondLClick
 	};
-	
+
 	RMouseDownActions lastAction;
 	pp_int32 RMouseDownInChannelHeading;
-	
+
 	pp_int32 pointInChannelHeading(PPPoint& cp);
 	bool isSoloChannel(pp_int32 c);
-	
+
 private:
 	bool executeBinding(const PPKeyBindings<TPatternEditorKeyBindingHandler>* bindings, pp_uint16 keyCode);
 	void initKeyBindings();
@@ -413,10 +418,10 @@ private:
 	void eventKeyDownBinding_NEXT();
 	void eventKeyDownBinding_HOME();
 	void eventKeyDownBinding_END();
-	
-	void eventKeyDownBinding_FIRSTQUARTER();	
-	void eventKeyDownBinding_SECONDQUARTER();	
-	void eventKeyDownBinding_THIRDQUARTER();	
+
+	void eventKeyDownBinding_FIRSTQUARTER();
+	void eventKeyDownBinding_SECONDQUARTER();
+	void eventKeyDownBinding_THIRDQUARTER();
 
 	void eventKeyDownBinding_ReadMacro1();
 	void eventKeyDownBinding_ReadMacro2();
@@ -460,7 +465,7 @@ private:
 
 	void eventKeyDownBinding_SC_IncreaseRowInsertAdd();
 	void eventKeyDownBinding_SC_DecreaseRowInsertAdd();
-	
+
 	void eventKeyDownBinding_PreviousChannel();
 	void eventKeyDownBinding_NextChannel();
 
@@ -478,7 +483,7 @@ private:
 	void eventKeyDownBinding_InsDecSelection();
 	void eventKeyDownBinding_InsIncTrack();
 	void eventKeyDownBinding_InsDecTrack();
-	
+
 	void eventKeyDownBinding_CutTrack();
 	void eventKeyDownBinding_CopyTrack();
 	void eventKeyDownBinding_PasteTrack();
@@ -511,13 +516,13 @@ public:
 		AdvanceCodeWrappedEnd,
 		AdvanceCodeSelectNewRow
 	};
-	
+
 private:
 	virtual void editorNotification(EditorBase* sender, EditorBase::EditorNotifications notification);
 
 	pp_int32 notifyUpdate(pp_int32 code = AdvanceCodeJustUpdate)
 	{
-		PPEvent e(eUpdated, &code, sizeof(code));						
+		PPEvent e(eUpdated, &code, sizeof(code));
 		return eventListener->handleEvent(reinterpret_cast<PPObject*>(this), &e);
 	}
 };

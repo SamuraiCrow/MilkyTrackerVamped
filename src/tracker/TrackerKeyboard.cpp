@@ -74,7 +74,7 @@ bool Tracker::executeBinding(const PPKeyBindings<TTrackerKeyBindingHandler>* bin
 
 	if (res)
 	{
-		(this->*handlerFunc)();		
+		(this->*handlerFunc)();
 		return true;
 	}
 	return false;
@@ -90,7 +90,7 @@ void Tracker::initKeyBindings()
 	eventKeyDownBindingsMilkyTracker->addBinding('T', KeyModifierCTRL|KeyModifierSHIFT, &Tracker::eventKeyDownBinding_OpenTab);
 	eventKeyDownBindingsMilkyTracker->addBinding('W', KeyModifierCTRL|KeyModifierSHIFT, &Tracker::eventKeyDownBinding_CloseTab);
 	eventKeyDownBindingsMilkyTracker->addBinding(VK_LEFT, KeyModifierCTRL|KeyModifierSHIFT, &Tracker::eventKeyDownBinding_SwitchToPreviousTab);
-	eventKeyDownBindingsMilkyTracker->addBinding(VK_RIGHT, KeyModifierCTRL|KeyModifierSHIFT, &Tracker::eventKeyDownBinding_SwitchToNextTab);	
+	eventKeyDownBindingsMilkyTracker->addBinding(VK_RIGHT, KeyModifierCTRL|KeyModifierSHIFT, &Tracker::eventKeyDownBinding_SwitchToNextTab);
 
 	eventKeyDownBindingsMilkyTracker->addBinding('1', KeyModifierCTRL|KeyModifierSHIFT, &Tracker::eventKeyDownBinding_SelectOctave1);
 	eventKeyDownBindingsMilkyTracker->addBinding('2', KeyModifierCTRL|KeyModifierSHIFT, &Tracker::eventKeyDownBinding_SelectOctave2);
@@ -115,29 +115,29 @@ void Tracker::initKeyBindings()
 	eventKeyDownBindingsMilkyTracker->addBinding(VK_SPACE, 0, &Tracker::eventKeyDownBinding_Edit);
 	eventKeyDownBindingsMilkyTracker->addBinding('U', KeyModifierSHIFT, &Tracker::eventKeyDownBinding_UnmuteAll);
 	eventKeyDownBindingsMilkyTracker->addBinding(VK_F4, KeyModifierALT, &Tracker::eventKeyDownBinding_ExitApplication);
-	
+
 	eventKeyDownBindingsMilkyTracker->addBinding('Q', KeyModifierCTRL, &Tracker::eventKeyDownBinding_ExitApplication);
 
 	eventKeyDownBindingsMilkyTracker->addBinding('O', KeyModifierCTRL, &Tracker::eventKeyDownBinding_Open);
 	eventKeyDownBindingsMilkyTracker->addBinding('S', KeyModifierCTRL, &Tracker::eventKeyDownBinding_Save);
 	eventKeyDownBindingsMilkyTracker->addBinding('S', KeyModifierCTRL|KeyModifierSHIFT, &Tracker::eventKeyDownBinding_SaveAs);
-	
+
 	// Sections always with CTRL+ALT
-	eventKeyDownBindingsMilkyTracker->addBinding('X', KeyModifierCTRL|KeyModifierALT, &Tracker::eventKeyDownBinding_InvokeMainScreen);	
-	eventKeyDownBindingsMilkyTracker->addBinding('I', KeyModifierCTRL|KeyModifierALT, &Tracker::eventKeyDownBinding_InvokeSectionInstruments);	
-	eventKeyDownBindingsMilkyTracker->addBinding('S', KeyModifierCTRL|KeyModifierALT, &Tracker::eventKeyDownBinding_InvokeSectionSamples);	
-	eventKeyDownBindingsMilkyTracker->addBinding('C', KeyModifierCTRL|KeyModifierALT, &Tracker::eventKeyDownBinding_InvokeSectionSettings);	
-	eventKeyDownBindingsMilkyTracker->addBinding('A', KeyModifierCTRL|KeyModifierALT, &Tracker::eventKeyDownBinding_InvokeSectionAdvancedEdit);	
-	eventKeyDownBindingsMilkyTracker->addBinding('D', KeyModifierCTRL|KeyModifierALT, &Tracker::eventKeyDownBinding_InvokeSectionDiskMenu);	
-	eventKeyDownBindingsMilkyTracker->addBinding('T', KeyModifierCTRL|KeyModifierALT, &Tracker::eventKeyDownBinding_InvokeSectionTranspose);	
-	eventKeyDownBindingsMilkyTracker->addBinding('R', KeyModifierCTRL|KeyModifierALT, &Tracker::eventKeyDownBinding_InvokeSectionHDRecorder);	
-	eventKeyDownBindingsMilkyTracker->addBinding('O', KeyModifierCTRL|KeyModifierALT, &Tracker::eventKeyDownBinding_InvokeSectionQuickOptions);	
-	eventKeyDownBindingsMilkyTracker->addBinding('Z', KeyModifierCTRL|KeyModifierALT, &Tracker::eventKeyDownBinding_ToggleScopes);	
+	eventKeyDownBindingsMilkyTracker->addBinding('X', KeyModifierCTRL|KeyModifierALT, &Tracker::eventKeyDownBinding_InvokeMainScreen);
+	eventKeyDownBindingsMilkyTracker->addBinding('I', KeyModifierCTRL|KeyModifierALT, &Tracker::eventKeyDownBinding_InvokeSectionInstruments);
+	eventKeyDownBindingsMilkyTracker->addBinding('S', KeyModifierCTRL|KeyModifierALT, &Tracker::eventKeyDownBinding_InvokeSectionSamples);
+	eventKeyDownBindingsMilkyTracker->addBinding('C', KeyModifierCTRL|KeyModifierALT, &Tracker::eventKeyDownBinding_InvokeSectionSettings);
+	eventKeyDownBindingsMilkyTracker->addBinding('A', KeyModifierCTRL|KeyModifierALT, &Tracker::eventKeyDownBinding_InvokeSectionAdvancedEdit);
+	eventKeyDownBindingsMilkyTracker->addBinding('D', KeyModifierCTRL|KeyModifierALT, &Tracker::eventKeyDownBinding_InvokeSectionDiskMenu);
+	eventKeyDownBindingsMilkyTracker->addBinding('T', KeyModifierCTRL|KeyModifierALT, &Tracker::eventKeyDownBinding_InvokeSectionTranspose);
+	eventKeyDownBindingsMilkyTracker->addBinding('R', KeyModifierCTRL|KeyModifierALT, &Tracker::eventKeyDownBinding_InvokeSectionHDRecorder);
+	eventKeyDownBindingsMilkyTracker->addBinding('O', KeyModifierCTRL|KeyModifierALT, &Tracker::eventKeyDownBinding_InvokeSectionQuickOptions);
+	eventKeyDownBindingsMilkyTracker->addBinding('Z', KeyModifierCTRL|KeyModifierALT, &Tracker::eventKeyDownBinding_ToggleScopes);
 	// handy toggle shortcuts
-	eventKeyDownBindingsMilkyTracker->addBinding('F', KeyModifierCTRL, &Tracker::eventKeyDownBinding_ToggleFollowSong);	
-	eventKeyDownBindingsMilkyTracker->addBinding('P', KeyModifierCTRL, &Tracker::eventKeyDownBinding_ToggleProspectiveMode);	
-	eventKeyDownBindingsMilkyTracker->addBinding('W', KeyModifierCTRL, &Tracker::eventKeyDownBinding_ToggleCursorWrapAround);	
-	eventKeyDownBindingsMilkyTracker->addBinding('L', KeyModifierCTRL, &Tracker::eventKeyDownBinding_ToggleLiveSwitch);	
+	eventKeyDownBindingsMilkyTracker->addBinding('F', KeyModifierCTRL, &Tracker::eventKeyDownBinding_ToggleFollowSong);
+	eventKeyDownBindingsMilkyTracker->addBinding('P', KeyModifierCTRL, &Tracker::eventKeyDownBinding_ToggleProspectiveMode);
+	eventKeyDownBindingsMilkyTracker->addBinding('W', KeyModifierCTRL, &Tracker::eventKeyDownBinding_ToggleCursorWrapAround);
+	eventKeyDownBindingsMilkyTracker->addBinding('L', KeyModifierCTRL, &Tracker::eventKeyDownBinding_ToggleLiveSwitch);
 
 	// Transpose stuff like FT2
 	eventKeyDownBindingsMilkyTracker->addBinding(VK_F1, KeyModifierSHIFT, &Tracker::eventKeyDownBinding_TransposeAllInsTrackDown);
@@ -154,22 +154,22 @@ void Tracker::initKeyBindings()
 	eventKeyDownBindingsMilkyTracker->addBinding(VK_F7, KeyModifierALT, &Tracker::eventKeyDownBinding_TransposeCurInsBlockDown);
 	eventKeyDownBindingsMilkyTracker->addBinding(VK_F8, KeyModifierALT, &Tracker::eventKeyDownBinding_TransposeCurInsBlockUp);
 
-	eventKeyDownBindingsMilkyTracker->addBinding(VK_NUMPAD0, 0, &Tracker::eventKeyDownBinding_InvokeQuickChooseInstrument);	
-	eventKeyDownBindingsMilkyTracker->addBinding(VK_NUMPAD1, 0, &Tracker::eventKeyDownBinding_InvokeQuickChooseInstrument);	
-	eventKeyDownBindingsMilkyTracker->addBinding(VK_NUMPAD2, 0, &Tracker::eventKeyDownBinding_InvokeQuickChooseInstrument);	
-	eventKeyDownBindingsMilkyTracker->addBinding(VK_NUMPAD3, 0, &Tracker::eventKeyDownBinding_InvokeQuickChooseInstrument);	
-	eventKeyDownBindingsMilkyTracker->addBinding(VK_NUMPAD4, 0, &Tracker::eventKeyDownBinding_InvokeQuickChooseInstrument);	
-	eventKeyDownBindingsMilkyTracker->addBinding(VK_NUMPAD5, 0, &Tracker::eventKeyDownBinding_InvokeQuickChooseInstrument);	
-	eventKeyDownBindingsMilkyTracker->addBinding(VK_NUMPAD6, 0, &Tracker::eventKeyDownBinding_InvokeQuickChooseInstrument);	
-	eventKeyDownBindingsMilkyTracker->addBinding(VK_NUMPAD7, 0, &Tracker::eventKeyDownBinding_InvokeQuickChooseInstrument);	
-	eventKeyDownBindingsMilkyTracker->addBinding(VK_NUMPAD8, 0, &Tracker::eventKeyDownBinding_InvokeQuickChooseInstrument);	
-	eventKeyDownBindingsMilkyTracker->addBinding(VK_NUMPAD9, 0, &Tracker::eventKeyDownBinding_InvokeQuickChooseInstrument);	
-	eventKeyDownBindingsMilkyTracker->addBinding(VK_MULTIPLY, 0, &Tracker::eventKeyDownBinding_InvokeQuickChooseInstrument);	
-	eventKeyDownBindingsMilkyTracker->addBinding(VK_ADD, 0, &Tracker::eventKeyDownBinding_InvokeQuickChooseInstrument);	
-	eventKeyDownBindingsMilkyTracker->addBinding(VK_SEPARATOR, 0, &Tracker::eventKeyDownBinding_InvokeQuickChooseInstrument);	
-	eventKeyDownBindingsMilkyTracker->addBinding(VK_SUBTRACT, 0, &Tracker::eventKeyDownBinding_InvokeQuickChooseInstrument);	
-	eventKeyDownBindingsMilkyTracker->addBinding(VK_DECIMAL, 0, &Tracker::eventKeyDownBinding_InvokeQuickChooseInstrument);	
-	eventKeyDownBindingsMilkyTracker->addBinding(VK_DIVIDE, 0, &Tracker::eventKeyDownBinding_InvokeQuickChooseInstrument);	
+	eventKeyDownBindingsMilkyTracker->addBinding(VK_NUMPAD0, 0, &Tracker::eventKeyDownBinding_InvokeQuickChooseInstrument);
+	eventKeyDownBindingsMilkyTracker->addBinding(VK_NUMPAD1, 0, &Tracker::eventKeyDownBinding_InvokeQuickChooseInstrument);
+	eventKeyDownBindingsMilkyTracker->addBinding(VK_NUMPAD2, 0, &Tracker::eventKeyDownBinding_InvokeQuickChooseInstrument);
+	eventKeyDownBindingsMilkyTracker->addBinding(VK_NUMPAD3, 0, &Tracker::eventKeyDownBinding_InvokeQuickChooseInstrument);
+	eventKeyDownBindingsMilkyTracker->addBinding(VK_NUMPAD4, 0, &Tracker::eventKeyDownBinding_InvokeQuickChooseInstrument);
+	eventKeyDownBindingsMilkyTracker->addBinding(VK_NUMPAD5, 0, &Tracker::eventKeyDownBinding_InvokeQuickChooseInstrument);
+	eventKeyDownBindingsMilkyTracker->addBinding(VK_NUMPAD6, 0, &Tracker::eventKeyDownBinding_InvokeQuickChooseInstrument);
+	eventKeyDownBindingsMilkyTracker->addBinding(VK_NUMPAD7, 0, &Tracker::eventKeyDownBinding_InvokeQuickChooseInstrument);
+	eventKeyDownBindingsMilkyTracker->addBinding(VK_NUMPAD8, 0, &Tracker::eventKeyDownBinding_InvokeQuickChooseInstrument);
+	eventKeyDownBindingsMilkyTracker->addBinding(VK_NUMPAD9, 0, &Tracker::eventKeyDownBinding_InvokeQuickChooseInstrument);
+	eventKeyDownBindingsMilkyTracker->addBinding(VK_MULTIPLY, 0, &Tracker::eventKeyDownBinding_InvokeQuickChooseInstrument);
+	eventKeyDownBindingsMilkyTracker->addBinding(VK_ADD, 0, &Tracker::eventKeyDownBinding_InvokeQuickChooseInstrument);
+	eventKeyDownBindingsMilkyTracker->addBinding(VK_SEPARATOR, 0, &Tracker::eventKeyDownBinding_InvokeQuickChooseInstrument);
+	eventKeyDownBindingsMilkyTracker->addBinding(VK_SUBTRACT, 0, &Tracker::eventKeyDownBinding_InvokeQuickChooseInstrument);
+	eventKeyDownBindingsMilkyTracker->addBinding(VK_DECIMAL, 0, &Tracker::eventKeyDownBinding_InvokeQuickChooseInstrument);
+	eventKeyDownBindingsMilkyTracker->addBinding(VK_DIVIDE, 0, &Tracker::eventKeyDownBinding_InvokeQuickChooseInstrument);
 
 	// Key-down bindings for Fasttracker
 	// tab stuff
@@ -180,7 +180,7 @@ void Tracker::initKeyBindings()
 	eventKeyDownBindingsFastTracker->addBinding('S', KeyModifierCTRL|KeyModifierSHIFT, &Tracker::eventKeyDownBinding_Save);
 
 	eventKeyDownBindingsFastTracker->addBinding(VK_LEFT, KeyModifierCTRL|KeyModifierSHIFT, &Tracker::eventKeyDownBinding_SwitchToPreviousTab);
-	eventKeyDownBindingsFastTracker->addBinding(VK_RIGHT, KeyModifierCTRL|KeyModifierSHIFT, &Tracker::eventKeyDownBinding_SwitchToNextTab);	
+	eventKeyDownBindingsFastTracker->addBinding(VK_RIGHT, KeyModifierCTRL|KeyModifierSHIFT, &Tracker::eventKeyDownBinding_SwitchToNextTab);
 
 	eventKeyDownBindingsFastTracker->addBinding(VK_RETURN, 0, &Tracker::eventKeyDownBinding_PlaySong);
 	eventKeyDownBindingsFastTracker->addBinding(VK_RETURN, KeyModifierCTRL, &Tracker::eventKeyDownBinding_PlayPattern);
@@ -214,44 +214,44 @@ void Tracker::initKeyBindings()
 	eventKeyDownBindingsFastTracker->addBinding(VK_F8, KeyModifierALT, &Tracker::eventKeyDownBinding_TransposeCurInsBlockUp);
 
 	// Section bindings
-	eventKeyDownBindingsFastTracker->addBinding('X', KeyModifierCTRL, &Tracker::eventKeyDownBinding_InvokeMainScreen);	
-	eventKeyDownBindingsFastTracker->addBinding('I', KeyModifierCTRL, &Tracker::eventKeyDownBinding_InvokeSectionInstruments);	
-	eventKeyDownBindingsFastTracker->addBinding('S', KeyModifierCTRL, &Tracker::eventKeyDownBinding_InvokeSectionSamples);	
-	eventKeyDownBindingsFastTracker->addBinding('C', KeyModifierCTRL, &Tracker::eventKeyDownBinding_InvokeSectionSettings);	
-	eventKeyDownBindingsFastTracker->addBinding('A', KeyModifierCTRL, &Tracker::eventKeyDownBinding_InvokeSectionAdvancedEdit);	
-	eventKeyDownBindingsFastTracker->addBinding('D', KeyModifierCTRL, &Tracker::eventKeyDownBinding_InvokeSectionDiskMenu);	
-	eventKeyDownBindingsFastTracker->addBinding('T', KeyModifierCTRL, &Tracker::eventKeyDownBinding_InvokeSectionTranspose);	
-	eventKeyDownBindingsFastTracker->addBinding('R', KeyModifierCTRL, &Tracker::eventKeyDownBinding_InvokeSectionHDRecorder);	
-	eventKeyDownBindingsFastTracker->addBinding('O', KeyModifierCTRL, &Tracker::eventKeyDownBinding_InvokeSectionQuickOptions);	
-	//eventKeyDownBindingsFastTracker->addBinding('Z', KeyModifierCTRL, &Tracker::eventKeyDownBinding_InvokeSectionOptimize);	
-	eventKeyDownBindingsFastTracker->addBinding('Z', KeyModifierCTRL, &Tracker::eventKeyDownBinding_ToggleScopes);	
+	eventKeyDownBindingsFastTracker->addBinding('X', KeyModifierCTRL, &Tracker::eventKeyDownBinding_InvokeMainScreen);
+	eventKeyDownBindingsFastTracker->addBinding('I', KeyModifierCTRL, &Tracker::eventKeyDownBinding_InvokeSectionInstruments);
+	eventKeyDownBindingsFastTracker->addBinding('S', KeyModifierCTRL, &Tracker::eventKeyDownBinding_InvokeSectionSamples);
+	eventKeyDownBindingsFastTracker->addBinding('C', KeyModifierCTRL, &Tracker::eventKeyDownBinding_InvokeSectionSettings);
+	eventKeyDownBindingsFastTracker->addBinding('A', KeyModifierCTRL, &Tracker::eventKeyDownBinding_InvokeSectionAdvancedEdit);
+	eventKeyDownBindingsFastTracker->addBinding('D', KeyModifierCTRL, &Tracker::eventKeyDownBinding_InvokeSectionDiskMenu);
+	eventKeyDownBindingsFastTracker->addBinding('T', KeyModifierCTRL, &Tracker::eventKeyDownBinding_InvokeSectionTranspose);
+	eventKeyDownBindingsFastTracker->addBinding('R', KeyModifierCTRL, &Tracker::eventKeyDownBinding_InvokeSectionHDRecorder);
+	eventKeyDownBindingsFastTracker->addBinding('O', KeyModifierCTRL, &Tracker::eventKeyDownBinding_InvokeSectionQuickOptions);
+	//eventKeyDownBindingsFastTracker->addBinding('Z', KeyModifierCTRL, &Tracker::eventKeyDownBinding_InvokeSectionOptimize);
+	eventKeyDownBindingsFastTracker->addBinding('Z', KeyModifierCTRL, &Tracker::eventKeyDownBinding_ToggleScopes);
 
 	// Handy toggle functions
-	eventKeyDownBindingsFastTracker->addBinding('F', KeyModifierCTRL, &Tracker::eventKeyDownBinding_ToggleFollowSong);	
-	eventKeyDownBindingsFastTracker->addBinding('P', KeyModifierCTRL, &Tracker::eventKeyDownBinding_ToggleProspectiveMode);	
-	eventKeyDownBindingsFastTracker->addBinding('W', KeyModifierCTRL, &Tracker::eventKeyDownBinding_ToggleCursorWrapAround);	
-	eventKeyDownBindingsFastTracker->addBinding('L', KeyModifierCTRL, &Tracker::eventKeyDownBinding_ToggleLiveSwitch);	
+	eventKeyDownBindingsFastTracker->addBinding('F', KeyModifierCTRL, &Tracker::eventKeyDownBinding_ToggleFollowSong);
+	eventKeyDownBindingsFastTracker->addBinding('P', KeyModifierCTRL, &Tracker::eventKeyDownBinding_ToggleProspectiveMode);
+	eventKeyDownBindingsFastTracker->addBinding('W', KeyModifierCTRL, &Tracker::eventKeyDownBinding_ToggleCursorWrapAround);
+	eventKeyDownBindingsFastTracker->addBinding('L', KeyModifierCTRL, &Tracker::eventKeyDownBinding_ToggleLiveSwitch);
 
-	eventKeyDownBindingsFastTracker->addBinding('V', KeyModifierCTRL, &Tracker::eventKeyDownBinding_InvokePatternToolVolumeScalePattern);	
-	eventKeyDownBindingsFastTracker->addBinding('V', KeyModifierSHIFT, &Tracker::eventKeyDownBinding_InvokePatternToolVolumeScaleTrack);	
-	eventKeyDownBindingsFastTracker->addBinding('V', KeyModifierALT, &Tracker::eventKeyDownBinding_InvokePatternToolVolumeScaleSelection);	
+	eventKeyDownBindingsFastTracker->addBinding('V', KeyModifierCTRL, &Tracker::eventKeyDownBinding_InvokePatternToolVolumeScalePattern);
+	eventKeyDownBindingsFastTracker->addBinding('V', KeyModifierSHIFT, &Tracker::eventKeyDownBinding_InvokePatternToolVolumeScaleTrack);
+	eventKeyDownBindingsFastTracker->addBinding('V', KeyModifierALT, &Tracker::eventKeyDownBinding_InvokePatternToolVolumeScaleSelection);
 
-	eventKeyDownBindingsFastTracker->addBinding(VK_NUMPAD0, 0, &Tracker::eventKeyDownBinding_InvokeQuickChooseInstrument);	
-	eventKeyDownBindingsFastTracker->addBinding(VK_NUMPAD1, 0, &Tracker::eventKeyDownBinding_InvokeQuickChooseInstrument);	
-	eventKeyDownBindingsFastTracker->addBinding(VK_NUMPAD2, 0, &Tracker::eventKeyDownBinding_InvokeQuickChooseInstrument);	
-	eventKeyDownBindingsFastTracker->addBinding(VK_NUMPAD3, 0, &Tracker::eventKeyDownBinding_InvokeQuickChooseInstrument);	
-	eventKeyDownBindingsFastTracker->addBinding(VK_NUMPAD4, 0, &Tracker::eventKeyDownBinding_InvokeQuickChooseInstrument);	
-	eventKeyDownBindingsFastTracker->addBinding(VK_NUMPAD5, 0, &Tracker::eventKeyDownBinding_InvokeQuickChooseInstrument);	
-	eventKeyDownBindingsFastTracker->addBinding(VK_NUMPAD6, 0, &Tracker::eventKeyDownBinding_InvokeQuickChooseInstrument);	
-	eventKeyDownBindingsFastTracker->addBinding(VK_NUMPAD7, 0, &Tracker::eventKeyDownBinding_InvokeQuickChooseInstrument);	
-	eventKeyDownBindingsFastTracker->addBinding(VK_NUMPAD8, 0, &Tracker::eventKeyDownBinding_InvokeQuickChooseInstrument);	
-	eventKeyDownBindingsFastTracker->addBinding(VK_NUMPAD9, 0, &Tracker::eventKeyDownBinding_InvokeQuickChooseInstrument);	
-	eventKeyDownBindingsFastTracker->addBinding(VK_MULTIPLY, 0, &Tracker::eventKeyDownBinding_InvokeQuickChooseInstrument);	
-	eventKeyDownBindingsFastTracker->addBinding(VK_ADD, 0, &Tracker::eventKeyDownBinding_InvokeQuickChooseInstrument);	
-	eventKeyDownBindingsFastTracker->addBinding(VK_SEPARATOR, 0, &Tracker::eventKeyDownBinding_InvokeQuickChooseInstrument);	
-	eventKeyDownBindingsFastTracker->addBinding(VK_SUBTRACT, 0, &Tracker::eventKeyDownBinding_InvokeQuickChooseInstrument);	
-	eventKeyDownBindingsFastTracker->addBinding(VK_DECIMAL, 0, &Tracker::eventKeyDownBinding_InvokeQuickChooseInstrument);	
-	eventKeyDownBindingsFastTracker->addBinding(VK_DIVIDE, 0, &Tracker::eventKeyDownBinding_InvokeQuickChooseInstrument);	
+	eventKeyDownBindingsFastTracker->addBinding(VK_NUMPAD0, 0, &Tracker::eventKeyDownBinding_InvokeQuickChooseInstrument);
+	eventKeyDownBindingsFastTracker->addBinding(VK_NUMPAD1, 0, &Tracker::eventKeyDownBinding_InvokeQuickChooseInstrument);
+	eventKeyDownBindingsFastTracker->addBinding(VK_NUMPAD2, 0, &Tracker::eventKeyDownBinding_InvokeQuickChooseInstrument);
+	eventKeyDownBindingsFastTracker->addBinding(VK_NUMPAD3, 0, &Tracker::eventKeyDownBinding_InvokeQuickChooseInstrument);
+	eventKeyDownBindingsFastTracker->addBinding(VK_NUMPAD4, 0, &Tracker::eventKeyDownBinding_InvokeQuickChooseInstrument);
+	eventKeyDownBindingsFastTracker->addBinding(VK_NUMPAD5, 0, &Tracker::eventKeyDownBinding_InvokeQuickChooseInstrument);
+	eventKeyDownBindingsFastTracker->addBinding(VK_NUMPAD6, 0, &Tracker::eventKeyDownBinding_InvokeQuickChooseInstrument);
+	eventKeyDownBindingsFastTracker->addBinding(VK_NUMPAD7, 0, &Tracker::eventKeyDownBinding_InvokeQuickChooseInstrument);
+	eventKeyDownBindingsFastTracker->addBinding(VK_NUMPAD8, 0, &Tracker::eventKeyDownBinding_InvokeQuickChooseInstrument);
+	eventKeyDownBindingsFastTracker->addBinding(VK_NUMPAD9, 0, &Tracker::eventKeyDownBinding_InvokeQuickChooseInstrument);
+	eventKeyDownBindingsFastTracker->addBinding(VK_MULTIPLY, 0, &Tracker::eventKeyDownBinding_InvokeQuickChooseInstrument);
+	eventKeyDownBindingsFastTracker->addBinding(VK_ADD, 0, &Tracker::eventKeyDownBinding_InvokeQuickChooseInstrument);
+	eventKeyDownBindingsFastTracker->addBinding(VK_SEPARATOR, 0, &Tracker::eventKeyDownBinding_InvokeQuickChooseInstrument);
+	eventKeyDownBindingsFastTracker->addBinding(VK_SUBTRACT, 0, &Tracker::eventKeyDownBinding_InvokeQuickChooseInstrument);
+	eventKeyDownBindingsFastTracker->addBinding(VK_DECIMAL, 0, &Tracker::eventKeyDownBinding_InvokeQuickChooseInstrument);
+	eventKeyDownBindingsFastTracker->addBinding(VK_DIVIDE, 0, &Tracker::eventKeyDownBinding_InvokeQuickChooseInstrument);
 
 
     // Contributed by 8ch (http://modarchive.org/forums/index.php?topic=2713.0):
@@ -465,7 +465,7 @@ void Tracker::eventKeyDownBinding_Edit()
 	}
 	else
 	{
-		PPControl* ctrl = sectionDiskMenu->isFileBrowserVisible() ? 
+		PPControl* ctrl = sectionDiskMenu->isFileBrowserVisible() ?
 		static_cast<PPControl*>(sectionDiskMenu->getListBoxFiles()) : static_cast<PPControl*>(listBoxInstruments);
 		if (ctrl/* && ctrl->isVisible()*/)
 		{
@@ -508,7 +508,7 @@ void Tracker::eventKeyDownBinding_SaveAs()
 {
 	if (screen->getModalControl())
 		return;
-	
+
 	saveAs();
 }
 
@@ -520,13 +520,13 @@ void Tracker::eventKeyDownBinding_NextPattern()
 	if (moduleEditor->getCurrentPatternIndex() < 255)
 	{
 		moduleEditor->setCurrentPatternIndex(moduleEditor->getCurrentPatternIndex()+1);
-			
+
 		updatePattern();
 
 		playerLogic->continuePlayingPattern();
 	}
 }
-	
+
 void Tracker::eventKeyDownBinding_PreviousPattern()
 {
 	if (screen->getModalControl())
@@ -535,7 +535,7 @@ void Tracker::eventKeyDownBinding_PreviousPattern()
 	if (moduleEditor->getCurrentPatternIndex() > 0)
 	{
 		moduleEditor->setCurrentPatternIndex(moduleEditor->getCurrentPatternIndex()-1);
-		
+
 		updatePattern();
 
 		playerLogic->continuePlayingPattern();
@@ -549,7 +549,7 @@ void Tracker::eventKeyDownBinding_InvokeMainScreen()
 		return;
 
 	sectionSwitcher->showBottomSection(SectionSwitcher::ActiveBottomSectionNone);
-	sectionSwitcher->showUpperSection(NULL);	
+	sectionSwitcher->showUpperSection(NULL);
 }
 
 void Tracker::eventKeyDownBinding_InvokeSectionInstruments()
@@ -582,7 +582,7 @@ void Tracker::eventKeyDownBinding_InvokeSectionAdvancedEdit()
 {
 	if (screen->getModalControl())
 		return;
-	
+
 	sectionSwitcher->showUpperSection(sectionAdvancedEdit);
 }
 
@@ -606,20 +606,20 @@ void Tracker::eventKeyDownBinding_InvokeSectionSettings()
 {
 	if (screen->getModalControl())
 		return;
-	
+
 	settingsDatabase->store("FREQTAB", moduleEditor->getFrequency());
 	settingsDatabase->store("PROSPECTIVE", getProspectiveMode() ? 1 : 0);
 	settingsDatabase->store("WRAPAROUND", getCursorWrapAround() ? 1 : 0);
 	settingsDatabase->store("FOLLOWSONG", getFollowSong() ? 1 : 0);
-	
+
 	if (settingsDatabaseCopy)
 		delete settingsDatabaseCopy;
-	
+
 	settingsDatabaseCopy = new TrackerSettingsDatabase(*settingsDatabase);
-	
+
 	sectionSwitcher->showUpperSection(sectionSettings);
-	
-	screen->paint(true, true);	
+
+	screen->paint(true, true);
 }
 
 void Tracker::eventKeyDownBinding_InvokeSectionQuickOptions()
@@ -650,37 +650,37 @@ void Tracker::eventKeyDownBinding_ToggleFT2Edit()
 {
 	PPContainer* container = static_cast<PPContainer*>(screen->getControlByID(CONTAINER_MENU));
 	ASSERT(container);
-	
+
 	PPButton* button = static_cast<PPButton*>(container->getControlByID(MAINMENU_EDIT));
 	ASSERT(container);
-	
+
 	button->setTextColor(recorderLogic->getRecordMode() ? PPUIConfig::getInstance()->getColor(PPUIConfig::ColorDefaultButtonText) : TrackerConfig::colorRecordModeButtonText);
-	
+
 #ifdef __LOWRES__
 	container = static_cast<PPContainer*>(screen->getControlByID(CONTAINER_LOWRES_TINYMENU));
 	ASSERT(container);
-	
+
 	button = static_cast<PPButton*>(container->getControlByID(MAINMENU_EDIT));
 	ASSERT(button);
-	
+
 	button->setTextColor(recorderLogic->getRecordMode() ? PPUIConfig::getInstance()->getColor(PPUIConfig::ColorDefaultButtonText) : TrackerConfig::colorRecordModeButtonText);
 
 	container = static_cast<PPContainer*>(screen->getControlByID(CONTAINER_LOWRES_JAMMENU));
 	ASSERT(container);
-	
+
 	button = static_cast<PPButton*>(container->getControlByID(MAINMENU_EDIT));
 	ASSERT(button);
-	
+
 	button->setTextColor(recorderLogic->getRecordMode() ? PPUIConfig::getInstance()->getColor(PPUIConfig::ColorDefaultButtonText) : TrackerConfig::colorRecordModeButtonText);
 #endif
 
 	getPatternEditorControl()->setRecordMode(!recorderLogic->getRecordMode());
-	
-	//button->setColor(recordMode ? PPColor(191, 191, 191) : PPColor(192, 32, 32));	
+
+	//button->setColor(recordMode ? PPColor(191, 191, 191) : PPColor(192, 32, 32));
 	//screen->paintControl(button);
-	
+
 	screen->paint();
-	recorderLogic->setRecordMode(!recorderLogic->getRecordMode());	
+	recorderLogic->setRecordMode(!recorderLogic->getRecordMode());
 
 	recorderLogic->initToggleEdit();
 }
@@ -745,15 +745,15 @@ void Tracker::eventKeyDownBinding_TransposeCurInsTrackDown()
 		return;
 
 	PatternEditorTools::TransposeParameters tp;
-	
+
 	tp.insRangeStart = tp.insRangeEnd = listBoxInstruments->getSelectedIndex() + 1;
-	
+
 	tp.noteRangeStart = 1;
 	tp.noteRangeEnd = ModuleEditor::MAX_NOTE;
-	
+
 	tp.amount = -1;
-	
-	getPatternEditorControl()->noteTransposeTrack(tp);	
+
+	getPatternEditorControl()->noteTransposeTrack(tp);
 
 	screen->paintControl(getPatternEditorControl());
 }
@@ -764,15 +764,15 @@ void Tracker::eventKeyDownBinding_TransposeCurInsTrackUp()
 		return;
 
 	PatternEditorTools::TransposeParameters tp;
-	
+
 	tp.insRangeStart = tp.insRangeEnd = listBoxInstruments->getSelectedIndex() + 1;
-	
+
 	tp.noteRangeStart = 1;
 	tp.noteRangeEnd = ModuleEditor::MAX_NOTE;
-	
+
 	tp.amount = 1;
-	
-	getPatternEditorControl()->noteTransposeTrack(tp);	
+
+	getPatternEditorControl()->noteTransposeTrack(tp);
 
 	screen->paintControl(getPatternEditorControl());
 }
@@ -783,15 +783,15 @@ void Tracker::eventKeyDownBinding_TransposeCurInsPatternDown()
 		return;
 
 	PatternEditorTools::TransposeParameters tp;
-	
+
 	tp.insRangeStart = tp.insRangeEnd = listBoxInstruments->getSelectedIndex() + 1;
-	
+
 	tp.noteRangeStart = 1;
 	tp.noteRangeEnd = ModuleEditor::MAX_NOTE;
-	
+
 	tp.amount = -1;
-	
-	getPatternEditorControl()->noteTransposePattern(tp);	
+
+	getPatternEditorControl()->noteTransposePattern(tp);
 
 	screen->paintControl(getPatternEditorControl());
 }
@@ -802,15 +802,15 @@ void Tracker::eventKeyDownBinding_TransposeCurInsPatternUp()
 		return;
 
 	PatternEditorTools::TransposeParameters tp;
-	
+
 	tp.insRangeStart = tp.insRangeEnd = listBoxInstruments->getSelectedIndex() + 1;
-	
+
 	tp.noteRangeStart = 1;
 	tp.noteRangeEnd = ModuleEditor::MAX_NOTE;
-	
+
 	tp.amount = 1;
-	
-	getPatternEditorControl()->noteTransposePattern(tp);	
+
+	getPatternEditorControl()->noteTransposePattern(tp);
 
 	screen->paintControl(getPatternEditorControl());
 }
@@ -821,15 +821,15 @@ void Tracker::eventKeyDownBinding_TransposeCurInsBlockDown()
 		return;
 
 	PatternEditorTools::TransposeParameters tp;
-	
+
 	tp.insRangeStart = tp.insRangeEnd = listBoxInstruments->getSelectedIndex() + 1;
-	
+
 	tp.noteRangeStart = 1;
 	tp.noteRangeEnd = ModuleEditor::MAX_NOTE;
-	
+
 	tp.amount = -1;
-	
-	getPatternEditorControl()->noteTransposeSelection(tp);	
+
+	getPatternEditorControl()->noteTransposeSelection(tp);
 
 	screen->paintControl(getPatternEditorControl());
 }
@@ -840,15 +840,15 @@ void Tracker::eventKeyDownBinding_TransposeCurInsBlockUp()
 		return;
 
 	PatternEditorTools::TransposeParameters tp;
-	
+
 	tp.insRangeStart = tp.insRangeEnd = listBoxInstruments->getSelectedIndex() + 1;
-	
+
 	tp.noteRangeStart = 1;
 	tp.noteRangeEnd = ModuleEditor::MAX_NOTE;
-	
+
 	tp.amount = 1;
-	
-	getPatternEditorControl()->noteTransposeSelection(tp);	
+
+	getPatternEditorControl()->noteTransposeSelection(tp);
 
 	screen->paintControl(getPatternEditorControl());
 }
@@ -861,16 +861,16 @@ void Tracker::eventKeyDownBinding_TransposeAllInsTrackDown()
 		return;
 
 	PatternEditorTools::TransposeParameters tp;
-	
+
 	tp.insRangeStart = 0;
 	tp.insRangeEnd = 255;
-	
+
 	tp.noteRangeStart = 1;
 	tp.noteRangeEnd = ModuleEditor::MAX_NOTE;
-	
+
 	tp.amount = -1;
-	
-	getPatternEditorControl()->noteTransposeTrack(tp);	
+
+	getPatternEditorControl()->noteTransposeTrack(tp);
 
 	screen->paintControl(getPatternEditorControl());
 }
@@ -881,16 +881,16 @@ void Tracker::eventKeyDownBinding_TransposeAllInsTrackUp()
 		return;
 
 	PatternEditorTools::TransposeParameters tp;
-	
+
 	tp.insRangeStart = 0;
 	tp.insRangeEnd = 255;
-	
+
 	tp.noteRangeStart = 1;
 	tp.noteRangeEnd = ModuleEditor::MAX_NOTE;
-	
+
 	tp.amount = 1;
-	
-	getPatternEditorControl()->noteTransposeTrack(tp);	
+
+	getPatternEditorControl()->noteTransposeTrack(tp);
 
 	screen->paintControl(getPatternEditorControl());
 }
@@ -901,16 +901,16 @@ void Tracker::eventKeyDownBinding_TransposeAllInsPatternDown()
 		return;
 
 	PatternEditorTools::TransposeParameters tp;
-	
+
 	tp.insRangeStart = 0;
 	tp.insRangeEnd = 255;
-	
+
 	tp.noteRangeStart = 1;
 	tp.noteRangeEnd = ModuleEditor::MAX_NOTE;
-	
+
 	tp.amount = -1;
-	
-	getPatternEditorControl()->noteTransposePattern(tp);	
+
+	getPatternEditorControl()->noteTransposePattern(tp);
 
 	screen->paintControl(getPatternEditorControl());
 }
@@ -921,16 +921,16 @@ void Tracker::eventKeyDownBinding_TransposeAllInsPatternUp()
 		return;
 
 	PatternEditorTools::TransposeParameters tp;
-	
+
 	tp.insRangeStart = 0;
 	tp.insRangeEnd = 255;
-	
+
 	tp.noteRangeStart = 1;
 	tp.noteRangeEnd = ModuleEditor::MAX_NOTE;
-	
+
 	tp.amount = 1;
-	
-	getPatternEditorControl()->noteTransposePattern(tp);	
+
+	getPatternEditorControl()->noteTransposePattern(tp);
 
 	screen->paintControl(getPatternEditorControl());
 }
@@ -941,16 +941,16 @@ void Tracker::eventKeyDownBinding_TransposeAllInsBlockDown()
 		return;
 
 	PatternEditorTools::TransposeParameters tp;
-	
+
 	tp.insRangeStart = 0;
 	tp.insRangeEnd = 255;
-	
+
 	tp.noteRangeStart = 1;
 	tp.noteRangeEnd = ModuleEditor::MAX_NOTE;
-	
+
 	tp.amount = -1;
-	
-	getPatternEditorControl()->noteTransposeSelection(tp);	
+
+	getPatternEditorControl()->noteTransposeSelection(tp);
 
 	screen->paintControl(getPatternEditorControl());
 }
@@ -961,16 +961,16 @@ void Tracker::eventKeyDownBinding_TransposeAllInsBlockUp()
 		return;
 
 	PatternEditorTools::TransposeParameters tp;
-	
+
 	tp.insRangeStart = 0;
 	tp.insRangeEnd = 255;
-	
+
 	tp.noteRangeStart = 1;
 	tp.noteRangeEnd = ModuleEditor::MAX_NOTE;
-	
+
 	tp.amount = 1;
-	
-	getPatternEditorControl()->noteTransposeSelection(tp);	
+
+	getPatternEditorControl()->noteTransposeSelection(tp);
 
 	screen->paintControl(getPatternEditorControl());
 }

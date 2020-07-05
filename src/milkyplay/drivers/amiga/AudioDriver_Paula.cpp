@@ -1,7 +1,6 @@
 #include "AudioDriver_Paula.h"
 #include "MasterMixer.h"
 
-
 #define AUDIO_REGBASE(CH)       (CUSTOM_REGBASE + 0x0a0 + ((CH & 0x3) << 4))
 #define AUDIO_REG(CH, IDX)      (AUDIO_REGBASE(CH) + (IDX))
 
@@ -24,7 +23,7 @@ channelPlaybackService(register AudioDriver_Paula * that __asm("a1"))
 AudioDriver_Paula::AudioDriver_Paula()
 : hwDMACON(0)
 {
-    for(int i = 0; i < 4; i++) {
+    for(int i = 0; i < MAX_CHANNELS; i++) {
         hwChannelLoopStart[i] = 0;
         hwChannelRepeatLength[i] = 1;
         hwChannelPos[i] = 0;
@@ -36,7 +35,7 @@ AudioDriver_Paula::~AudioDriver_Paula()
 {
 }
 
-mp_uint32
+mp_sint32
 AudioDriver_Paula::getChannels() const
 {
     return MAX_CHANNELS;
@@ -371,7 +370,7 @@ AudioDriver_Paula::playSample(ChannelMixer::TMixerChannel * chn)
     /*printf("ch %ld play = $%08lx smppos = $%08lx, $%08lx, $%08lx, loopend = $%08lx\n",
         chn->index, chn->sample, chn->smppos, smppos, hwChannelPos[chn->index], chn->loopend);*/
 
-    // When end of sample is reached, either loop
+    // When end of sample is reached, either loop or stop
     if(smppos >= chn->loopend) {
         if ((chn->flags & 3) == 0) {
             stopSample(chn);
@@ -407,17 +406,23 @@ AudioDriver_Paula::playSample(ChannelMixer::TMixerChannel * chn)
 }
 
 void
+AudioDriver_Paula::stopChannel(mp_sint32 c)
+{
+    // Stop running sample
+    *((volatile mp_uword *) CUSTOM_DMACON) = DMAF_AUD0 << c;
+
+    hwChannelPos[c] = 0;
+    hwChannelLoopStart[c] = 0;
+    hwChannelRepeatLength[c] = 1;
+    hwPeriod[c] = 1;
+}
+
+void
 AudioDriver_Paula::stopSample(ChannelMixer::TMixerChannel * chn)
 {
     //printf("ch %ld stop = %ld\n", chn->index, chn->sample);
 
-    // Stop running sample
-    *((volatile mp_uword *) CUSTOM_DMACON) = DMAF_AUD0 << chn->index;
-
-    hwChannelPos[chn->index] = 0;
-    hwChannelLoopStart[chn->index] = 0;
-    hwChannelRepeatLength[chn->index] = 1;
-    hwPeriod[chn->index] = 1;
+    stopChannel(chn->index);
 
     //
     // See playSample what happens next!
@@ -435,7 +440,7 @@ AudioDriver_Paula::tickDone()
         ciab.ciacrb = CIACRBF_LOAD | CIACRBF_RUNMODE | CIACRBF_START;
     }
 
-    for(i = 0; i < 4; i++) {
+    for(i = 0; i < MAX_CHANNELS; i++) {
         // Period is bound to Paula/Video clock !
         hwChannelPos[i] += (3546895 / 50) / hwPeriod[i];
     }

@@ -1074,7 +1074,9 @@ void ChannelMixer::hardwareOutChannel(MixerProxy * mixerProxy, mp_uint32 c)
 
 				break;
 		}
-
+	} else {
+		// "Mute" channel
+		processor->setChannelVolume(chn);
 	}
 }
 

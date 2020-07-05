@@ -32,13 +32,15 @@
 #include "KeyBindings.h"
 #include "DialogBase.h"
 #include "PPUIConfig.h"
+#include "PlayerMaster.h"
+#include "ResamplerHelper.h"
 
 #include "TrackerConfig.h"
 
 #define SCROLLBARWIDTH  SCROLLBUTTONSIZE
 
 PatternEditorControl::PatternEditorControl(pp_int32 id, PPScreen* parentScreen, EventListenerInterface* eventListener,
-										   const PPPoint& location, const PPSize& size, bool border/*= true*/) :
+										   const PPPoint& location, const PPSize& size, PlayerMaster * playerMaster, bool border/*= true*/) :
 	PPControl(id, parentScreen, eventListener, location, size),
 	borderColor(&TrackerConfig::colorThemeMain),
 	cursorColor(&TrackerConfig::colorPatternEditorCursorLine),
@@ -50,7 +52,8 @@ PatternEditorControl::PatternEditorControl(pp_int32 id, PPScreen* parentScreen, 
 	eventKeyDownBindingsMilkyTracker(NULL), scanCodeBindingsMilkyTracker(NULL), eventKeyDownBindingsFastTracker(NULL), scanCodeBindingsFastTracker(NULL),
 	patternEditor(NULL), module(NULL), pattern(NULL),
 	ppreCursor(NULL),
-	lastAction(RMouseDownActionInvalid), RMouseDownInChannelHeading(-1)
+	lastAction(RMouseDownActionInvalid), RMouseDownInChannelHeading(-1),
+	playerMaster(playerMaster)
 {
 	// default color
 	bgColor.r = 0;
@@ -517,8 +520,25 @@ void PatternEditorControl::paint(PPGraphicsAbstract* g)
 
 			sprintf(name, "%i", j+1);
 
-			if (muteChannels[j])
+			// Collect channel options
+			bool channelMuted = muteChannels[j],
+				 channelUnsupported = false;
+
+			if (playerMaster) {
+				AudioDriverInterface * audioDriver = (AudioDriverInterface *) playerMaster->getCurrentDriver();
+				if (audioDriver) {
+					mp_sint32 maxChannels = audioDriver->getChannels();
+					if (maxChannels >= 0 && j >= maxChannels)
+						channelUnsupported = true;
+				}
+			}
+
+			if (channelMuted && channelUnsupported)
+				strcat(name, " <M,NO>");
+			else if (channelMuted)
 				strcat(name, " <Mute>");
+			else if (channelUnsupported)
+				strcat(name, " <NoOut>");
 
 			g->drawString(name, px + (slotSize>>1)-(((pp_int32)strlen(name)*font->getCharWidth())>>1), py+1);
 		}
