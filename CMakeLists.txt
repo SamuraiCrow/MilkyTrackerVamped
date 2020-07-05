@@ -189,8 +189,6 @@ elseif(AROS)
 elseif(AMIGA)
     find_package(SDL 1.2 REQUIRED)
 
-    add_definitions(-DAMIGA_DIRECTOUT)
-
     install(FILES ${PROJECT_SOURCE_DIR}/resources/packaging/amigaos/milkytracker.info DESTINATION .)
 else()
     # Workaround for SDL bug #3295, which occurs in SDL2 <2.0.5

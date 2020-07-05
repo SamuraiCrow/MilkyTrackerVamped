@@ -22,9 +22,6 @@
 
 #define MAX_CHANNELS            16
 
-#define SAMPLE_SIZE             MP_NUMBYTES
-
-
 AudioDriver_Arne::AudioDriver_Arne()
 {
 }
@@ -37,12 +34,6 @@ mp_sint32
 AudioDriver_Arne::getChannels() const
 {
     return MAX_CHANNELS;
-}
-
-mp_uint32
-AudioDriver_Arne::getSampleSize() const
-{
-    return SAMPLE_SIZE;
 }
 
 mp_sint32
@@ -159,7 +150,7 @@ AudioDriver_Arne::playAudioImpl()
 void
 AudioDriver_Arne::bufferAudioImpl()
 {
-    int i;
+    int i, j;
 
     switch(outputMode) {
     case Mix:
@@ -172,7 +163,7 @@ AudioDriver_Arne::bufferAudioImpl()
             if (isMixerActive())
                 mixer->mixerHandler(f);
             else
-                memset(f, 0, fetchSize << 2);
+                memset(f, 0, fetchSize * sizeof(mp_sword) * MP_NUMCHANNELS);
 
             for(i = 0; i < fetchSize; i++) {
                 *(l++) = *(f++);
@@ -184,11 +175,21 @@ AudioDriver_Arne::bufferAudioImpl()
         {
             if (isMixerActive()) {
                 for(i = 0; i < MAX_CHANNELS; i++)
-                    mixerProxy->setBuffer<mp_sword>(i, chanRing[i] + idxWrite);
+                    mixerProxy->setBuffer<mp_sword>(i, chanFetch[i]);
                 mixer->mixerHandler(NULL, mixerProxy);
+
+                for(i = 0; i < MAX_CHANNELS; i++) {
+                    mp_sword * s = chanFetch[i];
+                    mp_sword * d = chanRing[i] + idxWrite;
+
+                    for(j = 0; j < fetchSize; j++) {
+                        *(d++) = *(s++);
+                        s++;
+                    }
+                }
             } else {
                 for(i = 0; i < MAX_CHANNELS; i++)
-                    memset(chanRing[i] + idxWrite, 0, fetchSize * SAMPLE_SIZE);
+                    memset(chanRing[i] + idxWrite, 0, fetchSize * sizeof(mp_sword));
             }
         }
         break;

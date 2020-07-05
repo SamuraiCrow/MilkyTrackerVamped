@@ -97,7 +97,7 @@ public:
 
 	virtual void 			unlock(Mixable * filterHook) { }
 	virtual ProcessingType 	getProcessingType() const = 0;
-	virtual mp_uint32       getNumChannels() const = 0;
+	virtual mp_uint32       getNumChannels() const { return numChannels; }
 
 	ProxyProcessor *     	getProcessor() { return processor; }
 	mp_uint32 				getBufferSize() const { return bufferSize; }
@@ -118,7 +118,6 @@ public:
 	virtual bool 			lock(mp_uint32 bufferSize, mp_uint32 sampleShift);
 	virtual void 			unlock(Mixable * filterHook);
 	virtual ProcessingType	getProcessingType() const { return MixDown; }
-	virtual mp_uint32       getNumChannels() const { return numChannels; }
 
 	MixerProxyMixDown(mp_uint32 numChannels = 2, ProxyProcessor * processor = 0) : MixerProxy(numChannels, processor) {}
 	virtual ~MixerProxyMixDown();
@@ -129,7 +128,6 @@ class MixerProxyDirectOut : public MixerProxy
 public:
 	virtual bool 			lock(mp_uint32 bufferSize, mp_uint32 sampleShift);
 	virtual ProcessingType	getProcessingType() const { return DirectOut; }
-	virtual mp_uint32       getNumChannels() const { return numChannels; }
 
 	MixerProxyDirectOut(mp_uint32 numChannels, ProxyProcessor * processor = 0) : MixerProxy(numChannels, processor) {}
 	virtual ~MixerProxyDirectOut() {}
@@ -140,7 +138,6 @@ class MixerProxyHardwareOut : public MixerProxy
 public:
 	virtual bool 			lock(mp_uint32 bufferSize, mp_uint32 sampleShift);
 	virtual ProcessingType	getProcessingType() const { return HardwareOut; }
-	virtual mp_uint32       getNumChannels() const { return numChannels; }
 
 	MixerProxyHardwareOut(mp_uint32 numChannels, ProxyProcessor * processor = 0) : MixerProxy(numChannels, processor) {}
 	virtual ~MixerProxyHardwareOut() {}

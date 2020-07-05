@@ -25,11 +25,6 @@ AudioDriver_Amiga<SampleType>::AudioDriver_Amiga()
 , irqEnabled(false)
 , irqAudioOld(NULL)
 , allocated(false)
-/*#if defined(AMIGA_DIRECTOUT)
-, outputMode(DirectOut)
-#else
-, outputMode(Mix)
-#endif*/
 , outputMode(ResampleHW)
 , statVerticalBlankMixMedian(0)
 , statAudioBufferReset(0)
@@ -89,7 +84,6 @@ AudioDriver_Amiga<SampleType>::alloc(mp_sint32 bufferSize)
 {
     int i;
 
-    sampleSize = getSampleSize();
     nChannels = getChannels();
 
     dealloc();
@@ -126,25 +120,26 @@ AudioDriver_Amiga<SampleType>::alloc(mp_sint32 bufferSize)
 
     switch(outputMode) {
     case Mix:
-        // Fetch buffer for 16-bit stereo (4 byte a sample)
-        samplesFetched = (mp_sword *) AllocMem(fetchSize << 2, MEMF_PUBLIC | MEMF_CLEAR);
+        // Fetch buffer for 16-bit stereo
+        samplesFetched = (mp_sword *) AllocMem(fetchSize * sizeof(mp_sword) * MP_NUMCHANNELS, MEMF_PUBLIC | MEMF_CLEAR);
 
         // Ring buffers for each side
-        samplesLeft = (SampleType *) AllocMem(ringSize * sampleSize, MEMF_CHIP | MEMF_CLEAR);
-        samplesRight = (SampleType *) AllocMem(ringSize * sampleSize, MEMF_CHIP | MEMF_CLEAR);
+        samplesLeft = (SampleType *) AllocMem(ringSize * sizeof(SampleType), MEMF_CHIP | MEMF_CLEAR);
+        samplesRight = (SampleType *) AllocMem(ringSize * sizeof(SampleType), MEMF_CHIP | MEMF_CLEAR);
 
         mixerProxy = new MixerProxyMixDown(nChannels);
 
         break;
     case DirectOut:
-        // Ring buffers for each channel
+        // Fetch buffers for each channel (16-bit stereo)
         chanFetch = (mp_sword **) AllocMem(nChannels * sizeof(mp_sword *), MEMF_PUBLIC | MEMF_CLEAR);
-        chanRing = (SampleType **) AllocMem(nChannels * sizeof(SampleType *), MEMF_PUBLIC | MEMF_CLEAR);
+        for(i = 0; i < nChannels; i++)
+            chanFetch[i] = (mp_sword *) AllocMem(fetchSize * sizeof(mp_sword) * MP_NUMCHANNELS, MEMF_PUBLIC | MEMF_CLEAR);
 
-        for(i = 0; i < nChannels; i++) {
-            chanFetch[i] = (mp_sword *) AllocMem(fetchSize * sizeof(mp_sword), MEMF_PUBLIC | MEMF_CLEAR);
-            chanRing[i] = (SampleType *) AllocMem(ringSize * sampleSize, MEMF_CHIP | MEMF_CLEAR);
-        }
+        // Ring buffers for each channel
+        chanRing = (SampleType **) AllocMem(nChannels * sizeof(SampleType *), MEMF_PUBLIC | MEMF_CLEAR);
+        for(i = 0; i < nChannels; i++)
+            chanRing[i] = (SampleType *) AllocMem(ringSize * sizeof(SampleType), MEMF_CHIP | MEMF_CLEAR);
 
         mixerProxy = new MixerProxyDirectOut(nChannels);
 
@@ -158,7 +153,7 @@ AudioDriver_Amiga<SampleType>::alloc(mp_sint32 bufferSize)
 
     initHardware();
 
-    return bufferSize;
+    return bufferSize * MP_NUMCHANNELS;
 }
 
 template<typename SampleType>
@@ -175,19 +170,19 @@ AudioDriver_Amiga<SampleType>::dealloc()
 
     switch(outputMode) {
     case Mix:
-        FreeMem(samplesRight, ringSize * sampleSize);
-        FreeMem(samplesLeft, ringSize * sampleSize);
+        FreeMem(samplesRight, ringSize * sizeof(SampleType));
+        FreeMem(samplesLeft, ringSize * sizeof(SampleType));
 
-        FreeMem(samplesFetched, fetchSize << 2);
+        FreeMem(samplesFetched, fetchSize * sizeof(mp_sword) * MP_NUMCHANNELS);
 
         break;
     case DirectOut:
-        for(i = 0; i < nChannels; i++) {
-            FreeMem(chanRing[i], ringSize * sampleSize);
-            FreeMem(chanFetch[i], fetchSize * sizeof(mp_sword));
-        }
-
+        for(i = 0; i < nChannels; i++)
+            FreeMem(chanRing[i], ringSize * sizeof(SampleType));
         FreeMem(chanRing, nChannels * sizeof(SampleType *));
+
+        for(i = 0; i < nChannels; i++)
+            FreeMem(chanFetch[i], fetchSize * sizeof(mp_sword) * MP_NUMCHANNELS);
         FreeMem(chanFetch, nChannels * sizeof(mp_sword *));
 
         break;
@@ -370,6 +365,13 @@ AudioDriver_Amiga<SampleType>::getStatValue(mp_uint32 key)
     }
 
     return 0;
+}
+
+template<typename SampleType>
+bool
+AudioDriver_Amiga<SampleType>::isMultiChannel() const
+{
+    return outputMode == DirectOut || outputMode == ResampleHW;
 }
 
 // Explicit specializations for signed 8-bit and 16-bit output

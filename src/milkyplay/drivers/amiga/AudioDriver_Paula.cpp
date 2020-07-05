@@ -12,8 +12,6 @@
 
 #define MAX_CHANNELS            4
 
-#define SAMPLE_SIZE             MP_NUMBYTES
-
 static mp_sint32
 channelPlaybackService(register AudioDriver_Paula * that __asm("a1"))
 {
@@ -41,17 +39,12 @@ AudioDriver_Paula::getChannels() const
     return MAX_CHANNELS;
 }
 
-mp_uint32
-AudioDriver_Paula::getSampleSize() const
-{
-    return SAMPLE_SIZE;
-}
-
 mp_sint32
 AudioDriver_Paula::initDevice(mp_sint32 bufferSizeInWords, mp_uint32 mixFrequency, MasterMixer* mixer)
 {
 #if DEBUG_DRIVER
     printf("%s\n", __PRETTY_FUNCTION__);
+    printf("Wanted buffer size: %ld\n", bufferSizeInWords);
     printf("Wanted mix frequency: %ld\n", mixFrequency);
     printf("Driver running in Paula mode\n");
 #endif
@@ -179,7 +172,7 @@ AudioDriver_Paula::bufferAudioImpl()
             if (isMixerActive())
                 mixer->mixerHandler(f);
             else
-                memset(f, 0, fetchSize << 2);
+                memset(f, 0, fetchSize * sizeof(mp_sword) * MP_NUMCHANNELS);
 
             for(i = 0; i < fetchSize; i++) {
                 *(l++) = *(f++) >> 8;
@@ -197,13 +190,16 @@ AudioDriver_Paula::bufferAudioImpl()
                 for(i = 0; i < MAX_CHANNELS; i++) {
                     mp_sword * s = chanFetch[i];
                     mp_sbyte * d = chanRing[i] + idxWrite;
+                    int l = -1;
 
-                    for(j = 0; j < fetchSize; j++)
+                    for(j = 0; j < fetchSize; j++) {
                         *(d++) = *(s++) >> 8;
+                        s++;
+                    }
                 }
             } else {
                 for(i = 0; i < MAX_CHANNELS; i++)
-                    memset(chanRing[i] + idxWrite, 0, fetchSize * SAMPLE_SIZE);
+                    memset(chanRing[i] + idxWrite, 0, fetchSize * sizeof(mp_sbyte));
             }
         }
         break;
@@ -235,7 +231,6 @@ AudioDriver_Paula::bufferAudio()
 {
     switch(outputMode) {
     case ResampleHW:
-        //bufferAudioImpl();
         return 0;
     default:
         return AudioDriver_Amiga<mp_sbyte>::bufferAudio();
@@ -257,7 +252,8 @@ AudioDriver_Paula::disableIRQ()
 mp_sint32
 AudioDriver_Paula::channelPlayback()
 {
-    UBYTE icr = ciab.ciaicr; // Get and clear
+    // Get ICR and clear
+    UBYTE icr = ciab.ciaicr;
 
     // If Timer-A has been fired
     if(icr & CIAICRF_TA) {
@@ -442,6 +438,6 @@ AudioDriver_Paula::tickDone()
 
     for(i = 0; i < MAX_CHANNELS; i++) {
         // Period is bound to Paula/Video clock !
-        hwChannelPos[i] += (3546895 / 50) / hwPeriod[i];
+        hwChannelPos[i] += (PAULA_CLK / REFRESHRATE) / hwPeriod[i];
     }
 }

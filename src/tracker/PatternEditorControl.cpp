@@ -526,7 +526,7 @@ void PatternEditorControl::paint(PPGraphicsAbstract* g)
 
 			if (playerMaster) {
 				AudioDriverInterface * audioDriver = (AudioDriverInterface *) playerMaster->getCurrentDriver();
-				if (audioDriver) {
+				if (audioDriver && audioDriver->isMultiChannel()) {
 					mp_sint32 maxChannels = audioDriver->getChannels();
 					if (maxChannels >= 0 && j >= maxChannels)
 						channelUnsupported = true;

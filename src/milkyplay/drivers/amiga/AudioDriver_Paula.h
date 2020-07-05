@@ -27,7 +27,6 @@ protected:
 	virtual void 		playAudioImpl();
 
 	virtual mp_sint32   getChannels() const;
-	virtual mp_uint32   getSampleSize() const;
 
 	virtual void		setGlobalVolume(mp_ubyte volume);
 	virtual void    	disableDMA();

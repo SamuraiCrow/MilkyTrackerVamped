@@ -548,7 +548,7 @@ void ChannelMixer::setFrequency(mp_sint32 frequency)
 	for(int i = 0; i < MAX_DIRECTOUT_CHANNELS; i++) {
 		if (mixbuffBeatPackets[i])
 			delete[] mixbuffBeatPackets[i];
-		mixbuffBeatPackets[i] = new mp_sword[beatPacketSize];
+		mixbuffBeatPackets[i] = new mp_sword[beatPacketSize*MP_NUMCHANNELS];
 	}
 
 	// channels contain information based on beatPacketSize so this might
@@ -1112,15 +1112,15 @@ void ChannelMixer::directOut(MixerProxy * mixerProxy)
 			todo = mixBufferSize;
 			mp_uint32 pos = beatLength - lastBeatRemainder;
 			for(c = 0; c < nChannels; c++) {
-				memcpy(mixerProxy->getBuffer<mp_sword>(c), mixbuffBeatPackets[c] + pos, todo * sizeof(mp_sword));
+				memcpy(mixerProxy->getBuffer<mp_sword>(c), mixbuffBeatPackets[c] + pos * MP_NUMCHANNELS, todo * MP_NUMCHANNELS * sizeof(mp_sword));
 			}
 			done = mixBufferSize;
 			lastBeatRemainder -= done;
 		} else {
 			mp_uint32 pos = beatLength - lastBeatRemainder;
 			for(c = 0; c < nChannels; c++) {
-				memcpy(mixerProxy->getBuffer<mp_sword>(c), mixbuffBeatPackets[c] + pos, todo * sizeof(mp_sword));
-				mixerProxy->advanceBuffer<mp_sword>(c, lastBeatRemainder);
+				memcpy(mixerProxy->getBuffer<mp_sword>(c), mixbuffBeatPackets[c] + pos * MP_NUMCHANNELS, todo * MP_NUMCHANNELS * sizeof(mp_sword));
+				mixerProxy->advanceBuffer<mp_sword>(c, lastBeatRemainder * MP_NUMCHANNELS);
 			}
 			mixSize -= lastBeatRemainder;
 			done = lastBeatRemainder;
@@ -1141,19 +1141,19 @@ void ChannelMixer::directOut(MixerProxy * mixerProxy)
 				for(c = 0; c < nChannels; c++) {
 					storeTimeRecordData(nb, &channel[c]);
 					if(resamplerTable[MIXER_NORMAL] != NULL) {
-						resamplerTable[MIXER_NORMAL]->directOutChannel(this, c, mixerProxy->getBuffer<mp_sword>(c) + nb * beatLength, nb, beatLength);
+						resamplerTable[MIXER_NORMAL]->directOutChannel(this, c, mixerProxy->getBuffer<mp_sword>(c) + nb * beatLength * MP_NUMCHANNELS, nb, beatLength);
 					}
 				}
 			}
 		}
 
 		for(c = 0; c < nChannels; c++) {
-			mixerProxy->advanceBuffer<mp_sword>(c, numbeats * beatLength);
+			mixerProxy->advanceBuffer<mp_sword>(c, numbeats * beatLength * MP_NUMCHANNELS);
 		}
 
 		if (done < (mp_sint32)mixBufferSize) {
 			for(c = 0; c < nChannels; c++) {
-				memset(mixbuffBeatPackets[c], 0, beatLength * sizeof(mp_sword));
+				memset(mixbuffBeatPackets[c], 0, beatLength * MP_NUMCHANNELS * sizeof(mp_sword));
 			}
 
 			timer(numbeats);
@@ -1170,7 +1170,7 @@ void ChannelMixer::directOut(MixerProxy * mixerProxy)
 			mp_sint32 todo = mixBufferSize - done;
 			if (todo) {
 				for(c = 0; c < nChannels; c++) {
-					memcpy(mixerProxy->getBuffer<mp_sword>(c), mixbuffBeatPackets[c], todo * sizeof(mp_sword));
+					memcpy(mixerProxy->getBuffer<mp_sword>(c), mixbuffBeatPackets[c], todo * MP_NUMCHANNELS * sizeof(mp_sword));
 				}
 				lastBeatRemainder = beatLength - todo;
 			}
@@ -1359,15 +1359,15 @@ void ChannelMixer::mix(MixerProxy * mixerProxy)
 	case MixerProxy::MixDown:
 		// Mix down channels into *one single* stereo mix buffer
 		mixDown(mixerProxy);
-		return;
+		break;
 	case MixerProxy::DirectOut:
 		// Direct out to channels for machines with multi-channel hardware
 		directOut(mixerProxy);
-		return;
+		break;
 	case MixerProxy::HardwareOut:
 		// Hardware out to channels for machine with multi-channel audio DMA control
 		hardwareOut(mixerProxy);
-		return;
+		break;
 	}
 }
 

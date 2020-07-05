@@ -102,7 +102,7 @@ bool MixerProxyDirectOut::lock(mp_uint32 bufferSize, mp_uint32 sampleShift)
     MixerProxy::lock(bufferSize, sampleShift);
 
     for(int i = 0; i < numChannels; i++) {
-        clearBuffer<mp_sword>(i, bufferSize);
+        clearBuffer<mp_sword>(i, bufferSize * MP_NUMCHANNELS);
     }
 
     return true;

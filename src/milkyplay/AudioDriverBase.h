@@ -41,11 +41,7 @@
 #include "MilkyPlayResults.h"
 
 // WAV Header & mixing buffer info
-#if defined(AMIGA_DIRECTOUT)
-#	define MP_NUMCHANNELS 1
-#else
-#	define MP_NUMCHANNELS 2
-#endif
+#define MP_NUMCHANNELS 2
 #define MP_NUMBITS 16
 #define MP_NUMBYTES (MP_NUMBITS>>3)
 
@@ -110,6 +106,7 @@ public:
 
 	virtual     mp_sint32   getStatValue(mp_uint32 key) = 0;
 	virtual     mp_sint32   getChannels() const = 0;
+	virtual     bool        isMultiChannel() const = 0;
 };
 
 // -------------------------------------------------------------------------
@@ -175,7 +172,8 @@ public:
 	virtual		void		setIdle(bool idle);
 
 	virtual     mp_sint32   getStatValue(mp_uint32 key) { return 0; }
-	virtual     mp_sint32   getChannels() const { return -1; };
+	virtual     mp_sint32   getChannels() const { return -1; }
+	virtual     bool        isMultiChannel() const { return false; }
 };
 
 #endif

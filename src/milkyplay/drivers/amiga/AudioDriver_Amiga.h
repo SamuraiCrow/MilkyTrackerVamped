@@ -63,7 +63,7 @@ protected:
 
 	OutputMode          outputMode;
 
-	mp_uint32           nChannels, sampleSize;
+	mp_uint32           nChannels;
 
 	mp_sint32   		idxRead, idxWrite;
 	mp_uint32           chunkSize, ringSize, fetchSize;
@@ -99,8 +99,6 @@ protected:
 	virtual void        bufferAudioImpl() = 0;
 	virtual void 		playAudioImpl() = 0;
 
-	virtual mp_uint32   getSampleSize() const = 0;
-
 	virtual void		setGlobalVolume(mp_ubyte volume) = 0;
 	virtual void    	disableDMA() = 0;
 	virtual void      	enableDMA() = 0;
@@ -119,6 +117,7 @@ protected:
 
 	virtual mp_sint32   getStatValue(mp_uint32 key);
 
+	virtual bool        isMultiChannel() const;
 public:
 	virtual void 		playAudio();
 	virtual mp_sint32  	bufferAudio();
