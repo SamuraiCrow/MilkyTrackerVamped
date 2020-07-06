@@ -231,9 +231,9 @@ AudioDriverManager::AudioDriverManager() :
 	ALLOC_DRIVERLIST(1);
 
 	if(hasAMMX) {
-		driverList[0] = new AudioDriver_Arne();
+		driverList[0] = new AudioDriver_Arne_ResampleHW();
 	} else {
-		driverList[0] = new AudioDriver_Paula();
+		driverList[0] = new AudioDriver_Paula_ResampleHW();
 	}
 }
 

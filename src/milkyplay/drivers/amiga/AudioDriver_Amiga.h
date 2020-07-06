@@ -43,10 +43,9 @@ extern volatile struct CIA ciaa, ciab;
 class AudioDriverInterface_Amiga : public AudioDriverBase
 {
 public:
-	virtual mp_sint32	bufferAudio();
+	virtual void bufferAudio();
 };
 
-template<typename SampleType>
 class AudioDriver_Amiga : public AudioDriverInterface_Amiga, public ProxyProcessor
 {
 protected:
@@ -61,8 +60,6 @@ protected:
 	bool                allocated;
 	bool                irqEnabled;
 
-	OutputMode          outputMode;
-
 	mp_uint32           nChannels;
 
 	mp_sint32   		idxRead, idxWrite;
@@ -73,15 +70,6 @@ protected:
 	mp_sint32           statAudioBufferReset, statAudioBufferResetMedian;
 	mp_sint32           statRingBufferFull, statRingBufferFullMedian;
 	mp_sint32           statCountPerSecond;
-
-	mp_sword ** 		chanFetch;
-
-	SampleType ** 		chanRing;
-
-	mp_sword * 			samplesFetched;
-
-	SampleType * 		samplesLeft;
-	SampleType * 		samplesRight;
 
 	struct Interrupt *	irqPlayAudio;
 	struct Interrupt *	irqAudioOld;
@@ -95,13 +83,17 @@ protected:
 						AudioDriver_Amiga();
 	virtual				~AudioDriver_Amiga();
 
+	virtual mp_sint32   allocResources() = 0;
 	virtual void        initHardware() = 0;
-	virtual void        bufferAudioImpl() = 0;
-	virtual void 		playAudioImpl() = 0;
+	virtual void   		deallocResources() = 0;
 
-	virtual void		setGlobalVolume(mp_ubyte volume) = 0;
-	virtual void    	disableDMA() = 0;
-	virtual void      	enableDMA() = 0;
+	virtual void        bufferAudioImpl() = 0;
+	virtual void 		playAudioImpl() { }
+
+	virtual void		setGlobalVolume(mp_ubyte volume) { }
+
+	virtual void    	disableDMA() { }
+	virtual void      	enableDMA() { }
 
 	virtual	mp_sint32	initDevice(mp_sint32 bufferSizeInWords, mp_uint32 mixFrequency, MasterMixer* mixer);
 	virtual	mp_sint32	closeDevice();
@@ -117,10 +109,11 @@ protected:
 
 	virtual mp_sint32   getStatValue(mp_uint32 key);
 
-	virtual bool        isMultiChannel() const;
 public:
 	virtual void 		playAudio();
-	virtual mp_sint32  	bufferAudio();
+	virtual void 		bufferAudio();
+
+	virtual bool        isMultiChannel() const { return false; }
 };
 
 #endif

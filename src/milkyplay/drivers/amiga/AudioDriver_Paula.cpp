@@ -12,21 +12,8 @@
 
 #define MAX_CHANNELS            4
 
-static mp_sint32
-channelPlaybackService(register AudioDriver_Paula * that __asm("a1"))
-{
-    return that->channelPlayback();
-}
-
 AudioDriver_Paula::AudioDriver_Paula()
-: hwDMACON(0)
 {
-    for(int i = 0; i < MAX_CHANNELS; i++) {
-        hwChannelLoopStart[i] = 0;
-        hwChannelRepeatLength[i] = 1;
-        hwChannelPos[i] = 0;
-        hwPeriod[i] = 1;
-    }
 }
 
 AudioDriver_Paula::~AudioDriver_Paula()
@@ -38,181 +25,6 @@ AudioDriver_Paula::getChannels() const
 {
     return MAX_CHANNELS;
 }
-
-mp_sint32
-AudioDriver_Paula::initDevice(mp_sint32 bufferSizeInWords, mp_uint32 mixFrequency, MasterMixer* mixer)
-{
-#if DEBUG_DRIVER
-    printf("%s\n", __PRETTY_FUNCTION__);
-    printf("Wanted buffer size: %ld\n", bufferSizeInWords);
-    printf("Wanted mix frequency: %ld\n", mixFrequency);
-    printf("Driver running in Paula mode\n");
-#endif
-
-    mixFrequency = 22050;
-
-    irqChannelPlayback = (struct Interrupt *) AllocMem(sizeof(struct Interrupt), MEMF_PUBLIC | MEMF_CLEAR);
-    irqChannelPlayback->is_Node.ln_Type = NT_INTERRUPT;
-    irqChannelPlayback->is_Node.ln_Pri = 127;
-    irqChannelPlayback->is_Node.ln_Name = (char *) "mt-paula-chn-pb";
-    irqChannelPlayback->is_Data = this;
-    irqChannelPlayback->is_Code = (void(*)()) channelPlaybackService;
-
-    return AudioDriver_Amiga::initDevice(bufferSizeInWords, mixFrequency, mixer);
-}
-
-void
-AudioDriver_Paula::setGlobalVolume(mp_ubyte volume)
-{
-    int i;
-
-    switch(outputMode) {
-    case Mix:
-    case DirectOut:
-        for(i = 0; i < MAX_CHANNELS; i++) {
-            *((volatile mp_uword *) AUDIO_VOLUME(i)) = volume;
-        }
-        break;
-    }
-}
-
-void
-AudioDriver_Paula::disableDMA()
-{
-    switch(outputMode) {
-    case Mix:
-        *((volatile mp_uword *) CUSTOM_DMACON) = DMAF_AUD0 | DMAF_AUD1;
-        break;
-    case DirectOut:
-        *((volatile mp_uword *) CUSTOM_DMACON) = DMAF_AUDIO;
-        break;
-    }
-}
-
-void
-AudioDriver_Paula::enableDMA()
-{
-    switch(outputMode) {
-    case Mix:
-        *((volatile mp_uword *) CUSTOM_DMACON) = DMAF_SETCLR | DMAF_AUD0 | DMAF_AUD1;
-        break;
-    case DirectOut:
-        *((volatile mp_uword *) CUSTOM_DMACON) = DMAF_SETCLR | DMAF_AUDIO;
-        break;
-    }
-}
-
-void
-AudioDriver_Paula::initHardware()
-{
-    int i;
-
-    // Initialize audio hardware with default values
-    mp_uword period = PAULA_CLK / this->mixFrequency;
-
-    switch(outputMode) {
-    case Mix:
-        *((volatile mp_uint32 *) AUDIO_LOCHI(0)) = (mp_uint32) samplesLeft;
-        *((volatile mp_uword *) AUDIO_LENGTH(0)) = chunkSize >> 1;
-        *((volatile mp_uword *) AUDIO_PERIOD(0)) = period;
-
-        *((volatile mp_uint32 *) AUDIO_LOCHI(1)) = (mp_uint32) samplesRight;
-        *((volatile mp_uword *) AUDIO_LENGTH(1)) = chunkSize >> 1;
-        *((volatile mp_uword *) AUDIO_PERIOD(1)) = period;
-
-        break;
-    case DirectOut:
-        for(i = 0; i < MAX_CHANNELS; i++) {
-            *((volatile mp_uint32 *) AUDIO_LOCHI(i)) = (mp_uint32) chanRing[i];
-            *((volatile mp_uword *) AUDIO_LENGTH(i)) = chunkSize >> 1;
-            *((volatile mp_uword *) AUDIO_PERIOD(i)) = period;
-        }
-
-        break;
-    }
-}
-
-void
-AudioDriver_Paula::playAudioImpl()
-{
-    int i;
-
-    switch(outputMode) {
-    case Mix:
-        *((volatile mp_uint32 *) AUDIO_LOCHI(0)) = (mp_uint32) (samplesLeft + idxRead);
-        *((volatile mp_uword *) AUDIO_LENGTH(0)) = chunkSize >> 1;
-
-        *((volatile mp_uint32 *) AUDIO_LOCHI(1)) = (mp_uint32) (samplesRight + idxRead);
-        *((volatile mp_uword *) AUDIO_LENGTH(1)) = chunkSize >> 1;
-
-        break;
-    case DirectOut:
-        for(i = 0; i < MAX_CHANNELS; i++) {
-            *((volatile mp_uint32 *) AUDIO_LOCHI(i)) = (mp_uint32) (chanRing[i] + idxRead);
-            *((volatile mp_uword *) AUDIO_LENGTH(i)) = chunkSize >> 1;
-        }
-
-        break;
-    }
-}
-
-void
-AudioDriver_Paula::bufferAudioImpl()
-{
-    int i, j;
-
-    switch(outputMode) {
-    case Mix:
-        {
-            mp_sword * f = samplesFetched;
-            mp_sbyte
-                * l = samplesLeft + idxWrite,
-                * r = samplesRight + idxWrite;
-
-            if (isMixerActive())
-                mixer->mixerHandler(f);
-            else
-                memset(f, 0, fetchSize * sizeof(mp_sword) * MP_NUMCHANNELS);
-
-            for(i = 0; i < fetchSize; i++) {
-                *(l++) = *(f++) >> 8;
-                *(r++) = *(f++) >> 8;
-            }
-        }
-        break;
-    case DirectOut:
-        {
-            if (isMixerActive()) {
-                for(i = 0; i < MAX_CHANNELS; i++)
-                    mixerProxy->setBuffer<mp_sword>(i, chanFetch[i]);
-                mixer->mixerHandler(NULL, mixerProxy);
-
-                for(i = 0; i < MAX_CHANNELS; i++) {
-                    mp_sword * s = chanFetch[i];
-                    mp_sbyte * d = chanRing[i] + idxWrite;
-                    int l = -1;
-
-                    for(j = 0; j < fetchSize; j++) {
-                        *(d++) = *(s++) >> 8;
-                        s++;
-                    }
-                }
-            } else {
-                for(i = 0; i < MAX_CHANNELS; i++)
-                    memset(chanRing[i] + idxWrite, 0, fetchSize * sizeof(mp_sbyte));
-            }
-        }
-        break;
-    case ResampleHW:
-        {
-            if(isMixerActive()) {
-                mixer->mixerHandler(NULL, mixerProxy);
-            }
-        }
-        break;
-    }
-}
-
 
 const char*
 AudioDriver_Paula::getDriverID()
@@ -227,32 +39,359 @@ AudioDriver_Paula::getPreferredBufferSize() const
 }
 
 mp_sint32
-AudioDriver_Paula::bufferAudio()
+AudioDriver_Paula::initDevice(mp_sint32 bufferSizeInWords, mp_uint32 mixFrequency, MasterMixer* mixer)
 {
-    switch(outputMode) {
-    case ResampleHW:
-        return 0;
-    default:
-        return AudioDriver_Amiga<mp_sbyte>::bufferAudio();
+#if DEBUG_DRIVER
+    printf("%s\n", __PRETTY_FUNCTION__);
+    printf("Hi baby, my name is Paula.\n");
+    printf("Wanted buffer size: %ld\n", bufferSizeInWords);
+    printf("Wanted mix frequency: %ld\n", mixFrequency);
+#endif
+
+    mixFrequency = 22050;
+
+    return AudioDriver_Amiga::initDevice(bufferSizeInWords, mixFrequency, mixer);
+}
+
+// ---------------------------------------------------------------------------
+// Mix
+// ---------------------------------------------------------------------------
+
+mp_sint32
+AudioDriver_Paula_Mix::initDevice(mp_sint32 bufferSizeInWords, mp_uint32 mixFrequency, MasterMixer* mixer)
+{
+#if DEBUG_DRIVER
+    printf("Driver outputting in Mix mode\n");
+#endif
+
+    return AudioDriver_Paula::initDevice(bufferSizeInWords, mixFrequency, mixer);
+}
+
+mp_sint32
+AudioDriver_Paula_Mix::allocResources()
+{
+    // Fetch buffer for 16-bit stereo
+    samplesFetched = (mp_sword *) AllocMem(fetchSize * sizeof(mp_sword) * MP_NUMCHANNELS, MEMF_PUBLIC | MEMF_CLEAR);
+
+    // Ring buffers for each side
+    samplesLeft = (mp_sbyte *) AllocMem(ringSize * sizeof(mp_sbyte), MEMF_CHIP | MEMF_CLEAR);
+    samplesRight = (mp_sbyte *) AllocMem(ringSize * sizeof(mp_sbyte), MEMF_CHIP | MEMF_CLEAR);
+
+    return 0;
+}
+
+void
+AudioDriver_Paula_Mix::deallocResources()
+{
+    FreeMem(samplesRight, ringSize * sizeof(mp_sbyte));
+    FreeMem(samplesLeft, ringSize * sizeof(mp_sbyte));
+
+    FreeMem(samplesFetched, fetchSize * sizeof(mp_sword) * MP_NUMCHANNELS);
+}
+
+void
+AudioDriver_Paula_Mix::initHardware()
+{
+    mp_uword period = PAULA_CLK / this->mixFrequency;
+
+    *((volatile mp_uint32 *) AUDIO_LOCHI(0)) = (mp_uint32) samplesLeft;
+    *((volatile mp_uword *) AUDIO_LENGTH(0)) = chunkSize >> 1;
+    *((volatile mp_uword *) AUDIO_PERIOD(0)) = period;
+
+    *((volatile mp_uint32 *) AUDIO_LOCHI(1)) = (mp_uint32) samplesRight;
+    *((volatile mp_uword *) AUDIO_LENGTH(1)) = chunkSize >> 1;
+    *((volatile mp_uword *) AUDIO_PERIOD(1)) = period;
+}
+
+void
+AudioDriver_Paula_Mix::setGlobalVolume(mp_ubyte volume)
+{
+    for(int i = 0; i < MAX_CHANNELS; i++) {
+        *((volatile mp_uword *) AUDIO_VOLUME(i)) = volume;
     }
 }
 
 void
-AudioDriver_Paula::disableIRQ()
+AudioDriver_Paula_Mix::disableDMA()
 {
-    switch(outputMode) {
-    case ResampleHW:
-        break;
-    default:
-        AudioDriver_Amiga::disableIRQ();
-        break;
+    *((volatile mp_uword *) CUSTOM_DMACON) = DMAF_AUD0 | DMAF_AUD1;
+}
+
+void
+AudioDriver_Paula_Mix::enableDMA()
+{
+    *((volatile mp_uword *) CUSTOM_DMACON) = DMAF_SETCLR | DMAF_AUD0 | DMAF_AUD1;
+}
+
+void
+AudioDriver_Paula_Mix::playAudioImpl()
+{
+    *((volatile mp_uint32 *) AUDIO_LOCHI(0)) = (mp_uint32) (samplesLeft + idxRead);
+    *((volatile mp_uword *) AUDIO_LENGTH(0)) = chunkSize >> 1;
+
+    *((volatile mp_uint32 *) AUDIO_LOCHI(1)) = (mp_uint32) (samplesRight + idxRead);
+    *((volatile mp_uword *) AUDIO_LENGTH(1)) = chunkSize >> 1;
+}
+
+void
+AudioDriver_Paula_Mix::bufferAudioImpl()
+{
+    mp_sword * f = samplesFetched;
+    mp_sbyte
+        * l = samplesLeft + idxWrite,
+        * r = samplesRight + idxWrite;
+
+    if (isMixerActive())
+        mixer->mixerHandler(f);
+    else
+        memset(f, 0, fetchSize * sizeof(mp_sword) * MP_NUMCHANNELS);
+
+    for(int i = 0; i < fetchSize; i++) {
+        *(l++) = *(f++) >> 8;
+        *(r++) = *(f++) >> 8;
     }
 }
 
+// ---------------------------------------------------------------------------
+// DirectOut
+// ---------------------------------------------------------------------------
+
 mp_sint32
-AudioDriver_Paula::channelPlayback()
+AudioDriver_Paula_DirectOut::initDevice(mp_sint32 bufferSizeInWords, mp_uint32 mixFrequency, MasterMixer* mixer)
 {
-    // Get ICR and clear
+#if DEBUG_DRIVER
+    printf("%s\n", __PRETTY_FUNCTION__);
+    printf("Driver outputting in DirectOut mode\n");
+#endif
+
+    return AudioDriver_Paula::initDevice(bufferSizeInWords, mixFrequency, mixer);
+}
+
+bool
+AudioDriver_Paula_DirectOut::isMultiChannel() const
+{
+    return true;
+}
+
+mp_sint32
+AudioDriver_Paula_DirectOut::allocResources()
+{
+    // Fetch buffers for each channel (16-bit stereo)
+    chanFetch = (mp_sword **) AllocMem(nChannels * sizeof(mp_sword *), MEMF_PUBLIC | MEMF_CLEAR);
+    for(int i = 0; i < nChannels; i++)
+        chanFetch[i] = (mp_sword *) AllocMem(fetchSize * sizeof(mp_sword) * MP_NUMCHANNELS, MEMF_PUBLIC | MEMF_CLEAR);
+
+    // Ring buffers for each channel
+    chanRing = (mp_sbyte **) AllocMem(nChannels * sizeof(mp_sbyte *), MEMF_PUBLIC | MEMF_CLEAR);
+    for(int i = 0; i < nChannels; i++)
+        chanRing[i] = (mp_sbyte *) AllocMem(ringSize * sizeof(mp_sbyte), MEMF_CHIP | MEMF_CLEAR);
+
+    mixerProxy = new MixerProxyDirectOut(nChannels);
+
+    return 0;
+}
+
+void
+AudioDriver_Paula_DirectOut::deallocResources()
+{
+    delete mixerProxy;
+
+    for(int i = 0; i < nChannels; i++)
+        FreeMem(chanRing[i], ringSize * sizeof(mp_sbyte));
+    FreeMem(chanRing, nChannels * sizeof(mp_sbyte *));
+
+    for(int i = 0; i < nChannels; i++)
+        FreeMem(chanFetch[i], fetchSize * sizeof(mp_sword) * MP_NUMCHANNELS);
+    FreeMem(chanFetch, nChannels * sizeof(mp_sword *));
+}
+
+void
+AudioDriver_Paula_DirectOut::initHardware()
+{
+    mp_uword period = PAULA_CLK / this->mixFrequency;
+
+    for(int i = 0; i < MAX_CHANNELS; i++) {
+        *((volatile mp_uint32 *) AUDIO_LOCHI(i)) = (mp_uint32) chanRing[i];
+        *((volatile mp_uword *) AUDIO_LENGTH(i)) = chunkSize >> 1;
+        *((volatile mp_uword *) AUDIO_PERIOD(i)) = period;
+    }
+}
+
+void
+AudioDriver_Paula_DirectOut::setGlobalVolume(mp_ubyte volume)
+{
+    for(int i = 0; i < MAX_CHANNELS; i++) {
+        *((volatile mp_uword *) AUDIO_VOLUME(i)) = volume;
+    }
+}
+
+void
+AudioDriver_Paula_DirectOut::disableDMA()
+{
+    *((volatile mp_uword *) CUSTOM_DMACON) = DMAF_AUDIO;
+}
+
+void
+AudioDriver_Paula_DirectOut::enableDMA()
+{
+    *((volatile mp_uword *) CUSTOM_DMACON) = DMAF_SETCLR | DMAF_AUDIO;
+}
+
+void
+AudioDriver_Paula_DirectOut::playAudioImpl()
+{
+    for(int i = 0; i < MAX_CHANNELS; i++) {
+        *((volatile mp_uint32 *) AUDIO_LOCHI(i)) = (mp_uint32) (chanRing[i] + idxRead);
+        *((volatile mp_uword *) AUDIO_LENGTH(i)) = chunkSize >> 1;
+    }
+}
+
+void
+AudioDriver_Paula_DirectOut::bufferAudioImpl()
+{
+    if (isMixerActive()) {
+        for(int i = 0; i < MAX_CHANNELS; i++)
+            mixerProxy->setBuffer<mp_sword>(i, chanFetch[i]);
+        mixer->mixerHandler(NULL, mixerProxy);
+
+        for(int i = 0; i < MAX_CHANNELS; i++) {
+            mp_sword * s = chanFetch[i];
+            mp_sbyte * d = chanRing[i] + idxWrite;
+            int l = -1;
+
+            for(int j = 0; j < fetchSize; j++) {
+                *(d++) = *(s++) >> 8;
+                s++;
+            }
+        }
+    } else {
+        for(int i = 0; i < MAX_CHANNELS; i++)
+            memset(chanRing[i] + idxWrite, 0, fetchSize * sizeof(mp_sbyte));
+    }
+}
+
+// ---------------------------------------------------------------------------
+// ResampleHW
+// ---------------------------------------------------------------------------
+
+mp_sint32
+AudioDriver_Paula_ResampleHW::initDevice(mp_sint32 bufferSizeInWords, mp_uint32 mixFrequency, MasterMixer* mixer)
+{
+#if DEBUG_DRIVER
+    printf("%s\n", __PRETTY_FUNCTION__);
+    printf("Driver outputting in ResampleHW mode\n");
+#endif
+
+    return AudioDriver_Paula::initDevice(bufferSizeInWords, mixFrequency, mixer);
+}
+
+bool
+AudioDriver_Paula_ResampleHW::isMultiChannel() const
+{
+    return true;
+}
+
+mp_sint32
+AudioDriver_Paula_ResampleHW::allocResources()
+{
+    mixerProxy = new MixerProxyHardwareOut(nChannels, this);
+
+    return 0;
+}
+
+void
+AudioDriver_Paula_ResampleHW::deallocResources()
+{
+    delete mixerProxy;
+}
+
+void
+AudioDriver_Paula_ResampleHW::initHardware()
+{
+    newDMACON = 0;
+
+    for(int i = 0; i < MAX_CHANNELS; i++) {
+        channelLoopStart[i] = 0;
+        channelRepeatLength[i] = 1;
+        channelSamplePos[i] = 0;
+        channelPeriod[i] = 1;
+    }
+}
+
+void
+AudioDriver_Paula_ResampleHW::bufferAudioImpl()
+{
+    if(isMixerActive()) {
+        mixer->mixerHandler(NULL, mixerProxy);
+    }
+}
+
+void
+AudioDriver_Paula_ResampleHW::bufferAudio()
+{
+}
+
+void
+AudioDriver_Paula_ResampleHW::disableIRQ()
+{
+    if(!irqEnabled)
+        return;
+
+    if(!wasExterIRQEnabled)
+        custom.intena = INTF_EXTER;
+    RemIntServer(INTB_EXTER, irqPlayAudio);
+
+    // Restore CIA registers
+    ciab.ciatalo = oldTimerALo;
+    ciab.ciatahi = oldTimerAHi;
+    ciab.ciatblo = oldTimerBLo;
+    ciab.ciatbhi = oldTimerBHi;
+
+    irqEnabled = false;
+}
+
+void
+AudioDriver_Paula_ResampleHW::enableIRQ()
+{
+    if(irqEnabled)
+        return;
+
+    // Save regs
+    oldTimerALo = ciab.ciatalo;
+    oldTimerAHi = ciab.ciatahi;
+    oldTimerBLo = ciab.ciatblo;
+    oldTimerBHi = ciab.ciatbhi;
+
+    // Disable CIA interrupts
+    ciab.ciaicr = CIAICRF_IR | CIAICRF_FLG | CIAICRF_SP | CIAICRF_ALRM | CIAICRF_TB | CIAICRF_TA;
+
+    // Reset Timer A
+    ciab.ciacra = CIACRAF_LOAD | CIACRAF_START;
+    ciab.ciatalo = (1773447/125)&0xff;
+    ciab.ciatahi = (1773447/125)>>8;
+
+    // Reset Timer B
+    ciab.ciacrb = CIACRBF_LOAD;
+    ciab.ciatblo = 576&0xff;
+    ciab.ciatbhi = 576>>8;
+
+    // Enable CIA interrupt
+    ciab.ciaicr = CIAICRF_SETCLR | CIAICRF_TA | CIAICRF_TB;
+
+    // Read current EXTER IRQ state
+    wasExterIRQEnabled = (custom.intenar & INTF_EXTER) ? true : false;
+
+    // Enable channel playback interrupt
+    AddIntServer(INTB_EXTER, irqPlayAudio);
+    if(!wasExterIRQEnabled)
+        custom.intena = INTF_SETCLR | INTF_EXTER;
+    irqEnabled = true;
+}
+
+void
+AudioDriver_Paula_ResampleHW::playAudio()
+{
+    // Read ICR (which clears the reg!)
     UBYTE icr = ciab.ciaicr;
 
     // If Timer-A has been fired
@@ -262,7 +401,7 @@ AudioDriver_Paula::channelPlayback()
 
     // If Timer-B has been fired
     if(icr & CIAICRF_TB) {
-        if(hwDMACON) {
+        if(newDMACON) {
             //
             // First round
             //
@@ -271,71 +410,37 @@ AudioDriver_Paula::channelPlayback()
             ciab.ciacrb = CIACRBF_LOAD | CIACRBF_RUNMODE | CIACRBF_START;
 
             // Enable DMA channels
-            custom.dmacon = DMAF_SETCLR | hwDMACON;
-            hwDMACON = 0;
+            custom.dmacon = DMAF_SETCLR | newDMACON;
+            newDMACON = 0;
         } else {
             //
             // Second round
             //
 
             // Set sample pointers and lengths
-            *((volatile mp_uint32 *) AUDIO_LOCHI(0)) = hwChannelLoopStart[0];
-            *((volatile mp_uword *) AUDIO_LENGTH(0)) = hwChannelRepeatLength[0];
-            *((volatile mp_uint32 *) AUDIO_LOCHI(1)) = hwChannelLoopStart[1];
-            *((volatile mp_uword *) AUDIO_LENGTH(1)) = hwChannelRepeatLength[1];
-            *((volatile mp_uint32 *) AUDIO_LOCHI(2)) = hwChannelLoopStart[2];
-            *((volatile mp_uword *) AUDIO_LENGTH(2)) = hwChannelRepeatLength[2];
-            *((volatile mp_uint32 *) AUDIO_LOCHI(3)) = hwChannelLoopStart[3];
-            *((volatile mp_uword *) AUDIO_LENGTH(3)) = hwChannelRepeatLength[3];
+            *((volatile mp_uint32 *) AUDIO_LOCHI(0)) = channelLoopStart[0];
+            *((volatile mp_uword *) AUDIO_LENGTH(0)) = channelRepeatLength[0];
+            *((volatile mp_uint32 *) AUDIO_LOCHI(1)) = channelLoopStart[1];
+            *((volatile mp_uword *) AUDIO_LENGTH(1)) = channelRepeatLength[1];
+            *((volatile mp_uint32 *) AUDIO_LOCHI(2)) = channelLoopStart[2];
+            *((volatile mp_uword *) AUDIO_LENGTH(2)) = channelRepeatLength[2];
+            *((volatile mp_uint32 *) AUDIO_LOCHI(3)) = channelLoopStart[3];
+            *((volatile mp_uword *) AUDIO_LENGTH(3)) = channelRepeatLength[3];
         }
     }
-
-    return 0;
 }
 
 void
-AudioDriver_Paula::enableIRQ()
-{
-    switch(outputMode) {
-    case ResampleHW:
-        // Disable CIA interrupts
-        ciab.ciaicr = CIAICRF_IR | CIAICRF_FLG | CIAICRF_SP | CIAICRF_ALRM | CIAICRF_TB | CIAICRF_TA;
-
-        // Reset Timer A
-        ciab.ciacra = CIACRAF_LOAD | CIACRAF_START;
-        ciab.ciatalo = (1773447/125)&0xff;
-        ciab.ciatahi = (1773447/125)>>8;
-
-        // Reset Timer B
-        ciab.ciacrb = CIACRBF_LOAD;
-        ciab.ciatblo = 576&0xff;
-        ciab.ciatbhi = 576>>8;
-
-        // Enable CIA interrupt
-        ciab.ciaicr = CIAICRF_SETCLR | CIAICRF_TA | CIAICRF_TB;
-
-        // Enable channel playback interrupt
-        AddIntServer(INTB_EXTER, irqChannelPlayback);
-        custom.intena = INTF_SETCLR | INTF_EXTER;
-
-        break;
-    default:
-        AudioDriver_Amiga::enableIRQ();
-        break;
-    }
-}
-
-void
-AudioDriver_Paula::setChannelFrequency(ChannelMixer::TMixerChannel * chn)
+AudioDriver_Paula_ResampleHW::setChannelFrequency(ChannelMixer::TMixerChannel * chn)
 {
     //printf("ch %ld per = %ld\n", chn->index, chn->period);
 
     *((volatile mp_uword *) AUDIO_PERIOD(chn->index)) = chn->period >> 10;
-    hwPeriod[chn->index] = chn->period >> 10;
+    channelPeriod[chn->index] = chn->period >> 10;
 }
 
 void
-AudioDriver_Paula::setChannelVolume(ChannelMixer::TMixerChannel * chn)
+AudioDriver_Paula_ResampleHW::setChannelVolume(ChannelMixer::TMixerChannel * chn)
 {
     mp_sint32 vol = 0;
 
@@ -353,7 +458,7 @@ AudioDriver_Paula::setChannelVolume(ChannelMixer::TMixerChannel * chn)
 }
 
 void
-AudioDriver_Paula::playSample(ChannelMixer::TMixerChannel * chn)
+AudioDriver_Paula_ResampleHW::playSample(ChannelMixer::TMixerChannel * chn)
 {
     ciab.ciacrb = CIACRBF_LOAD;
 
@@ -361,7 +466,7 @@ AudioDriver_Paula::playSample(ChannelMixer::TMixerChannel * chn)
     *((volatile mp_uword *) CUSTOM_DMACON) = DMAF_AUD0 << chn->index;
 
     // Get sample position
-    mp_sint32 smppos = (chn->flags & 131072) ? chn->smppos : hwChannelPos[chn->index];
+    mp_sint32 smppos = (chn->flags & 131072) ? chn->smppos : channelSamplePos[chn->index];
 
     /*printf("ch %ld play = $%08lx smppos = $%08lx, $%08lx, $%08lx, loopend = $%08lx\n",
         chn->index, chn->sample, chn->smppos, smppos, hwChannelPos[chn->index], chn->loopend);*/
@@ -379,21 +484,21 @@ AudioDriver_Paula::playSample(ChannelMixer::TMixerChannel * chn)
     // Set sample
     *((volatile mp_uint32 *) AUDIO_LOCHI(chn->index)) = (mp_uint32) (chn->sample + smppos);
     *((volatile mp_uword *) AUDIO_LENGTH(chn->index)) = (mp_uword) (((chn->loopend - smppos) >> 1) & 0xffff);
-    hwChannelPos[chn->index] = smppos;
+    channelSamplePos[chn->index] = smppos;
 
     setChannelFrequency(chn);
     setChannelVolume(chn);
 
     if ((chn->flags & 3) == 0) {
-        hwChannelLoopStart[chn->index] = (mp_uint32) (chn->sample + chn->loopstart);
-        hwChannelRepeatLength[chn->index] = 1;
+        channelLoopStart[chn->index] = (mp_uint32) (chn->sample + chn->loopstart);
+        channelRepeatLength[chn->index] = 1;
     } else {
-        hwChannelLoopStart[chn->index] = (mp_uint32) (chn->sample + chn->loopstart);
-        hwChannelRepeatLength[chn->index] = (mp_uword) (((chn->loopend - chn->loopstart) >> 1) & 0xffff);
+        channelLoopStart[chn->index] = (mp_uint32) (chn->sample + chn->loopstart);
+        channelRepeatLength[chn->index] = (mp_uword) (((chn->loopend - chn->loopstart) >> 1) & 0xffff);
     }
 
     // And mark DMA channel as to be played
-    hwDMACON |= DMAF_AUD0 << chn->index;
+    newDMACON |= DMAF_AUD0 << chn->index;
 
     //
     // After processing plays and stops, this continues in tickDone
@@ -402,23 +507,17 @@ AudioDriver_Paula::playSample(ChannelMixer::TMixerChannel * chn)
 }
 
 void
-AudioDriver_Paula::stopChannel(mp_sint32 c)
-{
-    // Stop running sample
-    *((volatile mp_uword *) CUSTOM_DMACON) = DMAF_AUD0 << c;
-
-    hwChannelPos[c] = 0;
-    hwChannelLoopStart[c] = 0;
-    hwChannelRepeatLength[c] = 1;
-    hwPeriod[c] = 1;
-}
-
-void
-AudioDriver_Paula::stopSample(ChannelMixer::TMixerChannel * chn)
+AudioDriver_Paula_ResampleHW::stopSample(ChannelMixer::TMixerChannel * chn)
 {
     //printf("ch %ld stop = %ld\n", chn->index, chn->sample);
 
-    stopChannel(chn->index);
+    // Stop running sample
+    *((volatile mp_uword *) CUSTOM_DMACON) = DMAF_AUD0 << chn->index;
+
+    channelSamplePos[chn->index] = 0;
+    channelLoopStart[chn->index] = 0;
+    channelRepeatLength[chn->index] = 1;
+    channelPeriod[chn->index] = 1;
 
     //
     // See playSample what happens next!
@@ -426,18 +525,18 @@ AudioDriver_Paula::stopSample(ChannelMixer::TMixerChannel * chn)
 }
 
 void
-AudioDriver_Paula::tickDone()
+AudioDriver_Paula_ResampleHW::tickDone()
 {
     int i;
 
     // If there are new samples playing on a channel, let irqEnableChannels enable the DMA for us
-    if(hwDMACON) {
+    if(newDMACON) {
         // Enable one-shot timer to set repeat
         ciab.ciacrb = CIACRBF_LOAD | CIACRBF_RUNMODE | CIACRBF_START;
     }
 
     for(i = 0; i < MAX_CHANNELS; i++) {
         // Period is bound to Paula/Video clock !
-        hwChannelPos[i] += (PAULA_CLK / REFRESHRATE) / hwPeriod[i];
+        channelSamplePos[i] += (PAULA_CLK / REFRESHRATE) / channelPeriod[i];
     }
 }
