@@ -21,6 +21,7 @@
 #include <clib/picasso96_protos.h>
 #include <clib/vampire_protos.h>
 #include <clib/icon_protos.h>
+#include <clib/gadtools_protos.h>
 
 #include <hardware/intbits.h>
 

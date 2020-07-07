@@ -144,6 +144,179 @@ static bool checkHardware()
 	return hasFPU;
 }
 
+static const char *driverNames[] = {
+	"Paula",
+	"Arne",
+	NULL
+};
+
+static const char *driverDescs[] = {
+	"4-ch/8-bit",
+	"16-ch/16-bit (Apollo)",
+	NULL
+};
+
+static const char *mixTypeNames[] = {
+	"ResampleHW",
+	"DirectOut",
+	"MixDown",
+	NULL
+};
+
+static const char *mixTypeDescs[] = {
+	"Fast/DMA",
+	"Slow/CPU",
+	"Slowest/CPU/Stereo",
+	NULL
+};
+
+static int setup()
+{
+	int ret = 0;
+	struct Gadget * gadgetList = NULL, * gadget;
+	struct NewGadget newGadget;
+	struct Screen * pubScreen;
+	struct Window * window;
+	long winWidth, winHeight;
+	bool setupRunning = true;
+	struct Gadget * driverDesc, * mixTypeDesc;
+
+	if(!(pubScreen = LockPubScreen(NULL)))
+		return -1;
+
+	gadget = CreateContext(&gadgetList);
+
+	newGadget.ng_VisualInfo = GetVisualInfo(pubScreen, TAG_END);
+	newGadget.ng_TextAttr 	= pubScreen->Font;
+	newGadget.ng_Flags 		= 0;
+
+	newGadget.ng_LeftEdge   = pubScreen->WBorLeft + 4 + 10 * pubScreen->RastPort.TxWidth;
+	newGadget.ng_TopEdge    = pubScreen->WBorTop + pubScreen->RastPort.TxHeight + 5;
+	newGadget.ng_Width      = 20 * pubScreen->RastPort.TxWidth + 20;
+	newGadget.ng_Height     = pubScreen->RastPort.TxHeight + 6;
+	newGadget.ng_GadgetText = (UBYTE *) "Driver";
+	newGadget.ng_GadgetID   = 10001;
+	gadget = CreateGadget(CYCLE_KIND, gadget, &newGadget,
+		GTCY_Labels, driverNames,
+		TAG_END);
+
+	newGadget.ng_TopEdge   += newGadget.ng_Height + 4;
+	newGadget.ng_GadgetText = NULL;
+	newGadget.ng_GadgetID   = 10006;
+	gadget = CreateGadget(TEXT_KIND, gadget, &newGadget,
+		GTTX_Text, driverDescs[0],
+		TAG_END);
+	driverDesc = gadget;
+
+	newGadget.ng_TopEdge   += newGadget.ng_Height + 4;
+	newGadget.ng_GadgetText = (UBYTE *) "MixType";
+	newGadget.ng_GadgetID   = 10002;
+	gadget = CreateGadget(CYCLE_KIND, gadget, &newGadget,
+		GTCY_Labels, mixTypeNames,
+		TAG_END);
+
+	newGadget.ng_TopEdge   += newGadget.ng_Height + 4;
+	newGadget.ng_GadgetText = NULL;
+	newGadget.ng_GadgetID   = 10005;
+	gadget = CreateGadget(TEXT_KIND, gadget, &newGadget,
+		GTTX_Text, mixTypeDescs[0],
+		TAG_END);
+	mixTypeDesc = gadget;
+
+	newGadget.ng_LeftEdge   = pubScreen->WBorLeft + 4;
+	newGadget.ng_TopEdge   += newGadget.ng_Height + 8;
+	newGadget.ng_Width      = 15 * pubScreen->RastPort.TxWidth + 8;
+	newGadget.ng_GadgetText = (UBYTE *) "Run";
+	newGadget.ng_GadgetID   = 10003;
+	gadget = CreateGadget(BUTTON_KIND, gadget, &newGadget,
+		TAG_END);
+
+	newGadget.ng_LeftEdge  += newGadget.ng_Width + 4;
+	newGadget.ng_GadgetText = (UBYTE *) "Quit";
+	newGadget.ng_GadgetID   = 10004;
+	gadget = CreateGadget (BUTTON_KIND, gadget, &newGadget,
+		TAG_END);
+
+	if(gadget) {
+		winWidth = newGadget.ng_LeftEdge + newGadget.ng_Width + 4 + pubScreen->WBorRight;
+		winHeight = newGadget.ng_TopEdge + newGadget.ng_Height + 4 + pubScreen->WBorBottom;
+
+		window = OpenWindowTags(NULL,
+			WA_Width,  		winWidth,
+			WA_Height, 		winHeight,
+			WA_Left,   		(pubScreen->Width - winWidth) >> 1,
+			WA_Top,    		(pubScreen->Height - winHeight) >> 1,
+			WA_PubScreen,	pubScreen,
+			WA_Title,		"MilkyTracker Setup",
+			WA_Flags,		WFLG_CLOSEGADGET | WFLG_DRAGBAR | WFLG_DEPTHGADGET | WFLG_ACTIVATE,
+			WA_IDCMP,		IDCMP_CLOSEWINDOW | IDCMP_VANILLAKEY | IDCMP_REFRESHWINDOW | BUTTONIDCMP | CYCLEIDCMP | STRINGIDCMP,
+			WA_Gadgets,		gadgetList,
+			TAG_END
+		);
+
+		if(window) {
+			struct IntuiMessage *imsg;
+
+			GT_RefreshWindow(window, NULL);
+			UnlockPubScreen(NULL, pubScreen);
+			pubScreen = NULL;
+
+			do {
+				if(Wait((1L << window->UserPort->mp_SigBit) | SIGBREAKF_CTRL_C) & SIGBREAKF_CTRL_C)
+					setupRunning = false;
+
+				while(imsg = GT_GetIMsg(window->UserPort)) {
+					switch(imsg->Class) {
+					case IDCMP_GADGETUP:
+						gadget = (struct Gadget *) imsg->IAddress;
+						switch (gadget->GadgetID) {
+						case 10001: {
+								long num;
+								GT_GetGadgetAttrs(gadget, window, NULL, GTCY_Active, &num, TAG_END);
+								GT_SetGadgetAttrs(driverDesc, window, NULL, GTTX_Text, driverDescs[num], TAG_END);
+							}
+							break;
+						case 10002: {
+								long num;
+								GT_GetGadgetAttrs(gadget, window, NULL, GTCY_Active, &num, TAG_END);
+								GT_SetGadgetAttrs(mixTypeDesc, window, NULL, GTTX_Text, mixTypeDescs[num], TAG_END);
+							}
+							break;
+						}
+						break;
+					case IDCMP_VANILLAKEY:
+						if(imsg->Code == 0x1b)
+							setupRunning = false;
+						break;
+					case IDCMP_CLOSEWINDOW:
+						setupRunning = false;
+						break;
+					case IDCMP_REFRESHWINDOW:
+						GT_BeginRefresh(window);
+						GT_EndRefresh(window, TRUE);
+						break;
+					}
+
+					GT_ReplyIMsg (imsg);
+				}
+			} while(setupRunning);
+
+			CloseWindow(window);
+		} else {
+			ret = -3;
+		}
+	} else {
+		ret = -2;
+	}
+
+	FreeGadgets(gadgetList);
+	FreeVisualInfo(newGadget.ng_VisualInfo);
+	if(pubScreen)
+		UnlockPubScreen(NULL, pubScreen);
+
+	return ret;
+}
+
 static int boot(int argc, char * argv[])
 {
 	int ret;
@@ -152,7 +325,6 @@ static int boot(int argc, char * argv[])
 	char exePath[256] = {0};
 	BPTR dirLock, oldDir;
 	struct DiskObject * diskObj;
-	bool choseFullscreenByToolType = false;
 
 	app = new AmigaApplication();
 	app->setCpuType(cpuType);
@@ -176,7 +348,6 @@ static int boot(int argc, char * argv[])
 
 		if(toolTypeVal = (char *) FindToolType(diskObj->do_ToolTypes, (STRPTR) "FULLSCREEN")) {
 			app->setFullScreen(*toolTypeVal == '1');
-			choseFullscreenByToolType = true;
 		}
 
 		FreeDiskObject(diskObj);
@@ -186,30 +357,23 @@ static int boot(int argc, char * argv[])
 		CurrentDir(oldDir);
 	}
 
-	// Ask to run in fullscreen mode
-	if(!choseFullscreenByToolType) {
-		easyStruct.es_StructSize = sizeof(struct EasyStruct);
-		easyStruct.es_Flags = 0;
-		easyStruct.es_Title = (UBYTE *) "MilkyTracker";
-		easyStruct.es_TextFormat = (UBYTE *) "Do you want to run in fullscreen mode?";
-		easyStruct.es_GadgetFormat = (UBYTE *) "Yes|No";
+	// Show setup dialog
+	ret = setup();
+	if(ret < 0) {
+		fprintf(stderr, "Setup failed! (ret = %ld)\n", ret);
+	} else if(ret == 0) {
+		// @todo Add new splash screen
+		app->setNoSplash(true);
 
-		if(EasyRequest(NULL, &easyStruct, NULL) == 1) {
-			app->setFullScreen(true);
+		// And start
+		if(ret = app->start()) {
+			fprintf(stderr, "Starting tracker failed! (ret = %ld)\n", ret);
+			app->stop();
+		} else {
+			do {
+				app->loop();
+			} while(app->stop() > 0);
 		}
-	}
-
-	// @todo Add new splash screen
-	app->setNoSplash(true);
-
-	// And start
-	if(ret = app->start()) {
-		fprintf(stderr, "Starting tracker failed! (ret = %ld)\n", ret);
-		app->stop();
-	} else {
-		do {
-			app->loop();
-		} while(app->stop() > 0);
 	}
 
 	delete app;
