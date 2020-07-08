@@ -58,7 +58,7 @@ private:
 	mp_ubyte            oldTimerBLo;
 	mp_ubyte            oldTimerBHi;
 
-	mp_uint32			newDMACON;
+	mp_uword			newDMACON;
 
 	mp_uint32			channelLoopStart[16];
 	mp_uint32			channelRepeatLength[16];

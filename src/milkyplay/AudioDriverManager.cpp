@@ -249,7 +249,7 @@ AudioDriverManager::AudioDriverManager() :
         break;
     case 1:
         switch(::audioMixer) {
-        case 2:
+        case 0:
             audioDriver = new AudioDriver_Arne_ResampleHW();
             break;
         default:

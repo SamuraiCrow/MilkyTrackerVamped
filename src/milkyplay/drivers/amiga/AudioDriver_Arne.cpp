@@ -122,7 +122,7 @@ AudioDriver_Arne_DirectOut::initHardware()
 
     for(int i = 0; i < MAX_CHANNELS; i++) {
         *((volatile mp_uint32 *) AUDIO_LOCHI(i)) = (mp_uint32) chanRing[i];
-        *((volatile mp_uword *) AUDIO_LENHI(i)) = chunkSize >> 1;
+        *((volatile mp_uint32 *) AUDIO_LENHI(i)) = chunkSize >> 1;
         *((volatile mp_uword *) AUDIO_PERIOD(i)) = period;
         *((volatile mp_uword *) AUDIO_MODE(i)) = AUDIO_MODEF_16;
     }
@@ -155,7 +155,7 @@ AudioDriver_Arne_DirectOut::playAudioImpl()
 {
     for(int i = 0; i < MAX_CHANNELS; i++) {
         *((volatile mp_uint32 *) AUDIO_LOCHI(i)) = (mp_uint32) (chanRing[i] + idxRead);
-        *((volatile mp_uword *) AUDIO_LENHI(i)) = chunkSize >> 1;
+        *((volatile mp_uint32 *) AUDIO_LENHI(i)) = chunkSize >> 1;
     }
 }
 
@@ -304,6 +304,8 @@ AudioDriver_Arne_ResampleHW::enableIRQ()
 void
 AudioDriver_Arne_ResampleHW::playAudio()
 {
+    int i;
+
     // Read ICR (which clears the reg!)
     UBYTE icr = ciab.ciaicr;
 
@@ -324,9 +326,10 @@ AudioDriver_Arne_ResampleHW::playAudio()
 
             // Enable DMA channels for 4 Paula legacy channels
             *((volatile mp_uword *) CUSTOM_DMACON) = DMAF_SETCLR | (newDMACON & 0xf);
-            newDMACON >>= 4;
+
             // Enable DMA channels for 12 new Apollo channels
-            *((volatile mp_uword *) CUSTOM_DMACON2) = DMAF_SETCLR | newDMACON;
+            *((volatile mp_uword *) CUSTOM_DMACON2) = DMAF_SETCLR | (newDMACON >> 4);
+
             newDMACON = 0;
         } else {
             //
@@ -334,14 +337,10 @@ AudioDriver_Arne_ResampleHW::playAudio()
             //
 
             // Set sample pointers and lengths
-            *((volatile mp_uint32 *) AUDIO_LOCHI(0)) = channelLoopStart[0];
-            *((volatile mp_uint32 *) AUDIO_LENHI(0)) = channelRepeatLength[0];
-            *((volatile mp_uint32 *) AUDIO_LOCHI(1)) = channelLoopStart[1];
-            *((volatile mp_uint32 *) AUDIO_LENHI(1)) = channelRepeatLength[1];
-            *((volatile mp_uint32 *) AUDIO_LOCHI(2)) = channelLoopStart[2];
-            *((volatile mp_uint32 *) AUDIO_LENHI(2)) = channelRepeatLength[2];
-            *((volatile mp_uint32 *) AUDIO_LOCHI(3)) = channelLoopStart[3];
-            *((volatile mp_uint32 *) AUDIO_LENHI(3)) = channelRepeatLength[3];
+            for(i = 0; i < MAX_CHANNELS; i++) {
+                *((volatile mp_uint32 *) AUDIO_LOCHI(i)) = channelLoopStart[i];
+                *((volatile mp_uint32 *) AUDIO_LENHI(i)) = channelRepeatLength[i];
+            }
         }
     }
 }
@@ -406,6 +405,7 @@ AudioDriver_Arne_ResampleHW::playSample(ChannelMixer::TMixerChannel * chn)
     // Set sample
     *((volatile mp_uint32 *) AUDIO_LOCHI(chn->index)) = (mp_uint32) (chn->sample + smppos);
     *((volatile mp_uint32 *) AUDIO_LENHI(chn->index)) = (mp_uint32) ((chn->loopend - smppos) >> 1);
+    *((volatile mp_uword *) AUDIO_MODE(chn->index)) = 0;
     channelSamplePos[chn->index] = smppos;
 
     setChannelFrequency(chn);
