@@ -223,18 +223,43 @@ AudioDriverManager::AudioDriverManager() :
 #include <exec/exec.h>
 #include <proto/exec.h>
 
-extern bool hasAMMX;
+extern int audioDriver, audioMixer;
 
 AudioDriverManager::AudioDriverManager() :
 	defaultDriverIndex(0)
 {
+	AudioDriverInterface * audioDriver;
+
 	ALLOC_DRIVERLIST(1);
 
-	if(hasAMMX) {
-		driverList[0] = new AudioDriver_Arne_ResampleHW();
-	} else {
-		driverList[0] = new AudioDriver_Paula_ResampleHW();
-	}
+    // Create audio driver (@todo)
+    switch(::audioDriver) {
+    case 0:
+        switch(::audioMixer) {
+        case 0:
+            audioDriver = new AudioDriver_Paula_ResampleHW();
+            break;
+        case 1:
+            audioDriver = new AudioDriver_Paula_DirectOut();
+            break;
+        case 2:
+            audioDriver = new AudioDriver_Paula_Mix();
+            break;
+        }
+        break;
+    case 1:
+        switch(::audioMixer) {
+        case 2:
+            audioDriver = new AudioDriver_Arne_ResampleHW();
+            break;
+        default:
+            audioDriver = new AudioDriver_Arne_DirectOut();
+            break;
+        }
+        break;
+    }
+
+	driverList[0] = audioDriver;
 }
 
 #endif

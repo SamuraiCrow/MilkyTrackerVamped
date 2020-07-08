@@ -8,12 +8,11 @@
 #include "PPSystem_POSIX.h"
 #include "PPPath_POSIX.h"
 #include "PlayerMaster.h"
-#include "../../milkyplay/drivers/amiga/AudioDriver_Amiga.h"
-
-#include <proto/picasso96.h>
-#include <clib/picasso96_protos.h>
+#include "../../milkyplay/drivers/amiga/AudioDriver_Paula.h"
+#include "../../milkyplay/drivers/amiga/AudioDriver_Arne.h"
 
 PPMutex* globalMutex = NULL;
+int audioDriver, audioMixer;
 
 static pp_uint32
 getVerticalBeamPosition() {
@@ -29,6 +28,7 @@ AmigaApplication::AmigaApplication()
 : cpuType(0)
 , hasFPU(false)
 , hasAMMX(false)
+, windowSize(PPSize(640, 480))
 , bpp(16)
 , noSplash(false)
 , running(false)
@@ -36,7 +36,9 @@ AmigaApplication::AmigaApplication()
 , tracker(NULL)
 , trackerScreen(NULL)
 , displayDevice(NULL)
-, fullScreen(false)
+, displayID(0)
+, audioDriver(Paula)
+, audioMixer(ResampleHW)
 , vbSignal(-1)
 , vbCount(0)
 , mouseLeftSeconds(0)
@@ -66,7 +68,7 @@ AmigaApplication::~AmigaApplication()
 
 struct Screen * AmigaApplication::getScreen() const
 {
-    if(fullScreen)
+    if(isFullScreen())
         return screen;
     return pubScreen;
 }
@@ -108,7 +110,7 @@ int AmigaApplication::load(char * loadFile)
 
 void AmigaApplication::setWindowTitle(const char * title)
 {
-    if(!fullScreen) {
+    if(!isFullScreen()) {
         strcpy(currentTitle, title);
         SetWindowTitles(window, currentTitle, (CONST_STRPTR) (UBYTE *) ~0);
     }
@@ -117,7 +119,7 @@ void AmigaApplication::setWindowTitle(const char * title)
 void AmigaApplication::resetScreenAlert()
 {
     if(showAlert) {
-        if(fullScreen) {
+        if(isFullScreen()) {
             ShowTitle(screen, FALSE);
         } else {
             SetWindowTitles(window, currentTitle, (CONST_STRPTR) (UBYTE *) ~0);
@@ -129,7 +131,7 @@ void AmigaApplication::resetScreenAlert()
 void AmigaApplication::setScreenAlert(const char * title)
 {
     strcpy(currentAlert, title);
-    if(fullScreen) {
+    if(isFullScreen()) {
         ShowTitle(screen, TRUE);
         SetWindowTitles(window, (CONST_STRPTR) (UBYTE *) ~0, currentAlert);
         DisplayBeep(screen);
@@ -151,86 +153,38 @@ int AmigaApplication::start()
     // Startup tracker
     globalMutex->lock();
     {
+        ::audioDriver = audioDriver;
+        ::audioMixer = audioMixer;
         tracker = new Tracker();
 
         if (pubScreen = LockPubScreen(NULL)) {
-            if (!fullScreen)
-                fullScreen = tracker->getFullScreenFlagFromDatabase();
-
-            if(fullScreen) {
-                windowSize.width = pubScreen->Width;
-                windowSize.height = pubScreen->Height;
-            } else {
-                windowSize = tracker->getWindowSizeFromDatabase();
-            }
-
-            if(fullScreen) {
-                ULONG displayId = p96BestModeIDTags(
-                    P96BIDTAG_NominalWidth,     windowSize.width,
-                    P96BIDTAG_NominalHeight,    windowSize.height,
-                    P96BIDTAG_Depth,            bpp,
+            if(isFullScreen()) {
+                screen = p96OpenScreenTags(
+                    P96SA_DisplayID             , displayID,
+                    P96SA_Left                  , 0,
+                    P96SA_Top                   , 0,
+                    P96SA_Width                 , windowSize.width,
+                    P96SA_Height                , windowSize.height,
+                    P96SA_Depth                 , bpp,
+                    P96SA_DetailPen             , 0,
+                    P96SA_BlockPen              , 1,
+                    P96SA_Quiet                 , FALSE,
+                    P96SA_Type                  , CUSTOMSCREEN,
+                    P96SA_BitMap                , FALSE,
+                    P96SA_ConstantBytesPerRow   , TRUE,
+                    P96SA_AutoScroll            , FALSE,
+                    P96SA_Exclusive             , TRUE,
+                    P96SA_ShowTitle             , FALSE,
                     TAG_DONE);
-                if(displayId == INVALID_ID) {
-                    fprintf(stderr, "Cannot find best screen mode (%ldx%ldx%ld)!\n", windowSize.width, windowSize.height, bpp);
-                    ret = 5;
-                }
-
-                if(!ret) {
-                    screen = p96OpenScreenTags(
-                        P96SA_DisplayID             , displayId,
-                        P96SA_Left                  , 0,
-                        P96SA_Top                   , 0,
-                        P96SA_Width                 , windowSize.width,
-                        P96SA_Height                , windowSize.height,
-                        P96SA_Depth                 , bpp,
-                        P96SA_DetailPen             , 0,
-                        P96SA_BlockPen              , 1,
-                        P96SA_Quiet                 , FALSE,
-                        P96SA_Type                  , CUSTOMSCREEN,
-                        P96SA_BitMap                , FALSE,
-                        P96SA_ConstantBytesPerRow   , TRUE,
-                        P96SA_AutoScroll            , FALSE,
-                        P96SA_Exclusive             , TRUE,
-                        P96SA_ShowTitle             , FALSE,
-                        TAG_DONE);
-                    if(screen) {
-                        window = OpenWindowTags(NULL,
-                            WA_CustomScreen  , (APTR) screen,
-                            WA_Left          , 0,
-                            WA_Top           , 0,
-                            WA_InnerWidth    , windowSize.width,
-                            WA_InnerHeight   , windowSize.height,
-                            WA_Title         , (APTR) (!fullScreen ? "Loading MilkyTracker" : NULL),
-                            WA_Borderless    , TRUE,
-                            WA_Backdrop      , TRUE,
-                            WA_Activate      , TRUE,
-                            WA_ReportMouse   , TRUE,
-                            WA_NoCareRefresh , TRUE,
-                            WA_RMBTrap       , TRUE,
-                            WA_IDCMP         , IDCMP_CLOSEWINDOW | IDCMP_MOUSEBUTTONS | IDCMP_MOUSEMOVE | IDCMP_RAWKEY,
-                            TAG_DONE);
-                        if(!window) {
-                            fprintf(stderr, "Could not create window!\n");
-                            ret = 4;
-                        }
-                    } else {
-                        fprintf(stderr, "Could not create P96 screen!\n");
-                        ret = 6;
-                    }
-                }
-            } else {
-                ULONG screenDepth = p96GetBitMapAttr(pubScreen->ViewPort.RasInfo->BitMap, P96BMA_DEPTH);
-                if(screenDepth == 16) {
+                if(screen) {
                     window = OpenWindowTags(NULL,
-                        WA_CustomScreen  , (APTR) pubScreen,
-                        WA_Left          , (pubScreen->Width - windowSize.width) / 2,
-                        WA_Top           , (pubScreen->Height - windowSize.height) / 2,
+                        WA_CustomScreen  , (APTR) screen,
+                        WA_Left          , 0,
+                        WA_Top           , 0,
                         WA_InnerWidth    , windowSize.width,
                         WA_InnerHeight   , windowSize.height,
-                        WA_Title         , (APTR) "Loading MilkyTracker ...",
-                        WA_DragBar       , TRUE,
-                        WA_DepthGadget   , TRUE,
-                        WA_CloseGadget   , TRUE,
+                        WA_Borderless    , TRUE,
+                        WA_Backdrop      , TRUE,
                         WA_Activate      , TRUE,
                         WA_ReportMouse   , TRUE,
                         WA_NoCareRefresh , TRUE,
@@ -239,11 +193,32 @@ int AmigaApplication::start()
                         TAG_DONE);
                     if(!window) {
                         fprintf(stderr, "Could not create window!\n");
-                        ret = 4;
+                        ret = 7;
                     }
                 } else {
-                    fprintf(stderr, "Only 16-bit modes are supported for windowed mode!\n");
-                    ret = 7;
+                    fprintf(stderr, "Could not create P96 screen!\n");
+                    ret = 6;
+                }
+            } else {
+                window = OpenWindowTags(NULL,
+                    WA_CustomScreen  , (APTR) pubScreen,
+                    WA_Left          , (pubScreen->Width - windowSize.width) / 2,
+                    WA_Top           , (pubScreen->Height - windowSize.height) / 2,
+                    WA_InnerWidth    , windowSize.width,
+                    WA_InnerHeight   , windowSize.height,
+                    WA_Title         , (APTR) "Loading MilkyTracker ...",
+                    WA_DragBar       , TRUE,
+                    WA_DepthGadget   , TRUE,
+                    WA_CloseGadget   , TRUE,
+                    WA_Activate      , TRUE,
+                    WA_ReportMouse   , TRUE,
+                    WA_NoCareRefresh , TRUE,
+                    WA_RMBTrap       , TRUE,
+                    WA_IDCMP         , IDCMP_CLOSEWINDOW | IDCMP_MOUSEBUTTONS | IDCMP_MOUSEMOVE | IDCMP_RAWKEY,
+                    TAG_DONE);
+                if(!window) {
+                    fprintf(stderr, "Could not create window!\n");
+                    ret = 5;
                 }
             }
         } else {
@@ -264,11 +239,11 @@ int AmigaApplication::start()
                 trackerStartUpFinished = true;
             } else {
                 fprintf(stderr, "Could not init display device!\n");
-                ret = 3;
+                ret = 4;
             }
         } else {
             fprintf(stderr, "Could not init Intuition objects!\n");
-            ret = 2;
+            ret = 3;
         }
     }
     globalMutex->unlock();
@@ -296,7 +271,7 @@ int AmigaApplication::start()
                 AddIntServer(INTB_VERTB, irqVerticalBlank);
             } else {
                 fprintf(stderr, "Could not alloc signal for VB<->loop IPC!\n");
-                ret = 4;
+                ret = 1;
             }
         }
     }

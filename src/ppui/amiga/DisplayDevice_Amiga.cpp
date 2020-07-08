@@ -31,8 +31,8 @@ DisplayDevice_Amiga::DisplayDevice_Amiga(AmigaApplication * app)
     useRTGWindowed = !app->isFullScreen() && app->getBpp() == 16 && GetBitMapAttr(rastPort->BitMap, BMA_DEPTH) == 16;
     useRTGMode = useRTGFullscreen || useRTGWindowed;
 
-    useSAGADirectFB = app->isAMMX() && useRTGFullscreen;
-    useSAGAPiP = app->isAMMX() && useRTGWindowed;
+    useSAGADirectFB = app->isAMMX() && app->isSAGA() && useRTGFullscreen;
+    useSAGAPiP = app->isAMMX() && app->isSAGA() && useRTGWindowed;
     useSAGAMode = useSAGADirectFB || useSAGAPiP;
 
     unalignedScreenBuffer[0] = NULL;

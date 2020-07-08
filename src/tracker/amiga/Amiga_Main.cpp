@@ -50,6 +50,20 @@
 #include "AmigaApplication.h"
 #include "PPUI.h"
 
+#define MAX_DISPLAY_MODES 		64
+
+#define GID_BASE				10000
+#define GID_SCREEN_MODE 		(GID_BASE + 1)
+#define GID_USE_SAGA			(GID_BASE + 2)
+#define GID_USE_SAGA_DESC		(GID_BASE + 3)
+#define GID_USE_SAGA_DESC2		(GID_BASE + 4)
+#define GID_AUDIO_DRV			(GID_BASE + 5)
+#define GID_AUDIO_DRV_DESC		(GID_BASE + 6)
+#define GID_AUDIO_MIXER			(GID_BASE + 7)
+#define GID_AUDIO_MIXER_DESC	(GID_BASE + 8)
+#define GID_RUN					(GID_BASE + 9)
+#define GID_QUIT				(GID_BASE + 10)
+
 extern struct ExecBase * SysBase;
 
 struct Library * IntuitionBase = NULL;
@@ -59,15 +73,56 @@ struct Library * P96Base = NULL;
 struct Library * VampireBase = NULL;
 struct Library * IconBase = NULL;
 
-int	cpuType = 0;
-bool hasFPU = false;
-bool hasAMMX = false;
+static int cpuType = 0;
+static bool hasFPU = false;
+static bool hasAMMX = false;
 
 struct Device * TimerBase = NULL;
 static struct IORequest timereq;
 static struct timeval startTime;
 
-static AmigaApplication * app = NULL;
+AmigaApplication * app = NULL;
+
+static AmigaApplication::AudioDriver drivers[] = {
+	AmigaApplication::Paula,
+	AmigaApplication::Arne
+};
+
+static const char *driverNames[] = {
+	"Paula",
+	"Arne (Apollo Core)",
+	NULL
+};
+
+static const char *driverDescs[] = {
+	"4-ch/8-bit",
+	"16-ch/16-bit (Apollo Core only)",
+	NULL
+};
+
+static AmigaApplication::AudioMixer mixTypes[] = {
+	AmigaApplication::ResampleHW,
+	AmigaApplication::DirectOut,
+	AmigaApplication::MixDown
+};
+
+static const char *mixTypeNames[] = {
+	"ResampleHW",
+	"DirectOut",
+	"MixDown",
+	NULL
+};
+
+static const char *mixTypeDescs[] = {
+	"Fastest with DMA Resampler",
+	"Slow with CPU Resampler",
+	"Slowest with CPU Resampler",
+	NULL
+};
+
+static ULONG * displayModeIDs = NULL;
+static PPSize * displayModeSizes = NULL;
+static char ** displayModeNames = NULL;
 
 void PrintStackSize() {
 	struct Task * task = FindTask(NULL);
@@ -144,45 +199,103 @@ static bool checkHardware()
 	return hasFPU;
 }
 
-static const char *driverNames[] = {
-	"Paula",
-	"Arne",
-	NULL
-};
+static Screen * discoverDisplayModes()
+{
+	int i = 0;
+	ULONG modeID;
+	ULONG displayID;
+	ULONG skipID;
+	ULONG result;
+	bool firstRun = true;
+	DisplayInfoHandle displayHandle;
+	struct DisplayInfo displayInfo;
+	struct DimensionInfo dimensionInfo;
+	struct MonitorInfo monitorInfo;
+	struct NameInfo nameInfo;
+	struct Screen * pubScreen;
 
-static const char *driverDescs[] = {
-	"4-ch/8-bit",
-	"16-ch/16-bit (Apollo)",
-	NULL
-};
+	if(!(pubScreen = LockPubScreen(NULL)))
+		return NULL;
 
-static const char *mixTypeNames[] = {
-	"ResampleHW",
-	"DirectOut",
-	"MixDown",
-	NULL
-};
+	displayModeIDs = new ULONG[MAX_DISPLAY_MODES];
+	displayModeNames = new char *[MAX_DISPLAY_MODES];
+	displayModeSizes = new PPSize[MAX_DISPLAY_MODES];
 
-static const char *mixTypeDescs[] = {
-	"Fast/DMA",
-	"Slow/CPU",
-	"Slowest/CPU/Stereo",
-	NULL
-};
+	do {
+		bool isWindowed = false;
+
+		//
+		// First run:
+		// Get current screen and check if we could support it for windowed mode
+		//
+		if(firstRun) {
+			modeID = GetVPModeID(&(pubScreen->ViewPort));
+			isWindowed = true;
+			firstRun = false;
+		}
+
+		// Get and check a lot of data :-P
+		if(ModeNotAvailable(modeID))
+			continue;
+		if(!(displayHandle = FindDisplayInfo(modeID)))
+			continue;
+		if(!(result = GetDisplayInfoData(displayHandle, (UBYTE *) &displayInfo, sizeof(struct DisplayInfo), DTAG_DISP, 0)))
+			continue;
+		if(!(result = GetDisplayInfoData(displayHandle, (UBYTE *) &dimensionInfo, sizeof(struct DimensionInfo), DTAG_DIMS, 0)))
+			continue;
+		if(!(result = GetDisplayInfoData(displayHandle, (UBYTE *) &monitorInfo, sizeof(struct MonitorInfo), DTAG_MNTR, 0)))
+			continue;
+		if(!(result = GetDisplayInfoData(displayHandle, (UBYTE *) &nameInfo, sizeof(struct NameInfo), DTAG_NAME, 0)))
+			continue;
+
+		// Requirement is 640x480x16 RTG for now
+		if(dimensionInfo.Nominal.MaxX+1 < 640)
+			continue;
+		if(dimensionInfo.Nominal.MaxY+1 < 480)
+			continue;
+		if(dimensionInfo.MaxDepth != 16)
+			continue;
+		if(!p96GetModeIDAttr(modeID, P96IDA_ISP96))
+			continue;
+
+		// Insert display mode
+		displayModeNames[i] = new char[256];
+		if(isWindowed) {
+			displayModeIDs[i] = 0;
+			strcpy(displayModeNames[i], "Windowed");
+			displayModeSizes[i] = PPSize(640, 480);
+		} else {
+			displayModeIDs[i] = modeID;
+			sprintf(displayModeNames[i], "FS: %s", nameInfo.Name);
+			displayModeSizes[i] = PPSize(dimensionInfo.Nominal.MaxX+1, dimensionInfo.Nominal.MaxY+1);
+		}
+		i++;
+
+		// Bail out when we reached the max number of display modes
+		if(i == MAX_DISPLAY_MODES)
+			break;
+
+		// Prepare for NextDisplayInfo
+		if(isWindowed)
+			modeID = INVALID_ID;
+	} while((modeID = NextDisplayInfo(modeID)) != INVALID_ID);
+
+	return pubScreen;
+}
 
 static int setup()
 {
 	int ret = 0;
 	struct Gadget * gadgetList = NULL, * gadget;
 	struct NewGadget newGadget;
-	struct Screen * pubScreen;
 	struct Window * window;
+	struct Screen * pubScreen;
 	long winWidth, winHeight;
 	bool setupRunning = true;
 	struct Gadget * driverDesc, * mixTypeDesc;
 
-	if(!(pubScreen = LockPubScreen(NULL)))
-		return -1;
+	if(!(pubScreen = discoverDisplayModes()))
+		return -4;
 
 	gadget = CreateContext(&gadgetList);
 
@@ -190,34 +303,62 @@ static int setup()
 	newGadget.ng_TextAttr 	= pubScreen->Font;
 	newGadget.ng_Flags 		= 0;
 
-	newGadget.ng_LeftEdge   = pubScreen->WBorLeft + 4 + 10 * pubScreen->RastPort.TxWidth;
-	newGadget.ng_TopEdge    = pubScreen->WBorTop + pubScreen->RastPort.TxHeight + 5;
-	newGadget.ng_Width      = 20 * pubScreen->RastPort.TxWidth + 20;
+	newGadget.ng_LeftEdge   = pubScreen->WBorLeft + 4 + 14 * pubScreen->RastPort.TxWidth;
+	newGadget.ng_Width      = 30 * pubScreen->RastPort.TxWidth + 20;
 	newGadget.ng_Height     = pubScreen->RastPort.TxHeight + 6;
-	newGadget.ng_GadgetText = (UBYTE *) "Driver";
-	newGadget.ng_GadgetID   = 10001;
+
+	newGadget.ng_TopEdge    = pubScreen->WBorTop + pubScreen->RastPort.TxHeight + 5;
+	newGadget.ng_GadgetText = (UBYTE *) "Screen mode";
+	newGadget.ng_GadgetID   = GID_SCREEN_MODE;
+	gadget = CreateGadget(CYCLE_KIND, gadget, &newGadget,
+		GTCY_Labels, displayModeNames,
+		TAG_END);
+
+	newGadget.ng_TopEdge   += newGadget.ng_Height + 4;
+	newGadget.ng_GadgetText = (UBYTE *) "Use SAGA";
+	newGadget.ng_GadgetID   = GID_USE_SAGA;
+	gadget = CreateGadget(CHECKBOX_KIND, gadget, &newGadget,
+		GTCB_Checked, TRUE,
+		TAG_END);
+
+	newGadget.ng_TopEdge   += newGadget.ng_Height;
+	newGadget.ng_GadgetText = NULL;
+	newGadget.ng_GadgetID   = GID_USE_SAGA_DESC;
+	gadget = CreateGadget(TEXT_KIND, gadget, &newGadget,
+		GTTX_Text, "Use accelerated framebuffer",
+		TAG_END);
+	newGadget.ng_TopEdge   += newGadget.ng_Height;
+	newGadget.ng_GadgetText = NULL;
+	newGadget.ng_GadgetID   = GID_USE_SAGA_DESC2;
+	gadget = CreateGadget(TEXT_KIND, gadget, &newGadget,
+		GTTX_Text, "(Apollo Core only)",
+		TAG_END);
+
+	newGadget.ng_TopEdge   += newGadget.ng_Height + 4;
+	newGadget.ng_GadgetText = (UBYTE *) "Audio driver";
+	newGadget.ng_GadgetID   = GID_AUDIO_DRV;
 	gadget = CreateGadget(CYCLE_KIND, gadget, &newGadget,
 		GTCY_Labels, driverNames,
 		TAG_END);
 
-	newGadget.ng_TopEdge   += newGadget.ng_Height + 4;
+	newGadget.ng_TopEdge   += newGadget.ng_Height;
 	newGadget.ng_GadgetText = NULL;
-	newGadget.ng_GadgetID   = 10006;
+	newGadget.ng_GadgetID   = GID_AUDIO_DRV_DESC;
 	gadget = CreateGadget(TEXT_KIND, gadget, &newGadget,
 		GTTX_Text, driverDescs[0],
 		TAG_END);
 	driverDesc = gadget;
 
 	newGadget.ng_TopEdge   += newGadget.ng_Height + 4;
-	newGadget.ng_GadgetText = (UBYTE *) "MixType";
-	newGadget.ng_GadgetID   = 10002;
+	newGadget.ng_GadgetText = (UBYTE *) "Mixer type";
+	newGadget.ng_GadgetID   = GID_AUDIO_MIXER;
 	gadget = CreateGadget(CYCLE_KIND, gadget, &newGadget,
 		GTCY_Labels, mixTypeNames,
 		TAG_END);
 
-	newGadget.ng_TopEdge   += newGadget.ng_Height + 4;
+	newGadget.ng_TopEdge   += newGadget.ng_Height;
 	newGadget.ng_GadgetText = NULL;
-	newGadget.ng_GadgetID   = 10005;
+	newGadget.ng_GadgetID   = GID_AUDIO_MIXER_DESC;
 	gadget = CreateGadget(TEXT_KIND, gadget, &newGadget,
 		GTTX_Text, mixTypeDescs[0],
 		TAG_END);
@@ -225,15 +366,15 @@ static int setup()
 
 	newGadget.ng_LeftEdge   = pubScreen->WBorLeft + 4;
 	newGadget.ng_TopEdge   += newGadget.ng_Height + 8;
-	newGadget.ng_Width      = 15 * pubScreen->RastPort.TxWidth + 8;
+	newGadget.ng_Width      = 22 * pubScreen->RastPort.TxWidth + 8;
 	newGadget.ng_GadgetText = (UBYTE *) "Run";
-	newGadget.ng_GadgetID   = 10003;
+	newGadget.ng_GadgetID   = GID_RUN;
 	gadget = CreateGadget(BUTTON_KIND, gadget, &newGadget,
 		TAG_END);
 
 	newGadget.ng_LeftEdge  += newGadget.ng_Width + 4;
 	newGadget.ng_GadgetText = (UBYTE *) "Quit";
-	newGadget.ng_GadgetID   = 10004;
+	newGadget.ng_GadgetID   = GID_QUIT;
 	gadget = CreateGadget (BUTTON_KIND, gadget, &newGadget,
 		TAG_END);
 
@@ -270,17 +411,39 @@ static int setup()
 					case IDCMP_GADGETUP:
 						gadget = (struct Gadget *) imsg->IAddress;
 						switch (gadget->GadgetID) {
-						case 10001: {
+						case GID_SCREEN_MODE: {
+								long num;
+								GT_GetGadgetAttrs(gadget, window, NULL, GTCY_Active, &num, TAG_END);
+								app->setDisplayID(displayModeIDs[num]);
+								app->setWindowSize(displayModeSizes[num]);
+							}
+							break;
+						case GID_USE_SAGA: {
+								ULONG checked;
+								GT_GetGadgetAttrs(gadget, window, NULL, GTCB_Checked, &checked, TAG_END);
+								app->setUseSAGA(checked != 0);
+							}
+							break;
+						case GID_AUDIO_DRV: {
 								long num;
 								GT_GetGadgetAttrs(gadget, window, NULL, GTCY_Active, &num, TAG_END);
 								GT_SetGadgetAttrs(driverDesc, window, NULL, GTTX_Text, driverDescs[num], TAG_END);
+								app->setAudioDriver(drivers[num]);
 							}
 							break;
-						case 10002: {
+						case GID_AUDIO_MIXER: {
 								long num;
 								GT_GetGadgetAttrs(gadget, window, NULL, GTCY_Active, &num, TAG_END);
 								GT_SetGadgetAttrs(mixTypeDesc, window, NULL, GTTX_Text, mixTypeDescs[num], TAG_END);
+								app->setAudioMixer(mixTypes[num]);
 							}
+							break;
+						case GID_RUN:
+							setupRunning = false;
+							break;
+						case GID_QUIT:
+							setupRunning = false;
+							ret = 1;
 							break;
 						}
 						break;
@@ -314,6 +477,11 @@ static int setup()
 	if(pubScreen)
 		UnlockPubScreen(NULL, pubScreen);
 
+	delete[] displayModeNames;
+	delete[] displayModeIDs;
+	delete[] displayModeSizes;
+
+
 	return ret;
 }
 
@@ -330,6 +498,7 @@ static int boot(int argc, char * argv[])
 	app->setCpuType(cpuType);
 	app->setHasFPU(hasFPU);
 	app->setHasAMMX(hasAMMX);
+	app->setUseSAGA(true);
 
 	// Get program path from WBStartup/argv
    	fromWorkbench = argc == 0;
@@ -342,13 +511,13 @@ static int boot(int argc, char * argv[])
 		strncpy(exePath, argv[0], 255);
 	}
 
-	// Process tool types
+	// Process tool types (if any)
 	if(diskObj = GetDiskObject(exePath)) {
 		char * toolTypeVal;
 
-		if(toolTypeVal = (char *) FindToolType(diskObj->do_ToolTypes, (STRPTR) "FULLSCREEN")) {
-			app->setFullScreen(*toolTypeVal == '1');
-		}
+		/*if(toolTypeVal = (char *) FindToolType(diskObj->do_ToolTypes, (STRPTR) "EXAMPLE")) {
+			app->setExample(*toolTypeVal == '1');
+		}*/
 
 		FreeDiskObject(diskObj);
 	}

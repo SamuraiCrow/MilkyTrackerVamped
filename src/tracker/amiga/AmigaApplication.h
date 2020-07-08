@@ -11,6 +11,7 @@
 #include <vampire/saga.h>
 #include <vampire/vampire.h>
 #include <proto/vampire.h>
+#include <proto/picasso96.h>
 
 #include <clib/exec_protos.h>
 #include <clib/dos_protos.h>
@@ -32,17 +33,31 @@ class PPEvent;
 
 class AmigaApplication
 {
+public:
+    enum AudioDriver {
+        Paula = 0,
+        Arne
+    };
+
+    enum AudioMixer {
+        ResampleHW = 0,
+        DirectOut,
+        MixDown
+    };
 private:
     int                     cpuType;
     bool                    hasFPU;
     bool                    hasAMMX;
+    bool                    useSAGA;
     pp_uint32               bpp;
     bool                    noSplash;
     bool                    running;
-    bool                    fullScreen;
     bool                    trackerStartUpFinished;
     char *                  loadFile;
     bool                    showAlert;
+    ULONG                   displayID;
+    AudioDriver             audioDriver;
+    AudioMixer              audioMixer;
 
     Tracker *               tracker;
     DisplayDevice_Amiga *   displayDevice;
@@ -91,25 +106,32 @@ public:
     void                    loop();
     int                     stop();
 
-    bool                    isFullScreen() const { return fullScreen; }
+    bool                    isFullScreen() const { return displayID != 0; }
     bool                    isAMMX() const { return hasAMMX; }
+    bool                    isSAGA() const { return useSAGA; }
 
     struct Screen *         getScreen() const;
     struct Window *         getWindow() const { return window; }
 
     const PPSize&           getWindowSize() const { return windowSize; }
     pp_uint32               getBpp() const { return bpp; }
+    AudioDriver             getAudioDriver() const { return audioDriver; }
+    AudioMixer              getAudioMixer() const { return audioMixer; }
 
     void                    setRunning(bool running) { this->running = running; }
-    void                    setFullScreen(bool fullScreen) { this->fullScreen = fullScreen; }
-	void                    setCpuType(int cpuType) { this->cpuType = cpuType; }
+    void                    setCpuType(int cpuType) { this->cpuType = cpuType; }
 	void                    setHasFPU(bool hasFPU) { this->hasFPU = hasFPU; }
 	void                    setHasAMMX(bool hasAMMX) { this->hasAMMX = hasAMMX; }
+    void                    setWindowSize(const PPSize& size) { this->windowSize = size; }
     void                    setBpp(pp_uint32 bpp) { this->bpp = bpp; }
     void                    setNoSplash(bool noSplash) { this->noSplash = noSplash; }
     void                    setLoadFile(char * loadFile) { this->loadFile = loadFile; }
     void                    setWindowTitle(const char * title);
     void                    setScreenAlert(const char * title);
+    void                    setUseSAGA(bool useSAGA) { this->useSAGA = useSAGA; }
+    void                    setAudioDriver(AudioDriver audioDriver) { this->audioDriver = audioDriver; }
+    void                    setAudioMixer(AudioMixer audioMixer) { this->audioMixer = audioMixer; }
+    void                    setDisplayID(ULONG displayID) { this->displayID = displayID; }
 
     bool                    isShiftPressed() const { return keyQualifierShiftPressed; };
     bool                    isCtrlPressed() const { return keyQualifierCtrlPressed; };
