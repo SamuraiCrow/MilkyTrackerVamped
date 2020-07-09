@@ -61,50 +61,50 @@ private:
 		XM_MINPERIOD = 50
 	};
 
-	struct TPrEnv 
+	struct TPrEnv
 	{
 		TEnvelope*	envstruc;
 		mp_sint32   a,b,step;
 		mp_uint32	bpmCounter, bpmAdder;
 
 		mp_uint32	timeTrackSize;
-		
+
 		struct TTimeRecord
 		{
 			mp_sword pos;
 			const TEnvelope* envstruc;
 		};
-		
+
 		TTimeRecord* timeRecord;
-		
+
 		TPrEnv() :
 			timeTrackSize(0),
 			timeRecord(NULL)
 		{
 		}
-		
+
 		~TPrEnv()
 		{
 			delete[] timeRecord;
 		}
-		
+
 		void clear()
 		{
 			envstruc	= 0;
 			a = b = step = 0;
 			bpmCounter = bpmAdder = 0;
-			
+
 			if (timeTrackSize && timeRecord)
 				memset(timeRecord, 0, sizeof(TTimeRecord)*timeTrackSize);
 		}
-		
+
 		void reallocTimeRecord(mp_uint32 size)
 		{
 			timeTrackSize = size;
 			delete[] timeRecord;
 			timeRecord = new TTimeRecord[size];
 		}
-		
+
 		void setToTick(mp_uint32 tick);
 	};
 
@@ -127,7 +127,7 @@ private:
 		mp_ubyte smpoffset;
 	};
 
-	struct TModuleChannel 
+	struct TModuleChannel
 	{
 		mp_uint32		flags;
 		mp_sint32		ins;
@@ -180,7 +180,7 @@ private:
 		mp_ubyte		avibcnt;
 		mp_ubyte		avibsweep;
 		mp_ubyte		avibswcnt;
-		
+
 		void clear()
 		{
 			flags = 0;
@@ -215,11 +215,11 @@ private:
 			memset(&trmpos, 0, sizeof(trmpos));
 			memset(&tremorcnt, 0, sizeof(tremorcnt));
 			memset(&retrigcounterE9x, 0, sizeof(retrigcounterE9x));
-			
+
 			memset(&retrigmaxE9x, 0, sizeof(retrigmaxE9x));
 			memset(&retrigcounterRxx, 0, sizeof(retrigcounterRxx));
 			memset(&retrigmaxRxx, 0, sizeof(retrigmaxRxx));
-			
+
 			keyon = false;
 			venv.clear();
 			penv.clear();
@@ -235,34 +235,34 @@ private:
 			avibsweep = 0;
 			avibswcnt = 0;
 		}
-		
+
 		void reallocTimeRecord(mp_uint32 size)
 		{
 			venv.reallocTimeRecord(size);
 			penv.reallocTimeRecord(size);
 			fenv.reallocTimeRecord(size);
-			vibenv.reallocTimeRecord(size);			
+			vibenv.reallocTimeRecord(size);
 		}
 	};
-	
+
 private:
 
 	static const mp_sint32	vibtab[32];
 	static const mp_uword	lintab[769];
 	static const mp_uint32	logtab[];
-	
+
 	StatusEventListener* statusEventListener;
-	
+
 	TModuleChannel*	chninfo;				// our channel information
 	mp_sint32		lastNumAllocatedChannels;
-	
-	mp_uint32*		smpoffs;	
+
+	mp_uint32*		smpoffs;
 	mp_ubyte*		attick;
-	
+
 	mp_sint32		patternIndex;			// holds current pattern index
 	mp_sint32		numEffects;				// current number of effects
 	mp_sint32		numChannels;			// current number of channels
-	
+
 	mp_ubyte		pbreak;
 	mp_ubyte		pbreakpos;
 	mp_sint32		pbreakPriority;
@@ -272,13 +272,13 @@ private:
 	bool			patDelay;
 	bool			haltFlag;
 	mp_sint32		startNextRow;
-	
+
 	mp_sint32		patDelayCount;
 
 	// keep track of what positions we already visited (bitmap)
 	mp_ubyte		rowHits[256*256/8];
 	bool			isLooping;
-	
+
 	///////////////////////////////////////////////////////////////////////////////////////////////////
 	//					    this information is updated while the song plays
 	///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -289,23 +289,23 @@ private:
 	bool playModePTPitchLimit;
 	bool playModeFT2;
 	bool playModeChopSampleOffset;
-	
+
 	bool isRowVisited(mp_sint32 row)
-	{		
+	{
 		return (rowHits[row>>3]>>(row&7))&1;
 	}
 
 	void visitRow(mp_sint32 row)
 	{
 		rowHits[row>>3] |= (1<<(row&7));
-	}	
+	}
 
 	static void			prenvelope(mp_sint32 c, TPrEnv* env, mp_sint32 keyon);		// process envelopes
-	
+
 	static mp_sint32	getenvval(mp_sint32 c, TPrEnv* env, mp_sint32 n);			// get envelope value
 
 	// This takes the period *with* 8 bit fractional part
-	static mp_sint32	getlinfreq(mp_sint32 per);	
+	static mp_sint32	getlinfreq(mp_sint32 per);
 	// This takes the period *with* 8 bit fractional part
 	static mp_sint32	getlogfreq(mp_sint32 per);
 	// this returns a period *without* the 8 bit fractional part
@@ -313,23 +313,32 @@ private:
 	static mp_sint32	interpolate(mp_sint32 eax,mp_sint32 ebx,mp_sint32 ecx,mp_sint32 edi,mp_sint32 esi);
 	// this returns a period *without* the 8 bit fractional part
 	static mp_sint32	getlogperiod(mp_sint32 note,mp_sint32 relnote,mp_sint32 finetune);
-	
+
 	mp_uint32		getbpmrate(mp_uint32 bpm)
 	{
 		// digibooster "real BPM" setting
 		mp_uint32 realCiaTempo = (bpm * (baseBpm << 8) / 125) >> 8;
 
 		if (!realCiaTempo) realCiaTempo++;
-		
+
 		mp_int64 t = ((mp_int64)realCiaTempo)<<(32+2);
-		
+
 		const mp_uint32 timerBase = (mp_uint32)(5.0f*500.0f*(MP_BEATLENGTH*MP_TIMERFREQ / (float)MP_BASEFREQ));
-		
+
 		return (mp_uint32)(t/timerBase);
 	}
 
 	mp_sint32		getperiod(mp_sint32 note,mp_sint32 relnote,mp_sint32 finetune)
 	{
+#ifdef __AMIGA__
+		extern int audioMixer;
+
+		// If ResampleHW Mixer is used, we can only support logarithmic period
+		if(audioMixer == 0) {
+			return getlogperiod(note,relnote,finetune);
+		}
+#endif
+
 		if (playModeFT2)
 		{
 			// FT2 doesn't support lower 3 bits
@@ -342,10 +351,10 @@ private:
 					finetune = -128;
 			}
 		}
-	
+
 		return (module->header.freqtab&1) ? getlinperiod(note,relnote,finetune) : getlogperiod(note,relnote,finetune);
 	}
-	
+
 	mp_sint32		getvolume(mp_sint32 c,mp_sint32 nv)
 	{
 		mp_sint32 vol = (nv*getenvval(c,&chninfo[c].venv,256))>>7;
@@ -354,7 +363,7 @@ private:
 		vol = (vol*mainVolume)>>8;
 		return vol;
 	}
-	
+
 	mp_sint32		getpanning(mp_sint32 c,mp_sint32 np)
 	{
 		mp_sint32 envpan = getenvval(c,&chninfo[c].penv,128);
@@ -364,32 +373,32 @@ private:
 		if (finalpan>255) finalpan=255;
 		return finalpan;
 	}
-	
+
 	mp_sint32		getfreq(mp_sint32 c,mp_sint32 per,mp_sword freqadjust)
 	{
 		if (per<1) return 0;
 		mp_sint32 eval = getenvval(c,&chninfo[c].fenv,128)-128;
 		mp_uint32 freq;
-		
+
 		freq = (module->header.freqtab&1) ? getlinfreq(per) : getlogfreq(per);
-		
+
 		mp_sint32 finalFreq = (freq+(eval*63))+freqadjust;
 		if (finalFreq < 0) finalFreq = 0;
-		
+
 		return finalFreq;
 	}
-	
+
 	mp_sint32		getfinalperiod(mp_sint32 c, mp_sint32 p);
-	
+
 	void			playInstrument(mp_sint32 chn, TModuleChannel* chnInf, bool bNoRestart = false);
-	
+
 	void			triggerEnvelope(TPrEnv& dstEnv, TEnvelope& srcEnv);
-	void			triggerEnvelopes(TModuleChannel* chnInf);	
-	void			triggerAutovibrato(TModuleChannel* chnInf);	
+	void			triggerEnvelopes(TModuleChannel* chnInf);
+	void			triggerAutovibrato(TModuleChannel* chnInf);
 	void			triggerInstrumentFX(TModuleChannel* chnInf);
-	
+
 	void			updatePlayModeFlags();
-	
+
 	void			handlePeriodOverflow(mp_sint32 channel)
 	{
 		// PTK/FT1 playmode
@@ -405,7 +414,7 @@ private:
 			//	chninfo[channel].per %= 14150;
 		}
 	}
-	
+
 	void			handlePeriodUnderflow(mp_sint32 channel)
 	{
 		// PTK/FT1 playmode
@@ -417,54 +426,54 @@ private:
 		// FT2 playmode (clamp on low value, not what FT2 does btw.)
 		else
 		{
-			if (chninfo[channel].per < XM_MINPERIOD) 
+			if (chninfo[channel].per < XM_MINPERIOD)
 				chninfo[channel].per = XM_MINPERIOD;
 			//chninfo[channel].per &= 0x3FFF;
 		}
 	}
-	
+
 	mp_sint32		calcVibrato(TModuleChannel* chnInf, mp_sint32 effcnt);
 	void			doTickEffect(mp_sint32 chn, TModuleChannel* chnInf, mp_sint32 effcnt);
 	void			doEffect(mp_sint32 chn, TModuleChannel* chnInf, mp_sint32 effcnt);
-	
-	void			doTickeffects();	
-	void			progressRow();	
-	void			update();	
+
+	void			doTickeffects();
+	void			progressRow();
+	void			update();
 	void			updateBPMIndependent();
 
 	//void			handleQueuedPositions(mp_sint32& poscnt);
 	void			setNewPosition(mp_sint32 poscnt);
 
 	void			tickhandler();
-	
+
 	mp_sint32		allocateStructures();
 	void			freeMemory();
-	
+
 	// stop song by setting flag and setting speed to zero
 	void			halt();
 
 protected:
 	virtual void	clearEffectMemory();
-	
+
 public:
 					PlayerSTD(mp_uint32 frequency,
 							  StatusEventListener* statusEventListener = NULL);
-					
+
 	virtual			~PlayerSTD();
-	
+
 	virtual PlayerTypes getType() const { return PlayerType_Generic; }
 
 	virtual mp_sint32 adjustFrequency(mp_uint32 frequency);
-	virtual mp_sint32 setBufferSize(mp_uint32 bufferSize);	
-	
+	virtual mp_sint32 setBufferSize(mp_uint32 bufferSize);
+
 	// virtual from mixer class, perform playing here
 	virtual void	timerHandler(mp_sint32 currentBeatPacket);
-	
-	virtual void	restart(mp_uint32 startPosition = 0, mp_uint32 startRow = 0, 
-							bool resetMixer = true, 
-							const mp_ubyte* customPanningTable = NULL, 
-							bool playOneRowOnly = false); 
-	
+
+	virtual void	restart(mp_uint32 startPosition = 0, mp_uint32 startRow = 0,
+							bool resetMixer = true,
+							const mp_ubyte* customPanningTable = NULL,
+							bool playOneRowOnly = false);
+
 	virtual void	reset();
 
 	virtual void	resetAllSpeed();
@@ -473,7 +482,7 @@ public:
 
 	// milkytracker
 	virtual void	playNote(mp_ubyte chn, mp_sint32 note, mp_sint32 ins, mp_sint32 vol = -1);
-							 
+
 	virtual void	setPanning(mp_ubyte chn, mp_ubyte pan) { chninfo[chn].pan = pan; }
 
 #ifdef MILKYTRACKER

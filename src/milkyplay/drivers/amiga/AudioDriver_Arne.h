@@ -60,6 +60,7 @@ private:
 
 	mp_uword			newDMACON;
 
+	mp_sbyte *          zeroSample;
 	mp_uint32			channelLoopStart[16];
 	mp_uint32			channelRepeatLength[16];
 	mp_sint32           channelSamplePos[16];

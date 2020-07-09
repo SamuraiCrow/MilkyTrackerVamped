@@ -295,6 +295,7 @@ mp_sint32
 AudioDriver_Paula_ResampleHW::allocResources()
 {
     mixerProxy = new MixerProxyHardwareOut(nChannels, this);
+    zeroSample = (mp_sbyte *) AllocMem(16, MEMF_CHIP | MEMF_CLEAR);
 
     return 0;
 }
@@ -302,6 +303,7 @@ AudioDriver_Paula_ResampleHW::allocResources()
 void
 AudioDriver_Paula_ResampleHW::deallocResources()
 {
+    FreeMem(zeroSample, 16);
     delete mixerProxy;
 }
 
@@ -490,10 +492,10 @@ AudioDriver_Paula_ResampleHW::playSample(ChannelMixer::TMixerChannel * chn)
     setChannelVolume(chn);
 
     if ((chn->flags & 3) == 0) {
-        channelLoopStart[chn->index] = (mp_uint32) (chn->sample + chn->loopstart);
+        channelLoopStart[chn->index] = (mp_uint32) zeroSample;
         channelRepeatLength[chn->index] = 1;
     } else {
-        channelLoopStart[chn->index] = (mp_uint32) (chn->sample + chn->loopstart);
+    channelLoopStart[chn->index] = (mp_uint32) (chn->sample + chn->loopstart);
         channelRepeatLength[chn->index] = (mp_uword) (((chn->loopend - chn->loopstart) >> 1) & 0xffff);
     }
 

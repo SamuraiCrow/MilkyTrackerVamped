@@ -208,6 +208,7 @@ mp_sint32
 AudioDriver_Arne_ResampleHW::allocResources()
 {
     mixerProxy = new MixerProxyHardwareOut(nChannels, this);
+    zeroSample = (mp_sbyte *) AllocMem(16, MEMF_CHIP | MEMF_CLEAR);
 
     return 0;
 }
@@ -215,6 +216,7 @@ AudioDriver_Arne_ResampleHW::allocResources()
 void
 AudioDriver_Arne_ResampleHW::deallocResources()
 {
+    FreeMem(zeroSample, 16);
     delete mixerProxy;
 }
 
@@ -377,6 +379,8 @@ AudioDriver_Arne_ResampleHW::setChannelVolume(ChannelMixer::TMixerChannel * chn)
 void
 AudioDriver_Arne_ResampleHW::playSample(ChannelMixer::TMixerChannel * chn)
 {
+    bool is16bit = chn->flags & 4;
+
     ciab.ciacrb = CIACRBF_LOAD;
 
     // Stop running sample
@@ -403,19 +407,30 @@ AudioDriver_Arne_ResampleHW::playSample(ChannelMixer::TMixerChannel * chn)
     }
 
     // Set sample
-    *((volatile mp_uint32 *) AUDIO_LOCHI(chn->index)) = (mp_uint32) (chn->sample + smppos);
+    if(is16bit) {
+        *((volatile mp_uint32 *) AUDIO_LOCHI(chn->index)) = (mp_uint32) (((mp_sword *) chn->sample) + smppos);
+        *((volatile mp_uword *) AUDIO_MODE(chn->index)) = AUDIO_MODEF_16;
+    } else {
+        *((volatile mp_uint32 *) AUDIO_LOCHI(chn->index)) = (mp_uint32) (((mp_sbyte *) chn->sample) + smppos);
+        *((volatile mp_uword *) AUDIO_MODE(chn->index)) = 0;
+    }
     *((volatile mp_uint32 *) AUDIO_LENHI(chn->index)) = (mp_uint32) ((chn->loopend - smppos) >> 1);
-    *((volatile mp_uword *) AUDIO_MODE(chn->index)) = 0;
+
     channelSamplePos[chn->index] = smppos;
 
     setChannelFrequency(chn);
     setChannelVolume(chn);
 
+
     if ((chn->flags & 3) == 0) {
-        channelLoopStart[chn->index] = (mp_uint32) (chn->sample + chn->loopstart);
+        channelLoopStart[chn->index] = (mp_uint32) zeroSample;
         channelRepeatLength[chn->index] = 1;
     } else {
-        channelLoopStart[chn->index] = (mp_uint32) (chn->sample + chn->loopstart);
+        if(is16bit) {
+            channelLoopStart[chn->index] = (mp_uint32) (((mp_sword *) chn->sample) + chn->loopstart);
+        } else {
+            channelLoopStart[chn->index] = (mp_uint32) (((mp_sbyte *) chn->sample) + chn->loopstart);
+        }
         channelRepeatLength[chn->index] = (mp_uint32) ((chn->loopend - chn->loopstart) >> 1);
     }
 
