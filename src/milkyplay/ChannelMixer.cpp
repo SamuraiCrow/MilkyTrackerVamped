@@ -1093,7 +1093,7 @@ void ChannelMixer::hardwareOut(MixerProxy * mixerProxy)
 			hardwareOutChannel(mixerProxy, c);
 		}
 	}
-	mixerProxy->getProcessor()->tickDone();
+	mixerProxy->getProcessor()->tickDone(channel);
 }
 
 void ChannelMixer::directOut(MixerProxy * mixerProxy)

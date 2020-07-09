@@ -421,7 +421,6 @@ AudioDriver_Arne_ResampleHW::playSample(ChannelMixer::TMixerChannel * chn)
     setChannelFrequency(chn);
     setChannelVolume(chn);
 
-
     if ((chn->flags & 3) == 0) {
         channelLoopStart[chn->index] = (mp_uint32) zeroSample;
         channelRepeatLength[chn->index] = 1;
@@ -466,9 +465,26 @@ AudioDriver_Arne_ResampleHW::stopSample(ChannelMixer::TMixerChannel * chn)
 }
 
 void
-AudioDriver_Arne_ResampleHW::tickDone()
+AudioDriver_Arne_ResampleHW::tickDone(ChannelMixer::TMixerChannel * chn)
 {
     int i;
+
+    // Handle one-shot
+    for(i = 0; i < MAX_CHANNELS; i++) {
+        if((chn->flags & 3) == 0 && chn->flags & 8192 && channelSamplePos[i] >= chn->loopend) {
+            chn->flags &= ~8192;
+            chn->flags |= 1;
+            chn->loopend = chn->loopendcopy;
+
+            channelLoopStart[i] = (mp_uint32) chn->sample;
+            channelRepeatLength[i] = (mp_uword) (((chn->loopend - chn->loopstart) >> 1) & 0xffff);
+            channelSamplePos[i] = ((channelSamplePos[i] - chn->loopstart) % (chn->loopend - chn->loopstart)) + chn->loopstart;
+
+            newDMACON |= DMAF_AUD0 << i;
+        }
+
+        chn++;
+    }
 
     // If there are new samples playing on a channel, let irqEnableChannels enable the DMA for us
     if(newDMACON) {
