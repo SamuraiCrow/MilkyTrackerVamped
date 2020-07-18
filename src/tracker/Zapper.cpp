@@ -38,6 +38,10 @@
 
 void Zapper::zapAll()
 {
+#ifdef __AMIGA__
+	if(!tracker.checkForChanges())
+		return;
+#endif
 	tracker.signalWaitState(true);
 	tracker.playerController->resetPlayTimeCounter();
 	tracker.moduleEditor->createEmptySong(true,

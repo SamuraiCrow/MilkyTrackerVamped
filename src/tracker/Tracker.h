@@ -611,7 +611,9 @@ private:
 	friend class Zapper;
 	friend class SectionSwitcher;
 
+#ifdef __AMIGA__
 	friend class AmigaApplication;
+#endif
 	friend class PatternEditorControl;
 };
 

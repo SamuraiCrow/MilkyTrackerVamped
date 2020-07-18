@@ -1,4 +1,45 @@
-#include "Amiga_KeyTranslation.h"
+/*
+ *  tracker/sdl/SDL_KeyTranslation.cpp
+ *
+ *  Copyright 2009 Peter Barth, Christopher O'Neill, Dale Whinham
+ *
+ *  This file is part of Milkytracker.
+ *
+ *  Milkytracker is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  Milkytracker is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with Milkytracker.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
+
+/*
+ *  KeyTranslation.cpp
+ *  MilkyTracker
+ *
+ *  Created by Peter Barth on 19.11.05.
+ *
+ *  12/5/14 - Dale Whinham
+ *    - Port to SDL2
+ *    - Many new SDL2 scancodes added - keyboard shortcuts need thorough testing
+ *    - OSX: Command now acts as CTRL (e.g. more native-style Command-C, Command-V copy and paste in MilkyTracker edit mode)
+ *    - Attempted to fix mapping of RAlt/RCtrl (RCommand on OSX) for the FTII-style song play/pattern play shortcuts
+ *    - CapsLock now acts as noteoff-insert as per MilkyTracker manual
+ *
+ *  14/8/06 - Christopher O'Neill
+ *    - PC specific code added to toSC - allows none qwerty layouts to work
+ *    - Small fix in toSC
+ *    - Various keys added to toVK - rewritten to use array instead of select
+ */
+
+#include "SDL_KeyTranslation.h"
 
 pp_uint16 toVK(const SDL_Keysym& keysym)
 {
