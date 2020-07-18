@@ -38,7 +38,9 @@
 
 #include "XMFile.h"
 
-#include <clib/exec_protos.h>
+#ifdef __AMIGA__
+#	include <clib/exec_protos.h>
+#endif
 
 #define MP_MAXTEXT 32
 #define MP_MAXORDERS 256

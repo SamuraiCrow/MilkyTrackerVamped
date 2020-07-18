@@ -28,11 +28,7 @@
  *
  */
 
-#ifdef __GNUC__
-static __attribute__((noinline)) void fill_dword(pp_uint32* buff, pp_uint32 dw, pp_uint32 len)
-#else
 static inline void fill_dword(pp_uint32* buff, pp_uint32 dw, pp_uint32 len)
-#endif
 {
 #if defined(__ppc__) && defined(__GNUC__)	
 	// PPC assembly FTW!!1!
@@ -88,11 +84,7 @@ static inline void fill_dword(pp_uint32* buff, pp_uint32 dw, pp_uint32 len)
 #endif
 }
 
-#ifdef __GNUC__
-static __attribute__((noinline)) void fill_dword_vertical(pp_uint32* buff, pp_uint32 dw, pp_uint32 len, pp_uint32 pitch)
-#else
 static inline void fill_dword_vertical(pp_uint32* buff, pp_uint32 dw, pp_uint32 len, pp_uint32 pitch)
-#endif
 {
 #if defined(__ppc__) && defined(__GNUC__)	
 	asm volatile("nop\n" // align loop start to 16 byte boundary
@@ -106,10 +98,12 @@ static inline void fill_dword_vertical(pp_uint32* buff, pp_uint32 dw, pp_uint32 
 				 "cmpw cr7,r5,r9\n"
 				 "bne cr7,1b"); 
 #else
+	pitch >>= 2;
+
 	do
 	{
 		*buff = dw;
-		buff+=(pitch>>2);
+		buff += pitch;
 	} while (--len);
 #endif
 }

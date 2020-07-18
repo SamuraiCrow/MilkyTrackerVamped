@@ -25,3 +25,6 @@ CMakeFiles
 .idea/
 build-*/
 cmake-*
+
+# Editor config files
+.vscode/

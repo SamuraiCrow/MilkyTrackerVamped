@@ -171,6 +171,10 @@ private:
 	pp_int32 selectionTicker;
 
 	bool hasDragged;
+	
+	bool moveSelection;
+	PatternEditorTools::Position moveSelectionInitialPos;
+	PatternEditorTools::Position moveSelectionFinalPos;
 
 	// edit menu
 	pp_int32 menuPosX;
@@ -381,6 +385,9 @@ private:
 	void handleDeleteKey(pp_uint16 keyCode, pp_int32& result);
 	void handleKeyChar(pp_uint8 character);
 	void handleKeyDown(pp_uint16 keyCode, pp_uint16 scanCode, pp_uint16 character);
+
+	void selectionModifierKeyDown();
+	void selectionModifierKeyUp();
 
 	// mark channel
 	void markChannel(pp_int32 channel, bool invert = true);
