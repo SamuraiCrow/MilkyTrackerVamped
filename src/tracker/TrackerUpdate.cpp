@@ -643,7 +643,8 @@ void Tracker::updateWindowTitle()
 {
 	if (moduleEditor->hasChanged() != lastState)
 	{
-		PPSystemString title = "MilkyTracker - ";
+		// MAGIC
+		PPSystemString title = "Titan's MilkyMagic - ";
 
 		title.append(currentFileName);
 
@@ -1041,6 +1042,9 @@ void Tracker::updateAfterLoad(bool loadResult, bool wasPlaying, bool wasPlayingP
 						playerController->switchPlayMode(PlayerController::PlayMode_ProTracker3);
 					break;
 				case ModuleEditor::ModSaveTypeXM:
+					playerController->switchPlayMode(PlayerController::PlayMode_FastTracker2);
+					break;
+				case ModuleEditor::ModSaveTypeTMM:
 					playerController->switchPlayMode(PlayerController::PlayMode_FastTracker2);
 					break;
 				default:

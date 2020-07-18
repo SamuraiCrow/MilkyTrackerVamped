@@ -51,6 +51,7 @@ target_include_directories(compression
         ${CMAKE_CURRENT_SOURCE_DIR}/../milkyplay
         ${CMAKE_CURRENT_SOURCE_DIR}/../ppui
         ${CMAKE_CURRENT_SOURCE_DIR}/../ppui/osinterface/posix
+        ${CMAKE_CURRENT_SOURCE_DIR}/../tmm
 )
 
 # Under macOS and Windows, build sources from Git submodules if present
@@ -187,11 +188,19 @@ if(WIN32)
         )
 
         # zlib adds a 'd' suffix to debug builds of the library
-        set(ZLIB_LIBRARIES
-            debug ${ZLIB_DESTDIR}/lib/zlibstaticd.lib
-            optimized ${ZLIB_DESTDIR}/lib/zlibstatic.lib
-            CACHE INTERNAL "ZLIB_LIBRARIES"
-        )
+        if(MINGW)
+            set(ZLIB_LIBRARIES
+                debug ${ZLIB_DESTDIR}/lib/libzlibstatic.a
+                optimized ${ZLIB_DESTDIR}/lib/libzlibstatic.a
+                CACHE INTERNAL "ZLIB_LIBRARIES"
+            )
+        else()
+            set(ZLIB_LIBRARIES
+                debug ${ZLIB_DESTDIR}/lib/zlibstaticd.lib
+                optimized ${ZLIB_DESTDIR}/lib/zlibstatic.lib
+                CACHE INTERNAL "ZLIB_LIBRARIES"
+            )
+        endif()
 
         ExternalProject_Add(zlib
             SOURCE_DIR ${ZLIB_SUBMODULE_DIR}

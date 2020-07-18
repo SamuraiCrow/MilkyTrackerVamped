@@ -233,6 +233,10 @@ void Tracker::processShortcutsFastTracker(PPEvent* event)
 
 	if (event->getID() == eKeyDown)
 	{
+		// MAGIC
+		PPControl* modalcontrol = screen->getModalControl();
+		bool modal = modalcontrol && modalcontrol->getID() != RESPONDMESSAGEBOX_MAGIC;
+
 		pp_uint16 keyCode = *((pp_uint16*)event->getDataPtr());
 		pp_uint16 scanCode = *(((pp_uint16*)event->getDataPtr())+1);
 
@@ -496,7 +500,7 @@ void Tracker::processShortcutsFastTracker(PPEvent* event)
 processOthers:
 				processShortcutsMilkyTracker(event);
 
-				if (screen->getModalControl())
+				if (modal)
 					break;
 
 				if (recorderLogic->getRecordMode())

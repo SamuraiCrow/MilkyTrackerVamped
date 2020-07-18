@@ -289,8 +289,8 @@ void PlayerSTD::timerHandler(mp_sint32 currentBeatPacket)
 		statusEventListener->timerTickStarted(*this, *module);
 
 	mp_int64 dummy = (mp_int64)BPMCounter;
-	dummy += (mp_int64)adder;
-	BPMCounter = (mp_sint32)dummy;
+	dummy+=(mp_int64)adder;
+	BPMCounter=(mp_sint32)dummy;
 
 	// check overflow-carry
 	if ((dummy>>32))
@@ -1797,6 +1797,28 @@ void PlayerSTD::doEffect(mp_sint32 chn, TModuleChannel* chnInf, mp_sint32 effcnt
 						pjumprow = chnInf->eop[(effcnt+1)%numEffects];
 						pjumpPriority = MP_NUMEFFECTS*chn + effcnt;
 					}; break;
+
+		// MAGIC Filter control
+		case 0x30 : {
+						char test[255];
+						sprintf(test, "filter control: %02x\n", eop);
+						OutputDebugString(test);
+					}; break;
+
+		// MAGIC cutoff
+		case 0x12: {
+						char test[255];
+						sprintf(test, "cutoff: %d\n", eop);
+						OutputDebugString(test);
+				   }; break;
+
+		// MAGIC resonance
+		case 0x13: {
+						char test[255];
+						sprintf(test, "resonance: %d\n", eop);
+						OutputDebugString(test);
+				   }; break;
+
 		// Fine porta up
 		case 0x31 : {
 						if (eop) chnInf->old[effcnt].fineportaup=eop;
@@ -2719,6 +2741,7 @@ void PlayerSTD::updateBPMIndependent()
 			if (dummy>>32)
 			{
 				prenvelope(c,&chnInf->fenv,chnInf->keyon);
+
 				if ((chnInf->per)&&(!dfs)) {
 					mp_sint32 finalper = getfinalperiod(c,chnInf->per);
 					setFreq(c,getfreq(c,finalper,chnInf->freqadjust),finalper);

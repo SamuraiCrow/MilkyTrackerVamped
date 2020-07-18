@@ -1,0 +1,18 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "milkymagic",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}\\Debug\\src\\tracker\\MilkyTracker.exe",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "miDebuggerPath": "C:\\msys64\\mingw64\\bin\\gdb.exe"
+        }
+    ]
+}

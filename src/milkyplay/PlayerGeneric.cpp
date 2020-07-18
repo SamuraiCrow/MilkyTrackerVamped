@@ -125,6 +125,7 @@ PlayerBase::PlayerTypes PlayerGeneric::getPreferredPlayerType(XModule* module)
 		case XModule::ModuleType_S3M:
 		case XModule::ModuleType_STM:
 		case XModule::ModuleType_SFX:
+		case XModule::ModuleType_TMM:
 		case XModule::ModuleType_UNI:
 		case XModule::ModuleType_ULT:
 		case XModule::ModuleType_XM:
@@ -813,6 +814,14 @@ mp_int64 PlayerGeneric::getSyncCount() const
 {
 	if (player)
 		return player->getSyncCount();
+
+	return 0;
+}
+
+mp_uint32 PlayerGeneric::getSyncSampleCounter() const
+{
+	if (player)
+		return player->getSyncSampleCounter();
 
 	return 0;
 }

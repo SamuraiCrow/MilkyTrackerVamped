@@ -41,6 +41,7 @@
 #ifdef __AMIGA__
 #	include <clib/exec_protos.h>
 #endif
+#include "tmm.h"
 
 #define MP_MAXTEXT 32
 #define MP_MAXORDERS 256
@@ -118,6 +119,8 @@ struct TXMInstrument
 	mp_ubyte	ifc;			// IT Initial Filter cutoff
 	mp_ubyte	ifr;			// IT Initial Filter resonance
 	//char		extra[20];
+
+	TTMMSettings tmm;
 };
 
 // some words about the samples:
@@ -197,8 +200,11 @@ public:
 
 	static mp_ubyte* allocPaddedMem(mp_uint32 size)
 	{
-		//mp_ubyte* result = new mp_ubyte[getPaddedSize(size)];
+#ifdef __AMIGA__
 		mp_ubyte* result = (mp_ubyte *)AllocMem(getPaddedSize(size), MEMF_CHIP | MEMF_CLEAR);
+#else
+		mp_ubyte* result = new mp_ubyte[getPaddedSize(size)];
+#endif
 
 		if (result == NULL)
 			return NULL;
@@ -219,8 +225,11 @@ public:
 		if (mem == NULL)
 			return;
 
-		//delete[] getPadStartAddr(mem);
-
+#ifdef __AMIGA__
+		// @todo
+#else
+		delete[] getPadStartAddr(mem);
+#endif
 	}
 
 	static void copyPaddedMem(void* dst, const void* src, mp_uint32 size)
@@ -354,6 +363,7 @@ public:
 		ModuleType_S3M,
 		ModuleType_STM,
 		ModuleType_SFX,
+		ModuleType_TMM,
 		ModuleType_UNI,
 		ModuleType_ULT,
 		ModuleType_XM,
@@ -646,8 +656,9 @@ public:
 	///////////////////////////////////////////////////
 	// Module exporters								 //
 	///////////////////////////////////////////////////
-	mp_sint32		saveExtendedModule(const SYSCHAR* fileName);		// FT2 (.XM)
-	mp_sint32		saveProtrackerModule(const SYSCHAR* fileName);   // Protracker compatible (.MOD)
+	mp_sint32		saveExtendedModule(const SYSCHAR* fileName, bool isMagic = false);		// FT2 (.XM)
+	mp_sint32		saveProtrackerModule(const SYSCHAR* fileName, bool isMagic = false); 	// Protracker compatible (.MOD)
+	mp_sint32		saveMagicalModule(const SYSCHAR* fileName, bool isExtended = true);		// TiTAN Magical Module (.TMM)
 
 	///////////////////////////////////////////////////
 	// module loaded?								 //
@@ -716,6 +727,9 @@ public:
 	};
 
 	IsPTCompatibleErrorCodes isPTCompatible();
+
+	friend class LoaderXM;
+	friend class LoaderTMM;
 };
 
 #endif

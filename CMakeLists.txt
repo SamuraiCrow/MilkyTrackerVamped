@@ -184,6 +184,12 @@ elseif(WIN32)
     # Windows MIDI support requires no external libraries
     message(STATUS "Enabled MIDI support (WinMM)")
     add_subdirectory(src/midi)
+    
+    # MingW support
+    if(MINGW)
+        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DWIN32")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DWIN32")
+    endif()
 elseif(AROS)
     # AROS will provide the SDL dependency via makefile.
 elseif(AMIGA)
@@ -244,6 +250,7 @@ add_subdirectory(docs)
 add_subdirectory(resources/music)
 add_subdirectory(src/compression)
 add_subdirectory(src/fx)
+add_subdirectory(src/tmm)
 add_subdirectory(src/milkyplay)
 add_subdirectory(src/ppui)
 add_subdirectory(src/tracker)

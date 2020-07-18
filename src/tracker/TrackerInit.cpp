@@ -1106,7 +1106,8 @@ void Tracker::initListboxesSection(pp_int32 x, pp_int32 y)
 	container->addControl(button);
 #endif
 
-	listBoxInstruments = new PPListBox(LISTBOX_INSTRUMENTS, screen, this, PPPoint(x+2, y + 7 + dy + dy), PPSize(size+myDx,height-(10+2*dy)), true, true, true, true);
+	// MAGIC
+	listBoxInstruments = new PPListBox(LISTBOX_INSTRUMENTS, screen, this, PPPoint(x+2, y + 7 + dy + dy), PPSize(size+myDx,height-(10+2+tinyButtonHeight+2*dy)), true, true, true, true);
 	listBoxInstruments->setBorderColor(TrackerConfig::colorThemeMain);
 	listBoxInstruments->setShowIndex(true);
 	listBoxInstruments->setMaxEditSize(ModuleEditor::MAX_INSTEXT);
@@ -1115,6 +1116,12 @@ void Tracker::initListboxesSection(pp_int32 x, pp_int32 y)
 	fillInstrumentListBox(listBoxInstruments);
 
 	container->addControl(listBoxInstruments);
+
+	// MAGIC
+	button = new PPButton(BUTTON_INSTRUMENT_MAGIC, screen, sectionInstruments, PPPoint(x+2, y + 7 + dy + dy + height - 28), PPSize(size+myDx, tinyButtonHeight));
+	button->setFont(PPFont::getFont(PPFont::FONT_TINY));
+	button->setText("Magic");
+	container->addControl(button);
 
 	// Samples
 #ifndef __LOWRES__
@@ -1364,7 +1371,6 @@ void Tracker::initInstrumentChooser(pp_int32 id, const PPString& buttonText1, co
 
 		button->setText("Play");
 		container->addControl(button);
-
 
 		listBoxSamplesSrc = new PPListBox(INSTRUMENT_CHOOSER_LIST_SRC2, screen, this,
 													 PPPoint(x2-2, y2 + 10), PPSize((width-10)/2-1,lBoxHeight), true, false, true, true);

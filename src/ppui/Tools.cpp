@@ -41,37 +41,56 @@ void PPTools::convertToHex(char* name, pp_uint32 value, pp_uint32 numDigits)
 	pp_uint32 i;
 	for (i = 0; i < numDigits; i++)
 		name[i] = hex[((value>>(numDigits-1-i)*4)&0xF)];
-	
+
 	name[i] = 0;
 }
 
-pp_uint32 PPTools::getDecNumDigits(pp_uint32 value)
+pp_uint32 PPTools::getDecNumDigits(pp_uint32 x)
 {
-	if (value == 0)
-		return 1;
+	if (x == 0)
+		return 0;
 
-	pp_uint32 i = 0;
-	pp_uint32 start = 1;
-	while (value / start)
-	{
-		i++;
-		start*=10;
-	}
+    if (x >= 10000) {
+        if (x >= 10000000) {
+            if (x >= 100000000) {
+                if (x >= 1000000000)
+                    return 10;
+                return 9;
+            }
+            return 8;
+        }
+        if (x >= 100000) {
+            if (x >= 1000000)
+                return 7;
+            return 6;
+        }
+        return 5;
+    }
+    if (x >= 100) {
+        if (x >= 1000)
+            return 4;
+        return 3;
+    }
+    if (x >= 10)
+        return 2;
 
-	return i;
+    return 1;
 }
 
 void PPTools::convertToDec(char* name, pp_uint32 value, pp_uint32 numDigits)
 {
-	pp_uint32 i;
+	pp_uint32 i = 0;
 	pp_uint32 start = 1;
-	for (i = 0; i < numDigits-1; i++)
-		start*=10;
-		
-	for (i = 0; i < numDigits; i++)
-	{
-		name[i] = hex[(value / start)%10];
-		start/=10;
+
+	if(numDigits > 0) {
+		for (i = 0; i < numDigits-1; i++)
+			start*=10;
+
+		for (i = 0; i < numDigits; i++)
+		{
+			name[i] = hex[(value / start)%10];
+			start/=10;
+		}
 	}
 
 	name[i] = 0;
@@ -81,11 +100,11 @@ void PPTools::convertToDec(char* name, pp_uint32 value, pp_uint32 numDigits)
 PPSimpleVector<PPString>* PPTools::extractStringList(const PPString& str)
 {
 	PPSimpleVector<PPString>* stringList = new PPSimpleVector<PPString>();
-	
+
 	const char* sz = str;
-	
+
 	PPString* line = new PPString();
-	
+
 	while (*sz)
 	{
 		if (*sz == '\n')
@@ -99,30 +118,30 @@ PPSimpleVector<PPString>* PPTools::extractStringList(const PPString& str)
 		}
 		sz++;
 	}
-	
+
 	if (!line->length())
 		delete line;
 	else
 		stringList->add(line);
-	
+
 	return stringList;
 }
 
 PPString PPTools::encodeByteArray(const pp_uint8* array, pp_uint32 size)
 {
 	char buffer[10];
-	
+
 	// Convert number of bytes
 	convertToHex(buffer, size, 8);
-	
+
 	PPString str = buffer;
-	
+
 	for (pp_uint32 i = 0; i < size; i++)
 	{
 		convertToHex(buffer, array[i], 2);
 		str.append(buffer);
 	}
-	
+
 	return str;
 }
 
@@ -134,7 +153,7 @@ pp_uint8 PPTools::getNibble(const char* str)
 		return (*str - 'A' + 10);
 	if (*str >= 'a' && *str <= 'f')
 		return (*str - 'a' + 10);
-	
+
 	return 0;
 }
 
@@ -156,20 +175,20 @@ pp_uint32 PPTools::getDWord(const char* str)
 bool PPTools::decodeByteArray(pp_uint8* array, pp_uint32 size, const PPString& str)
 {
 	const char* ptr = str;
-	
+
 	pp_uint32 length = getDWord(ptr);
-	
+
 	if (length != size)
 		return false;
-	
+
 	ptr+=8;
-	
+
 	for (pp_uint32 i = 0; i < length; i++)
 	{
 		*array++ = getByte(ptr);
 		ptr+=2;
 	}
-	
+
 	return true;
 }
 

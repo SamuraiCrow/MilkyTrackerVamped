@@ -270,7 +270,9 @@ bool Tracker::isEditingCurrentOrderlistPattern()
 
 pp_int32 Tracker::getInstrumentToPlay(pp_int32 note, PlayerController*& playerController)
 {
-	if (PPControl* ctrl = screen->getModalControl())
+	// MAGIC
+	PPControl* ctrl = screen->getModalControl();
+	if (ctrl && ctrl->getID() != RESPONDMESSAGEBOX_MAGIC)
 	{
 		note--;
 
@@ -1309,7 +1311,7 @@ pp_int32 Tracker::handleEvent(PPObject* sender, PPEvent* event)
 				PPListBox* listBoxSrcIns = static_cast<PPListBox*>(container->getControlByID(INSTRUMENT_CHOOSER_LIST_SRC));
 				PPListBox* listBoxSrcSmp = static_cast<PPListBox*>(container->getControlByID(INSTRUMENT_CHOOSER_LIST_SRC2));
 
-				PPListBox* listBoxDstIns = static_cast<PPListBox*>(container->getControlByID(INSTRUMENT_CHOOSER_LIST_DST));;
+				PPListBox* listBoxDstIns = static_cast<PPListBox*>(container->getControlByID(INSTRUMENT_CHOOSER_LIST_DST));
 				PPListBox* listBoxDstSmp = static_cast<PPListBox*>(container->getControlByID(INSTRUMENT_CHOOSER_LIST_DST2));
 
 				if (reinterpret_cast<PPControl*>(sender)->getID() == INSTRUMENT_CHOOSER_LIST_SRC3)
@@ -2504,6 +2506,7 @@ pp_uint32 Tracker::fileTypeToHint(FileTypes type)
 			return DecompressorBase::HintTracks;
 
 		case FileTypes::FileTypeSongAllInstruments:
+		case FileTypes::FileTypeInstrumentTMI:
 		case FileTypes::FileTypeInstrumentXI:
 			return DecompressorBase::HintInstruments;
 
@@ -2722,6 +2725,13 @@ bool Tracker::loadTypeFromFile(FileTypes eType, const PPSystemString& fileName, 
 			break;
 		}
 
+		case FileTypes::FileTypeInstrumentTMI:
+		{
+			loadingParameters.res = moduleEditor->loadTMI(loadingParameters.filename, listBoxInstruments->getSelectedIndex());
+			sectionInstruments->updateAfterLoad();
+			break;
+		}
+
 		case FileTypes::FileTypeSongAllSamples:
 		{
 			pp_int32 numSampleChannels = moduleEditor->getNumSampleChannels(loadingParameters.filename);
@@ -2829,6 +2839,14 @@ bool Tracker::loadTypeWithDialog(FileTypes eLoadType, bool suspendPlayer/* = tru
 			openPanel->addExtensions(fileExtProvider.getSampleExtensions());
 			break;
 		}
+
+		case FileTypes::FileTypeInstrumentTMI:
+		{
+			openPanel = new PPOpenPanel(screen, "Open TMI");
+			openPanel->addExtension(fileExtProvider.getInstrumentExtension(FileExtProvider::InstrumentExtensionTMI),
+									fileExtProvider.getInstrumentDescription(FileExtProvider::InstrumentExtensionTMI));
+			break;
+		}
 	}
 
 	if (!openPanel)
@@ -2899,6 +2917,12 @@ bool Tracker::prepareSavingWithDialog(FileTypes eSaveType)
 									fileExtProvider.getModuleDescription(FileExtProvider::ModuleExtensionXM));
 			break;
 
+		case FileTypes::FileTypeSongTMM:
+			savePanel = new PPSavePanel(screen, "Save Titan Magic Module", moduleEditor->getModuleFileName(ModuleEditor::ModSaveTypeTMM));
+			savePanel->addExtension(fileExtProvider.getModuleExtension(FileExtProvider::ModuleExtensionTMM),
+									fileExtProvider.getModuleDescription(FileExtProvider::ModuleExtensionTMM));
+			break;
+
 		case FileTypes::FileTypePatternXP:
 		{
 			PPSystemString fileName = moduleEditor->getModuleFileName().stripExtension();
@@ -2926,6 +2950,16 @@ bool Tracker::prepareSavingWithDialog(FileTypes eSaveType)
 			savePanel = new PPSavePanel(screen, "Save Instrument", sampleFileName);
 			savePanel->addExtension(fileExtProvider.getInstrumentExtension(FileExtProvider::InstrumentExtensionXI),
 									fileExtProvider.getInstrumentDescription(FileExtProvider::InstrumentExtensionXI));
+			break;
+		}
+
+		case FileTypes::FileTypeInstrumentTMI:
+		{
+			PPSystemString sampleFileName = "";
+			sampleFileName.append(".tmi");
+			savePanel = new PPSavePanel(screen, "Save Magic Instrument", sampleFileName);
+			savePanel->addExtension(fileExtProvider.getInstrumentExtension(FileExtProvider::InstrumentExtensionTMI),
+									fileExtProvider.getInstrumentDescription(FileExtProvider::InstrumentExtensionTMI));
 			break;
 		}
 
@@ -2992,6 +3026,11 @@ bool Tracker::saveTypeWithDialog(FileTypes eSaveType, EventListenerInterface* fi
 					res = moduleEditor->saveSong(file, ModuleEditor::ModSaveTypeXM);
 					break;
 
+				case FileTypes::FileTypeSongTMM:
+					commitListBoxChanges();
+					res = moduleEditor->saveSong(file, ModuleEditor::ModSaveTypeTMM);
+					break;
+
 				case FileTypes::FileTypeTrackXT:
 				{
 					res = getPatternEditor()->saveExtendedTrack(file);
@@ -3007,6 +3046,10 @@ bool Tracker::saveTypeWithDialog(FileTypes eSaveType, EventListenerInterface* fi
 				case FileTypes::FileTypeInstrumentXI:
 					commitListBoxChanges();
 					res = moduleEditor->saveInstrument(file, listBoxInstruments->getSelectedIndex());
+					break;
+
+				case FileTypes::FileTypeInstrumentTMI:
+					res = moduleEditor->saveTMI(file, listBoxInstruments->getSelectedIndex());
 					break;
 
 				case FileTypes::FileTypeSampleWAV:
@@ -3130,6 +3173,10 @@ void Tracker::saveAs()
 
 		case ModuleEditor::ModSaveTypeXM:
 			saveType(FileTypes::FileTypeSongXM);
+			break;
+
+		case ModuleEditor::ModSaveTypeTMM:
+			saveType(FileTypes::FileTypeSongTMM);
 			break;
 
 		default:

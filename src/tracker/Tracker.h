@@ -464,6 +464,11 @@ public:
 
 	void sendNoteDown(pp_int32 note, pp_int32 volume = -1);
 	void sendNoteUp(pp_int32 note);
+<<<<<<< HEAD
+=======
+
+	class ModuleEditor* getModuleEditor() { return this->moduleEditor; }
+>>>>>>> d4450465953a76d360e9743a6984b4eb8ad51215
 private:
 	void switchEditMode(EditModes mode);
 
@@ -615,6 +620,7 @@ private:
 	friend class AmigaApplication;
 #endif
 	friend class PatternEditorControl;
+	friend class DialogSynth;
 };
 
 #endif

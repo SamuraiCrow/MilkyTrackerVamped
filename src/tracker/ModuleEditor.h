@@ -27,6 +27,8 @@
 #include "BasicTypes.h"
 #include "PatternEditorTools.h"
 #include "SongLengthEstimator.h"
+#include "PlayerController.h"
+#include "DialogSynth.h"
 
 class XIInstrument;
 class PatternEditor;
@@ -86,7 +88,8 @@ public:
 	{
 		ModSaveTypeDefault = -1,
 		ModSaveTypeXM,
-		ModSaveTypeMOD
+		ModSaveTypeMOD,
+		ModSaveTypeTMM
 	};
 
 private:
@@ -97,6 +100,7 @@ private:
 	class ChangesListener* changesListener;
 	ModuleServices* moduleServices;
 	PlayerCriticalSection* playerCriticalSection;
+	PlayerController* playerController;
 
 	bool changed;
 
@@ -138,6 +142,7 @@ private:
 
 	pp_int32 enumerationIndex;
 
+	DialogSynth * dialogSynth;
 public:
 	ModuleEditor();
 	~ModuleEditor();
@@ -147,6 +152,9 @@ public:
 	SampleEditor* getSampleEditor() { return sampleEditor; }
 	EnvelopeEditor* getEnvelopeEditor() { return envelopeEditor; }
 	ModuleServices* getModuleServices() { return moduleServices; }
+
+	void setPlayerController(PlayerController* playerController) { this->playerController = playerController; }
+	PlayerController* getPlayerController() { return playerController; }
 
 	void attachPlayerCriticalSection(PlayerCriticalSection* playerCriticalSection) { this->playerCriticalSection = playerCriticalSection; }
 
@@ -320,6 +328,11 @@ public:
 	// save instrument
 	bool saveInstrument(const SYSCHAR* fileName, mp_sint32 index);
 
+	// TMI
+	void setDialogSynth(DialogSynth * dialogSynth);
+	bool loadTMI(const SYSCHAR* fileName, mp_sint32 index);
+	bool saveTMI(const SYSCHAR* fileName, mp_sint32 index);
+
 	// zap (clear) instrument
 	bool zapInstrument(mp_sint32 index);
 
@@ -385,6 +398,7 @@ public:
 	static PPSystemString getTempFilename();
 
 	friend class ChangesListener;
+	friend class DialogSynth;
 };
 
 #endif

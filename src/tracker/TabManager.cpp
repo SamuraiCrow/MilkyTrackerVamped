@@ -79,6 +79,7 @@ TabHeaderControl* TabManager::getTabHeaderControl()
 ModuleEditor* TabManager::createModuleEditor()
 {
 	ModuleEditor* moduleEditor = new ModuleEditor();
+	moduleEditor->setPlayerController(tracker.playerController);
 	moduleEditor->createNewSong(tracker.playerController->getPlayMode() == PlayerController::PlayMode_FastTracker2 ? 8 : 4);
 	moduleEditor->setCurrentPatternIndex(moduleEditor->getOrderPosition(0));
 	return moduleEditor;

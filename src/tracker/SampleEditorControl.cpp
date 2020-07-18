@@ -675,7 +675,7 @@ void SampleEditorControl::startMarkerDragging(const PPPoint* p)
 	if (selecting >= 0)
 	{
 		currentRepeatStart = sampleEditor->getRepeatStart();
-		currentRepeatLength = sampleEditor->getRepeatLength();;
+		currentRepeatLength = sampleEditor->getRepeatLength();
 	}
 }
 

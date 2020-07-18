@@ -54,6 +54,7 @@
 #include "EnvelopeEditorControl.h"
 #include "PatternEditorControl.h"
 #include "DialogBase.h"
+#include "DialogSynth.h"
 
 #include "PlayerController.h"
 #include "InputControlListener.h"
@@ -406,6 +407,14 @@ pp_int32 SectionInstruments::handleEvent(PPObject* sender, PPEvent* event)
 				tracker.saveType(FileTypes::FileTypeInstrumentXI);
 				break;
 			}
+
+			// magic sample
+			case BUTTON_INSTRUMENT_MAGIC:
+				if (event->getID() != eCommand)
+					break;
+
+				showMagicDialog();
+				break;
 
 			// test instrument chooser
 			case BUTTON_INSTRUMENTEDITOR_COPY:
@@ -1701,3 +1710,14 @@ void SectionInstruments::zapInstrument()
 	updateAfterLoad();
 }
 
+void SectionInstruments::showMagicDialog()
+{
+	if (dialog)
+	{
+		delete dialog;
+		dialog = NULL;
+	}
+
+	dialog = new DialogSynth(tracker.screen, responder, RESPONDMESSAGEBOX_MAGIC, "Magic!", &tracker, tracker.listBoxInstruments->getSelectedIndex());
+	dialog->show();
+}

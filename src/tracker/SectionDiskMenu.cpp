@@ -66,6 +66,7 @@
 enum ControlIDs
 {
 	DISKMENU_BUTTON_FLIP = 7000,
+	DISKMENU_BUTTON_HD_RECORDER,
 	DISKMENU_BUTTON_EXIT,
 
 	DISKMENU_NORMAL_STATICTEXT_HEADING,
@@ -293,7 +294,7 @@ pp_int32 SectionDiskMenu::handleEvent(PPObject* sender, PPEvent* event)
 						break;
 
 					case 2:
-						tracker.sectionSwitcher->showUpperSection(tracker.sectionHDRecorder);
+						tracker.saveTypeWithDialog(FileTypes::FileTypeSongTMM);
 						break;
 				}
 
@@ -502,6 +503,23 @@ pp_int32 SectionDiskMenu::handleEvent(PPObject* sender, PPEvent* event)
 				break;
 			}
 
+			case DISKMENU_BUTTON_HD_RECORDER:
+			{
+				PPSystemString fileFullPath = listBoxFiles->getCurrentPathAsString();
+
+				fileFullPath.append(*this->file);
+
+				tracker.sectionHDRecorder->setCurrentFileName(fileFullPath);
+				tracker.sectionSwitcher->showUpperSection(tracker.sectionHDRecorder);
+				if (dialog &&
+					tracker.screen->getModalControl() == dialog->getMessageBoxContainer())
+				{
+					tracker.screen->setModalControl(NULL);
+				}
+
+				break;
+			}
+
 			case DISKMENU_BUTTON_EXIT:
 				show(false);
 				break;
@@ -569,17 +587,25 @@ void SectionDiskMenu::init(pp_int32 px, pp_int32 py)
 
 	container->addControl(new PPStaticText(DISKMENU_NORMAL_STATICTEXT_HEADING, NULL, NULL, PPPoint(px + 2, py + 2), "Disk operations", true, true));
 
-	pp_int32 buttonWidth = 8*4+4;
+	pp_int32 buttonWidth = 16*4+4;
 	pp_int32 buttonHeight = 11;
 
 	pp_int32 x = px+container->getSize().width-(buttonWidth+4);
 	pp_int32 y = py+container->getSize().height-(buttonHeight+4);
 
+	PPButton* button = new PPButton(DISKMENU_BUTTON_HD_RECORDER, screen, this, PPPoint(x, y), PPSize(buttonWidth,buttonHeight+1));
+	button->setText("HD Recorder");
+	container->addControl(button);
+
+	buttonWidth = 8*4+4;
+	x = px+container->getSize().width-(buttonWidth+4);
+
 	container->addControl(new PPSeperator(0, screen, PPPoint(px + 2, y - 4), container->getSize().width - 4, TrackerConfig::colorThemeMain, true));
 
-	PPButton* button = new PPButton(DISKMENU_BUTTON_EXIT, screen, this, PPPoint(x, y), PPSize(buttonWidth,buttonHeight+1));
+	button = new PPButton(DISKMENU_BUTTON_EXIT, screen, this, PPPoint(x, y), PPSize(buttonWidth,buttonHeight+1));
 	button->setText("Exit");
 	container->addControl(button);
+
 
 	pp_int32 dx = 6;
 	pp_int32 dy = 16;
@@ -605,7 +631,7 @@ void SectionDiskMenu::init(pp_int32 px, pp_int32 py)
 
 	radioGroup->addItem(".xm");
 	radioGroup->addItem(".mod");
-	radioGroup->addItem(".wav");
+	radioGroup->addItem(".tmm");
 	container->addControl(radioGroup);
 
 	// ---- Pattern ----------
@@ -678,6 +704,7 @@ void SectionDiskMenu::init(pp_int32 px, pp_int32 py)
 	radioGroup->setColor(TrackerConfig::colorThemeMain);
 
 	radioGroup->addItem(".xi");
+
 	container->addControl(radioGroup);
 
 	// ---- Sample ----------
@@ -927,6 +954,10 @@ void SectionDiskMenu::show(bool bShow)
 
 				case ModuleEditor::ModSaveTypeMOD:
 					radioGroup->setChoice(1);
+					break;
+
+				case ModuleEditor::ModSaveTypeTMM:
+					radioGroup->setChoice(2);
 					break;
 
 				default:
@@ -1548,16 +1579,8 @@ void SectionDiskMenu::saveCurrent()
 					break;
 
 				case 2:
-				{
-					tracker.sectionHDRecorder->setCurrentFileName(fileFullPath);
-					tracker.sectionSwitcher->showUpperSection(tracker.sectionHDRecorder);
-					if (dialog &&
-						tracker.screen->getModalControl() == dialog->getMessageBoxContainer())
-					{
-						tracker.screen->setModalControl(NULL);
-					}
-					return;
-				}
+					saveType = FileTypes::FileTypeSongTMM;
+					break;
 			}
 
 			break;

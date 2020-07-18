@@ -32,6 +32,7 @@ add_executable(tracker
     DialogPanning.cpp
     DialogQuickChooseInstrument.cpp
     DialogResample.cpp
+    DialogSynth.cpp
     DialogWithValues.cpp
     DialogZap.cpp
     EQConstants.cpp
@@ -84,6 +85,7 @@ add_executable(tracker
     SectionTranspose.cpp
     SectionUpperLeft.cpp
     SongLengthEstimator.cpp
+    SynthHarmonica.cpp
     SystemMessage.cpp
     TabHeaderControl.cpp
     TabManager.cpp
@@ -118,6 +120,7 @@ add_executable(tracker
     DialogPanning.h
     DialogQuickChooseInstrument.h
     DialogResample.h
+    DialogSynth.h
     DialogWithValues.h
     DialogZap.h
     EQConstants.h
@@ -172,6 +175,7 @@ add_executable(tracker
     SectionTranspose.h
     SectionUpperLeft.h
     SongLengthEstimator.h
+    SynthHarmonica.h
     SystemMessage.h
     TabHeaderControl.h
     TabManager.h
@@ -207,6 +211,7 @@ target_link_libraries(tracker
     milkyplay
     osinterface
     ppui
+    tmm
 )
 
 if(CMAKE_VERSION GREATER_EQUAL 3.12)
@@ -361,6 +366,10 @@ elseif(WIN32)
     set_target_properties(tracker PROPERTIES WIN32_EXECUTABLE TRUE)
 
     target_link_libraries(tracker midi)
+    
+    if(MINGW)
+        set_target_properties(tracker PROPERTIES LINK_FLAGS -static)
+    endif()
 elseif(AMIGA)
     if(MORPHOS AND NOT WARPOS)
         target_link_libraries(tracker -ldebug)
