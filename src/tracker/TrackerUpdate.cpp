@@ -643,8 +643,7 @@ void Tracker::updateWindowTitle()
 {
 	if (moduleEditor->hasChanged() != lastState)
 	{
-		// MAGIC
-		PPSystemString title = "Titan's MilkyMagic - ";
+		PPSystemString title = "MilkyTracker - ";
 
 		title.append(currentFileName);
 
