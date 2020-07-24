@@ -384,7 +384,7 @@ public:
 		if(!needsPalette())
 			return;
 		currentPalette = palette;
-	
+	}	
 	
 	void drawHLineDashed(pp_int32 x1, pp_int32 x2, pp_int32 y, pp_int32 dashLength, pp_int32 dashOffset = 0)
 	{

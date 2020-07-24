@@ -567,6 +567,8 @@ public:
 	 * @return			number of rows played since start
 	 */
 	mp_int64			getSyncCount() const;
+	
+	virtual mp_uint32 	getSyncSampleCounter() const;
 
 	/**
 	 * Jump to next pattern

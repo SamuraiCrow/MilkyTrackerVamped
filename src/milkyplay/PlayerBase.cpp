@@ -339,3 +339,4 @@ void PlayerBase::timerHandler(mp_sint32 currentBeatPacket)
 											   mainVolume,
 											   ticker);
 }
+

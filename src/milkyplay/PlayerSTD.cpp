@@ -1798,25 +1798,16 @@ void PlayerSTD::doEffect(mp_sint32 chn, TModuleChannel* chnInf, mp_sint32 effcnt
 						pjumpPriority = MP_NUMEFFECTS*chn + effcnt;
 					}; break;
 
-		// MAGIC Filter control
+		// MAGIC Filter control (@todo)
 		case 0x30 : {
-						char test[255];
-						sprintf(test, "filter control: %02x\n", eop);
-						OutputDebugString(test);
 					}; break;
 
-		// MAGIC cutoff
+		// MAGIC cutoff (@todo)
 		case 0x12: {
-						char test[255];
-						sprintf(test, "cutoff: %d\n", eop);
-						OutputDebugString(test);
 				   }; break;
 
-		// MAGIC resonance
+		// MAGIC resonance (@todo)
 		case 0x13: {
-						char test[255];
-						sprintf(test, "resonance: %d\n", eop);
-						OutputDebugString(test);
 				   }; break;
 
 		// Fine porta up

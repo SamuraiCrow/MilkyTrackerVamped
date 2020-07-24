@@ -295,6 +295,8 @@ public:
 	}
 
 	virtual mp_int64		getSyncCount() const { return synccnt; }
+	
+	virtual mp_uint32 		getSyncSampleCounter() const { return 0; }
 
 	virtual void			nextPattern();
 	virtual void			lastPattern();
