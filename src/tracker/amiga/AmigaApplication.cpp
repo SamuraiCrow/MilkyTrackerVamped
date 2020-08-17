@@ -28,6 +28,9 @@ AmigaApplication::AmigaApplication()
 : cpuType(0)
 , hasFPU(false)
 , hasAMMX(false)
+, useSAGA(false)
+, useP96(false)
+, useCGX(false)
 , windowSize(PPSize(640, 480))
 , bpp(16)
 , noSplash(false)
@@ -159,23 +162,41 @@ int AmigaApplication::start()
 
         if (pubScreen = LockPubScreen(NULL)) {
             if(isFullScreen()) {
-                screen = p96OpenScreenTags(
-                    P96SA_DisplayID             , displayID,
-                    P96SA_Left                  , 0,
-                    P96SA_Top                   , 0,
-                    P96SA_Width                 , windowSize.width,
-                    P96SA_Height                , windowSize.height,
-                    P96SA_Depth                 , bpp,
-                    P96SA_DetailPen             , 0,
-                    P96SA_BlockPen              , 1,
-                    P96SA_Quiet                 , FALSE,
-                    P96SA_Type                  , CUSTOMSCREEN,
-                    P96SA_BitMap                , FALSE,
-                    P96SA_ConstantBytesPerRow   , TRUE,
-                    P96SA_AutoScroll            , FALSE,
-                    P96SA_Exclusive             , TRUE,
-                    P96SA_ShowTitle             , FALSE,
-                    TAG_DONE);
+                if(useP96)
+                    screen = p96OpenScreenTags(
+                        P96SA_DisplayID             , displayID,
+                        P96SA_Left                  , 0,
+                        P96SA_Top                   , 0,
+                        P96SA_Width                 , windowSize.width,
+                        P96SA_Height                , windowSize.height,
+                        P96SA_Depth                 , bpp,
+                        P96SA_DetailPen             , 0,
+                        P96SA_BlockPen              , 1,
+                        P96SA_Quiet                 , FALSE,
+                        P96SA_Type                  , CUSTOMSCREEN,
+                        P96SA_BitMap                , FALSE,
+                        P96SA_ConstantBytesPerRow   , TRUE,
+                        P96SA_AutoScroll            , FALSE,
+                        P96SA_Exclusive             , TRUE,
+                        P96SA_ShowTitle             , FALSE,
+                        TAG_DONE);
+                if(useCGX)
+                    screen = OpenScreenTags(NULL,
+                        SA_DisplayID                , displayID,
+                        SA_Left                     , 0,
+                        SA_Top                      , 0,
+                        SA_Width                    , windowSize.width,
+                        SA_Height                   , windowSize.height,
+                        SA_Depth                    , bpp,
+                        SA_DetailPen                , 0,
+                        SA_BlockPen                 , 1,
+                        SA_Quiet                    , FALSE,
+                        SA_Type                     , CUSTOMSCREEN,
+                        SA_BitMap                   , FALSE,
+                        SA_AutoScroll               , FALSE,
+                        SA_Exclusive                , TRUE,
+                        SA_ShowTitle                , FALSE,
+                        TAG_DONE);
                 if(screen) {
                     window = OpenWindowTags(NULL,
                         WA_CustomScreen  , (APTR) screen,
@@ -196,7 +217,7 @@ int AmigaApplication::start()
                         ret = 7;
                     }
                 } else {
-                    fprintf(stderr, "Could not create P96 screen!\n");
+                    fprintf(stderr, "Could not create P96/CGX screen!\n");
                     ret = 6;
                 }
             } else {
@@ -533,17 +554,16 @@ int AmigaApplication::stop()
     }
 
     // Destroy tracker resources
-    delete screen;
     delete displayDevice;
     delete tracker;
 
     // Clean Intuition UI
     if(window)
         CloseWindow(window);
+    if(pubScreen)
+        UnlockPubScreen(0, pubScreen);
     if(screen)
         CloseScreen(screen);
-    if(pubScreen)
-        UnlockPubScreen(0, screen);
 
     return 0;
 }

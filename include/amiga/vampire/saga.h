@@ -27,7 +27,6 @@
 #define SAGA_PIP_PIXFMT     0xDFF3DC	// UWORD SAGA PiP Pixel Format
 #define SAGA_PIP_MODULO     0xDFF3DE	// UWORD SAGA PiP Modulo
 #define SAGA_PIP_COLORKEY   0xDFF3E0	// UWORD SAGA PiP ColorKey (ie. 0x8F0F)
-#define SAGA_PIP_COLOR0     0xDFFC00	// ULONG SAGA PiP Colors (256 colors)
 
 // SAGA Formats
 

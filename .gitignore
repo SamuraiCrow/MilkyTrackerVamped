@@ -1,3 +1,5 @@
+.vscode
+
 # The build output folder
 build/
 Debug/
