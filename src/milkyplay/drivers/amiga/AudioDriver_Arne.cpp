@@ -20,7 +20,7 @@
 
 #define DMA2F_AUDIO             0xfff
 
-#define MAX_CHANNELS            16
+#define MAX_CHANNELS            8
 
 AudioDriver_Arne::AudioDriver_Arne()
 {

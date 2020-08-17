@@ -1,5 +1,5 @@
 /*
-**	$VER: cybergraphics_pragmas.h 41.18 (21.02.1998)
+**	$VER: cybergraphics_pragmas.h 41.19 (14.07.1998)
 **
 **	SAS/C format pragma files for cybergraphics.library
 **
@@ -31,8 +31,8 @@
 #pragma libcall CyberGfxBase LockBitMapTagList a8 9802
 #pragma libcall CyberGfxBase UnLockBitMap ae 801
 #pragma libcall CyberGfxBase UnLockBitMapTagList b4 9802
-#pragma libcall CyberGfxBase ExtractColor 432109807
-#pragma libcall CyberGfxBase WriteLUTPixelArray 76543A921080B
+#pragma libcall CyberGfxBase ExtractColor ba 432109807
+#pragma libcall CyberGfxBase WriteLUTPixelArray c0 76543A921080B
 
 #ifdef __SASC_60
 #pragma tagcall CyberGfxBase BestCModeIDTags 3c 801

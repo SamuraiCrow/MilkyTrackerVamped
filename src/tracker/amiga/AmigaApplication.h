@@ -10,8 +10,10 @@
 
 #include <vampire/saga.h>
 #include <vampire/vampire.h>
+
 #include <proto/vampire.h>
 #include <proto/picasso96.h>
+#include <proto/cybergraphics.h>
 
 #include <clib/exec_protos.h>
 #include <clib/dos_protos.h>
@@ -49,6 +51,8 @@ private:
     bool                    hasFPU;
     bool                    hasAMMX;
     bool                    useSAGA;
+    bool                    useP96;
+    bool                    useCGX;
     pp_uint32               bpp;
     bool                    noSplash;
     bool                    running;
@@ -109,6 +113,8 @@ public:
     bool                    isFullScreen() const { return displayID != 0; }
     bool                    isAMMX() const { return hasAMMX; }
     bool                    isSAGA() const { return useSAGA; }
+    bool                    isP96() const { return useP96; }
+    bool                    isCGX() const { return useCGX; }
 
     struct Screen *         getScreen() const;
     struct Window *         getWindow() const { return window; }
@@ -129,6 +135,8 @@ public:
     void                    setWindowTitle(const char * title);
     void                    setScreenAlert(const char * title);
     void                    setUseSAGA(bool useSAGA) { this->useSAGA = useSAGA; }
+    void                    setUseP96(bool useP96) { this->useP96 = useP96; }
+    void                    setUseCGX(bool useCGX) { this->useCGX = useCGX; }
     void                    setAudioDriver(AudioDriver audioDriver) { this->audioDriver = audioDriver; }
     void                    setAudioMixer(AudioMixer audioMixer) { this->audioMixer = audioMixer; }
     void                    setDisplayID(ULONG displayID) { this->displayID = displayID; }

@@ -1,8 +1,23 @@
-#ifndef PROTO_CYBERGRAPHICS_H
-#define PROTO_CYBERGRAPHICS_H 1
-#include <exec/types.h>
-extern struct Library *CyberGfxBase;
-#include <clib/cybergraphics_protos.h>
-#include <pragmas/cybergraphics_pragmas.h>
+#ifndef _PROTO_CYBERGRAPHICS_H
+#define _PROTO_CYBERGRAPHICS_H
 
-#endif /* !PROTO_CYBERGRAPHICS_H */
+#ifndef EXEC_TYPES_H
+#include <exec/types.h>
+#endif
+#if !defined(CLIB_CYBERGRAPHICS_PROTOS_H) && !defined(__GNUC__)
+#include <clib/cybergraphics_protos.h>
+#endif
+
+#ifndef __NOLIBBASE__
+extern struct Library *CyberGfxBase;
+#endif
+
+#ifdef __GNUC__
+#include <inline/cybergraphics.h>
+#elif defined(__VBCC__)
+#include <inline/cybergraphics_protos.h>
+#else
+#include <pragma/cybergraphics_lib.h>
+#endif
+
+#endif	/*  _PROTO_CYBERGRAPHICS_H  */

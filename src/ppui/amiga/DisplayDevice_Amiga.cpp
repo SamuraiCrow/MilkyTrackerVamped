@@ -4,7 +4,10 @@
 #include "PPMutex.h"
 
 #include <intuition/intuitionbase.h>
+
 #include <proto/picasso96.h>
+#include <proto/cybergraphics.h>
+
 #include <clib/picasso96_protos.h>
 
 extern struct IntuitionBase * IntuitionBase;
@@ -25,15 +28,19 @@ DisplayDevice_Amiga::DisplayDevice_Amiga(AmigaApplication * app)
     height = app->getWindowSize().height;
     size.height = height;
 
-    pitch = width * app->getBpp() >> 3;
+    bpp = app->getBpp();
+    pitch = width * bpp >> 3;
 
-    useRTGFullscreen = app->isFullScreen() && app->getBpp() == 16;
-    useRTGWindowed = !app->isFullScreen() && app->getBpp() == 16 && GetBitMapAttr(rastPort->BitMap, BMA_DEPTH) == 16;
+    useRTGFullscreen = app->isFullScreen();
+    useRTGWindowed = !app->isFullScreen();
     useRTGMode = useRTGFullscreen || useRTGWindowed;
 
     useSAGADirectFB = app->isAMMX() && app->isSAGA() && useRTGFullscreen;
     useSAGAPiP = app->isAMMX() && app->isSAGA() && useRTGWindowed;
     useSAGAMode = useSAGADirectFB || useSAGAPiP;
+
+    // Prefer P96 over CGX
+    rtgDriver = app->isP96() ? P96 : (app->isCGX() ? CGX : NONE);
 
     unalignedScreenBuffer[0] = NULL;
     unalignedScreenBuffer[1] = NULL;
@@ -43,10 +50,7 @@ DisplayDevice_Amiga::DisplayDevice_Amiga(AmigaApplication * app)
 
 DisplayDevice_Amiga::~DisplayDevice_Amiga()
 {
-    if(useRTGMode) {
-        if(unalignedOffScreenBuffer)
-            FreeMem(unalignedOffScreenBuffer, (pitch * height) + 16);
-    } else if(useSAGAMode) {
+    if(useSAGAMode) {
         if(useSAGAPiP) {
             WRITE16(SAGA_PIP_PIXFMT,   0);
             WRITE16(SAGA_PIP_X0,       0);
@@ -62,6 +66,9 @@ DisplayDevice_Amiga::~DisplayDevice_Amiga()
         for(int i = 0; i < 2; i++)
             if(unalignedScreenBuffer[i])
                 FreeMem(unalignedScreenBuffer[i], (pitch * height) + 16);
+    } else if(useRTGMode) {
+        if(unalignedOffScreenBuffer)
+            FreeMem(unalignedOffScreenBuffer, (pitch * height) + 16);
     }
 
 	delete currentGraphics;
@@ -90,7 +97,7 @@ DisplayDevice_Amiga::init()
 
     // Detect display mode
     if(useRTGWindowed) {
-        screenMode = RTG_WINDOWED_16;
+        screenMode = bpp == 16 ? RTG_WINDOWED_16 : RTG_WINDOWED_8;
 
         if(useSAGAPiP) {
             void * allocator;
@@ -100,36 +107,32 @@ DisplayDevice_Amiga::init()
                 return false;
             }
 
-            screenMode = SAGA_PIP_16;
+            screenMode = bpp == 16 ? SAGA_PIP_16 : SAGA_PIP_8;
         }
 
-        currentGraphics = new PPGraphics_16BIT(width, height, 0, NULL);
+        if(bpp == 16) {
+            currentGraphics = new PPGraphics_16BIT(width, height, 0, NULL);
+        } else {
+            currentGraphics = new PPGraphics_8BIT(width, height, 0, NULL);
+        }
 	    currentGraphics->lock = true;
     } else if(useRTGFullscreen) {
-        screenMode = RTG_FULLSCREEN_16;
+        screenMode = bpp == 16 ? RTG_FULLSCREEN_16 : RTG_FULLSCREEN_8;
 
         if(useSAGADirectFB) {
-            screenMode = SAGA_DIRECT_16;
+            screenMode = bpp == 16 ? SAGA_DIRECT_16 : SAGA_DIRECT_8;
         }
 
-        currentGraphics = new PPGraphics_16BIT(width, height, 0, NULL);
+        if(bpp == 16) {
+            currentGraphics = new PPGraphics_16BIT(width, height, 0, NULL);
+        } else {
+            currentGraphics = new PPGraphics_8BIT(width, height, 0, NULL);
+        }
 	    currentGraphics->lock = true;
     }
 
     if(screenMode != INVALID) {
-        if(useRTGMode) {
-            //
-            // For RTG modes, use an offscreen buffer. RTG is doing the double-buffering
-            // internally. We just have to use WritePixelArray to copy over the new
-            // contents
-            //
-            void * b = allocMemAligned(pitch * height, &alignedOffScreenBuffer);
-            if(!b) {
-                fprintf(stderr, "Could not allocate enough memory for off-screen buffer %ld\n");
-                return false;
-            }
-            unalignedOffScreenBuffer = b;
-        } else if(useSAGAMode) {
+        if(useSAGAMode) {
             //
             // Partial double buffering in SAGA Modes
             // ======================================
@@ -156,14 +159,34 @@ DisplayDevice_Amiga::init()
             dbPage = 0;
 
             // And *display* DB page 1
-            if(screenMode == SAGA_PIP_16) {
+            switch(screenMode) {
+            case SAGA_PIP_8:
+            case SAGA_PIP_16:
                 WRITE16(SAGA_PIP_COLORKEY, 0);
-                WRITE16(SAGA_PIP_PIXFMT, SAGAF_RGB16);
+                WRITE16(SAGA_PIP_PIXFMT, bpp == 16 ? SAGAF_RGB16 : SAGAF_CLUT);
                 WRITE32(SAGA_PIP_BPLPTR, (ULONG) alignedScreenBuffer[1]);
-            } else if(screenMode == SAGA_DIRECT_16) {
-                WRITE16(SAGA_VID_PIXFMT, SAGAF_RGB16);
+                break;
+            case SAGA_DIRECT_8:
+            case SAGA_DIRECT_16:
+                WRITE16(SAGA_PIP_PIXFMT, bpp == 16 ? SAGAF_RGB16 : SAGAF_CLUT);
                 WRITE32(SAGA_VID_BPLPTR, (ULONG) alignedScreenBuffer[1]);
+                break;
             }
+            if(screenMode == SAGA_PIP_16) {
+            } else if(screenMode == SAGA_DIRECT_16) {
+            }
+        } else if(useRTGMode) {
+            //
+            // For RTG modes, use an offscreen buffer. RTG is doing the double-buffering
+            // internally. We just have to use WritePixelArray to copy over the new
+            // contents
+            //
+            void * b = allocMemAligned(pitch * height, &alignedOffScreenBuffer);
+            if(!b) {
+                fprintf(stderr, "Could not allocate enough memory for off-screen buffer %ld\n");
+                return false;
+            }
+            unalignedOffScreenBuffer = b;
         }
 
         return true;
@@ -182,10 +205,10 @@ DisplayDevice_Amiga::open()
 	if (currentGraphics->lock) {
 		currentGraphics->lock = false;
 
-        if(useRTGMode)
-            static_cast<PPGraphicsFrameBuffer*>(currentGraphics)->setBufferProperties(pitch, (pp_uint8 *) alignedOffScreenBuffer);
-        else if(useSAGAMode)
+        if(useSAGAMode)
             static_cast<PPGraphicsFrameBuffer*>(currentGraphics)->setBufferProperties(pitch, (pp_uint8 *) alignedScreenBuffer[dbPage]);
+        else if(useRTGMode)
+            static_cast<PPGraphicsFrameBuffer*>(currentGraphics)->setBufferProperties(pitch, (pp_uint8 *) alignedOffScreenBuffer);
 
 		return currentGraphics;
 	}
@@ -225,24 +248,20 @@ DisplayDevice_Amiga::flush()
 
     if(drawCommands.size() > 0) {
 
-        if(useRTGMode) {
-            struct RenderInfo renderInfo;
-
-            renderInfo.BytesPerRow = pitch;
-            renderInfo.Memory = (pp_uint16 *) alignedOffScreenBuffer;
-            renderInfo.pad = 0;
-            renderInfo.RGBFormat = RGBFB_R5G6B5;
-
-            p96WritePixelArray(&renderInfo, 0, 0, rastPort, window->BorderLeft, window->BorderTop, width, height);
-            WaitBlit();
-        } else if(useSAGAMode) {
+        if(useSAGAMode) {
             pp_uint16 * ps = (pp_uint16 *) alignedScreenBuffer[dbPage];
 
             // Display and flip
-            if(screenMode == SAGA_PIP_16)
+            switch(screenMode) {
+            case SAGA_PIP_8:
+            case SAGA_PIP_16:
                 WRITE32(SAGA_PIP_BPLPTR, (ULONG) alignedScreenBuffer[dbPage]);
-            else if(screenMode == SAGA_DIRECT_16)
+                break;
+            case SAGA_DIRECT_8:
+            case SAGA_DIRECT_16:
                 WRITE32(SAGA_VID_BPLPTR, (ULONG) alignedScreenBuffer[dbPage]);
+                break;
+            }
             dbPage ^= 1;
 
             // Copy over changed screen rects
@@ -257,12 +276,52 @@ DisplayDevice_Amiga::flush()
 
                 CopyRect_68080(s, d, stride, stride, pitch, rect->height());
             }
+        } else if(useRTGMode) {
+            struct RenderInfo renderInfo;
+
+            renderInfo.BytesPerRow = pitch;
+            renderInfo.Memory = (pp_uint16 *) alignedOffScreenBuffer;
+            renderInfo.pad = 0;
+            renderInfo.RGBFormat = bpp == 16 ? RGBFB_R5G6B5 : RGBFB_CLUT;
+
+            if(rtgDriver == P96) {
+                p96WritePixelArray(&renderInfo, 0, 0, rastPort, window->BorderLeft, window->BorderTop, width, height);
+            } else {
+                WritePixelArray(&renderInfo, 0, 0, pitch, rastPort, window->BorderLeft, window->BorderTop, width, height, 0);
+            }
+            WaitBlit();
         }
 
         drawCommands.clear();
     }
 
     drawMutex->unlock();
+}
+
+void
+DisplayDevice_Amiga::setPalette(PPColor * pppal)
+{
+
+	if(!currentGraphics->needsPalette())
+		return;
+
+	// Pass palette to graphics context
+	currentGraphics->setPalette(pppal);
+
+	// Pass palette to RTG Viewport
+    if(useRTGMode) {
+	    int i = 0, j = 0;
+
+        palette[j++] = (256 << 16) | 0;
+        for(i = 0; i < 256; i++) {
+            palette[j++] = pppal[i].r << 24;
+            palette[j++] = pppal[i].g << 24;
+            palette[j++] = pppal[i].b << 24;
+        }
+        palette[j] = 0;
+
+        LoadRGB32(&screen->ViewPort, (const ULONG *) palette);
+    }
 }
 
 void

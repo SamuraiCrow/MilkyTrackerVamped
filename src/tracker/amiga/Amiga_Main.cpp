@@ -54,15 +54,12 @@
 
 #define GID_BASE				10000
 #define GID_SCREEN_MODE 		(GID_BASE + 1)
-#define GID_USE_SAGA			(GID_BASE + 2)
-#define GID_USE_SAGA_DESC		(GID_BASE + 3)
-#define GID_USE_SAGA_DESC2		(GID_BASE + 4)
-#define GID_AUDIO_DRV			(GID_BASE + 5)
-#define GID_AUDIO_DRV_DESC		(GID_BASE + 6)
-#define GID_AUDIO_MIXER			(GID_BASE + 7)
-#define GID_AUDIO_MIXER_DESC	(GID_BASE + 8)
-#define GID_RUN					(GID_BASE + 9)
-#define GID_QUIT				(GID_BASE + 10)
+#define GID_AUDIO_DRV			(GID_BASE + 2)
+#define GID_AUDIO_DRV_DESC		(GID_BASE + 3)
+#define GID_AUDIO_MIXER			(GID_BASE + 4)
+#define GID_AUDIO_MIXER_DESC	(GID_BASE + 5)
+#define GID_RUN					(GID_BASE + 6)
+#define GID_QUIT				(GID_BASE + 7)
 
 extern struct ExecBase * SysBase;
 
@@ -70,12 +67,14 @@ struct Library * IntuitionBase = NULL;
 struct Library * KeymapBase = NULL;
 struct Library * GfxBase = NULL;
 struct Library * P96Base = NULL;
+struct Library * CyberGfxBase = NULL;
 struct Library * VampireBase = NULL;
 struct Library * IconBase = NULL;
 
 static int cpuType = 0;
 static bool hasFPU = false;
 static bool hasAMMX = false;
+static bool useSAGA = false;
 
 struct Device * TimerBase = NULL;
 static struct IORequest timereq;
@@ -123,6 +122,7 @@ static const char *mixTypeDescs[] = {
 static ULONG * displayModeIDs = NULL;
 static PPSize * displayModeSizes = NULL;
 static char ** displayModeNames = NULL;
+static UWORD * displayModeDepths = NULL;
 
 void PrintStackSize() {
 	struct Task * task = FindTask(NULL);
@@ -192,8 +192,10 @@ static bool checkHardware()
 
 	if ((SysBase->AttnFlags & AFF_FPU40) != 0)
 		hasFPU = true;
-	if (cpuType == 68080)
+	if (cpuType == 68080) {
 		hasAMMX = true;
+		useSAGA = true;
+	}
 #endif
 
 	return hasFPU;
@@ -218,8 +220,13 @@ static Screen * discoverDisplayModes()
 		return NULL;
 
 	displayModeIDs = new ULONG[MAX_DISPLAY_MODES];
+	memset(displayModeIDs, 0, MAX_DISPLAY_MODES * sizeof(ULONG));
 	displayModeNames = new char *[MAX_DISPLAY_MODES];
+	memset(displayModeNames, 0, MAX_DISPLAY_MODES * sizeof(char *));
 	displayModeSizes = new PPSize[MAX_DISPLAY_MODES];
+	memset(displayModeSizes, 0, MAX_DISPLAY_MODES * sizeof(PPSize));
+	displayModeDepths = new UWORD[MAX_DISPLAY_MODES];
+	memset(displayModeDepths, 0, MAX_DISPLAY_MODES * sizeof(UWORD));
 
 	do {
 		bool isWindowed = false;
@@ -253,21 +260,41 @@ static Screen * discoverDisplayModes()
 			continue;
 		if(dimensionInfo.Nominal.MaxY+1 < 480)
 			continue;
-		if(dimensionInfo.MaxDepth != 16)
+		if(dimensionInfo.MaxDepth != 8 && dimensionInfo.MaxDepth != 16)
 			continue;
-		if(!p96GetModeIDAttr(modeID, P96IDA_ISP96))
+		if(P96Base && !p96GetModeIDAttr(modeID, P96IDA_ISP96))
+			continue;
+		else if(CyberGfxBase && !IsCyberModeID(modeID))
 			continue;
 
 		// Insert display mode
-		displayModeNames[i] = new char[256];
 		if(isWindowed) {
-			displayModeIDs[i] = 0;
-			strcpy(displayModeNames[i], "Windowed");
-			displayModeSizes[i] = PPSize(640, 480);
+			if(useSAGA) {
+				displayModeIDs[i] = 0;
+				displayModeNames[i] = new char[256];
+				strcpy(displayModeNames[i], "Win: 640x480 PiP 8-bit");
+				displayModeSizes[i] = PPSize(640, 480);
+				displayModeDepths[i] = 8;
+				i++;
+
+				displayModeIDs[i] = 0;
+				displayModeNames[i] = new char[256];
+				strcpy(displayModeNames[i], "Win: 640x480 PiP 16-bit");
+				displayModeSizes[i] = PPSize(640, 480);
+				displayModeDepths[i] = 16;
+			} else {
+				displayModeIDs[i] = 0;
+				displayModeNames[i] = new char[256];
+				sprintf(displayModeNames[i], "Win: 640x480 %ld-bit", dimensionInfo.MaxDepth);
+				displayModeSizes[i] = PPSize(640, 480);
+				displayModeDepths[i] = dimensionInfo.MaxDepth;
+			}
 		} else {
 			displayModeIDs[i] = modeID;
+			displayModeNames[i] = new char[256];
 			sprintf(displayModeNames[i], "FS: %s", nameInfo.Name);
 			displayModeSizes[i] = PPSize(dimensionInfo.Nominal.MaxX+1, dimensionInfo.Nominal.MaxY+1);
+			displayModeDepths[i] = dimensionInfo.MaxDepth;
 		}
 		i++;
 
@@ -293,6 +320,7 @@ static int setup()
 	long winWidth, winHeight;
 	bool setupRunning = true;
 	struct Gadget * driverDesc, * mixTypeDesc;
+	UWORD audioDriverIndex = (cpuType == 68080) ? 1 : 0;
 
 	if(!(pubScreen = discoverDisplayModes()))
 		return -4;
@@ -315,37 +343,18 @@ static int setup()
 		TAG_END);
 
 	newGadget.ng_TopEdge   += newGadget.ng_Height + 4;
-	newGadget.ng_GadgetText = (UBYTE *) "Use SAGA";
-	newGadget.ng_GadgetID   = GID_USE_SAGA;
-	gadget = CreateGadget(CHECKBOX_KIND, gadget, &newGadget,
-		GTCB_Checked, TRUE,
-		TAG_END);
-
-	newGadget.ng_TopEdge   += newGadget.ng_Height;
-	newGadget.ng_GadgetText = NULL;
-	newGadget.ng_GadgetID   = GID_USE_SAGA_DESC;
-	gadget = CreateGadget(TEXT_KIND, gadget, &newGadget,
-		GTTX_Text, "Use accelerated framebuffer",
-		TAG_END);
-	newGadget.ng_TopEdge   += newGadget.ng_Height;
-	newGadget.ng_GadgetText = NULL;
-	newGadget.ng_GadgetID   = GID_USE_SAGA_DESC2;
-	gadget = CreateGadget(TEXT_KIND, gadget, &newGadget,
-		GTTX_Text, "(Apollo Core only)",
-		TAG_END);
-
-	newGadget.ng_TopEdge   += newGadget.ng_Height + 4;
 	newGadget.ng_GadgetText = (UBYTE *) "Audio driver";
 	newGadget.ng_GadgetID   = GID_AUDIO_DRV;
 	gadget = CreateGadget(CYCLE_KIND, gadget, &newGadget,
 		GTCY_Labels, driverNames,
+		GTCY_Active, audioDriverIndex,
 		TAG_END);
 
 	newGadget.ng_TopEdge   += newGadget.ng_Height;
 	newGadget.ng_GadgetText = NULL;
 	newGadget.ng_GadgetID   = GID_AUDIO_DRV_DESC;
 	gadget = CreateGadget(TEXT_KIND, gadget, &newGadget,
-		GTTX_Text, driverDescs[0],
+		GTTX_Text, driverDescs[audioDriverIndex],
 		TAG_END);
 	driverDesc = gadget;
 
@@ -416,12 +425,7 @@ static int setup()
 								GT_GetGadgetAttrs(gadget, window, NULL, GTCY_Active, &num, TAG_END);
 								app->setDisplayID(displayModeIDs[num]);
 								app->setWindowSize(displayModeSizes[num]);
-							}
-							break;
-						case GID_USE_SAGA: {
-								ULONG checked;
-								GT_GetGadgetAttrs(gadget, window, NULL, GTCB_Checked, &checked, TAG_END);
-								app->setUseSAGA(checked != 0);
+								app->setBpp(displayModeDepths[num]);
 							}
 							break;
 						case GID_AUDIO_DRV: {
@@ -480,6 +484,7 @@ static int setup()
 	delete[] displayModeNames;
 	delete[] displayModeIDs;
 	delete[] displayModeSizes;
+	delete[] displayModeDepths;
 
 
 	return ret;
@@ -498,7 +503,9 @@ static int boot(int argc, char * argv[])
 	app->setCpuType(cpuType);
 	app->setHasFPU(hasFPU);
 	app->setHasAMMX(hasAMMX);
-	app->setUseSAGA(true);
+	app->setUseSAGA(useSAGA);
+	app->setUseP96(P96Base != NULL);
+	app->setUseCGX(CyberGfxBase != NULL);
 
 	// Get program path from WBStartup/argv
    	fromWorkbench = argc == 0;
@@ -564,7 +571,10 @@ int main2(int argc, char * argv[])
 		if(IntuitionBase = OpenLibrary("intuition.library", 39)) {
 			if(IconBase = OpenLibrary("icon.library", 37)) {
 				if(GfxBase = OpenLibrary("graphics.library", 39)) {
-					if(P96Base = OpenLibrary(P96NAME, 2)) {
+					P96Base = OpenLibrary(P96NAME, 2);
+					CyberGfxBase = OpenLibrary("cybergraphics.library", 39);
+
+					if(P96Base || CyberGfxBase) {
 						BYTE err = OpenDevice("timer.device", 0, &timereq, 0);
 						if(err == 0) {
 							TimerBase = timereq.io_Device;
@@ -592,7 +602,11 @@ int main2(int argc, char * argv[])
 							fprintf(stderr, "Could not open timer.device! (err = %ld)\n", err);
 							ret = 1;
 						}
-						CloseLibrary(P96Base);
+
+						if(P96Base)
+							CloseLibrary(P96Base);
+						if(CyberGfxBase)
+							CloseLibrary(CyberGfxBase);
 					} else {
 						fprintf(stderr, "Could not open %s V2! This program needs RTG installed.\n", P96NAME);
 						ret = 1;

@@ -40,10 +40,19 @@ class DisplayDevice_Amiga : public PPDisplayDeviceBase
 		AGA_C2P_8,
 		RTG_WINDOWED_8,
 		RTG_WINDOWED_16,
+		RTG_FULLSCREEN_8,
 		RTG_FULLSCREEN_16,
 		SAGA_PIP_8,
 		SAGA_PIP_16,
+		SAGA_DIRECT_8,
 		SAGA_DIRECT_16
+	};
+
+	enum RTGDriver
+	{
+		NONE = 0,
+		P96,
+		CGX
 	};
 private:
 	AmigaApplication * 	app;
@@ -59,12 +68,15 @@ private:
 	pp_int32            width;
 	pp_int32            height;
 	pp_int32            pitch;
+	pp_uint32           bpp;
 	pp_uint32           dbPage;
 	ScreenMode          screenMode;
+	RTGDriver           rtgDriver;
 
 	PPMutex *           drawMutex;
 	std::vector<PPRect> drawCommands;
 
+	pp_uint32			palette[1 + (256 * 3) + 1];
 	struct Screen * 	screen;
 	struct Window *     window;
 	struct RastPort * 	rastPort;
@@ -94,6 +106,7 @@ public:
 	virtual	void	setSize(const PPSize& size);
 
 	virtual	bool 	supportsScaling() const { return false; }
+	virtual void    setPalette(PPColor * pppal);
 
 	virtual PPSize	getDisplayResolution() const;
 
