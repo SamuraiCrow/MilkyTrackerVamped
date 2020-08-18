@@ -392,11 +392,14 @@ void MasterMixer::mixerHandler(mp_sword* buffer, MixerProxy * mixerProxy)
 		//
 		if(!mixDownProxy) {
 			mixDownProxy = new MixerProxyMixDown();
+
+            // Lock initially to prepare mix buffer
+            mixDownProxy->lock(bufferSize, sampleShift);
 		}
 		mixerProxy = mixDownProxy;
 
 		// Set mix down buffer
-		mixerProxy->setBuffer<mp_sword>(MixerProxyMixDown::MixDownBuffer, buffer);
+        mixerProxy->setBuffer<mp_sword>(MixerProxyMixDown::MixDownBuffer, buffer);
 	}
 
 	// Lock the mix buffer(s)

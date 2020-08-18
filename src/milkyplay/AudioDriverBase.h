@@ -104,9 +104,9 @@ public:
 	virtual		bool		isMixerActive() = 0;
 	virtual		void		setIdle(bool idle) = 0;
 
-	virtual     mp_sint32   getStatValue(mp_uint32 key) = 0;
-	virtual     mp_sint32   getChannels() const = 0;
-	virtual     bool        isMultiChannel() const = 0;
+	virtual     mp_sint32   getStatValue(mp_uint32 key) { return 0; }
+	virtual     mp_sint32   getChannels() const { return -1; }
+	virtual     bool        isMultiChannel() const { return false; }
 };
 
 // -------------------------------------------------------------------------
@@ -170,10 +170,6 @@ public:
 	virtual		void		msleep(mp_uint32 msecs);
 	virtual		bool		isMixerActive();
 	virtual		void		setIdle(bool idle);
-
-	virtual     mp_sint32   getStatValue(mp_uint32 key) { return 0; }
-	virtual     mp_sint32   getChannels() const { return -1; }
-	virtual     bool        isMultiChannel() const { return false; }
 };
 
 #endif

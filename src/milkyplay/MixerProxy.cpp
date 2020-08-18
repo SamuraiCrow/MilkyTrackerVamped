@@ -37,8 +37,6 @@
 MixerProxy::MixerProxy(mp_uint32 numChannels, ProxyProcessor * processor)
 : numChannels(numChannels)
 {
-    //printf("MixerProxy: Create %ld channels (* = %lx)\n", numChannels, this);
-
     buffers = new void* [numChannels];
     memset(buffers, 0, numChannels * sizeof(void *));
 
@@ -50,8 +48,6 @@ MixerProxy::MixerProxy(mp_uint32 numChannels, ProxyProcessor * processor)
 
 MixerProxy::~MixerProxy()
 {
-    //printf("MixerProxy: Destroy (* = %lx)\n", this);
-
     delete[] buffers;
 }
 

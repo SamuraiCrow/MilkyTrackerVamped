@@ -75,7 +75,7 @@ mp_sint32 SongLengthEstimator::estimateSongLengthInSeconds()
 
 	AudioDriver_NULL* audioDriver = new AudioDriver_NULL;
 	mp_sint32 res = player->exportToWAV(NULL, module, 0, -1, NULL, module->header.channum, NULL, audioDriver) / player->getMixFrequency();
-	delete audioDriver;
+    delete audioDriver;
 
 	return res;
 }

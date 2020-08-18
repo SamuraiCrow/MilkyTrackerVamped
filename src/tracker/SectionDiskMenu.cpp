@@ -590,14 +590,13 @@ void SectionDiskMenu::init(pp_int32 px, pp_int32 py)
 	pp_int32 buttonWidth = 16*4+4;
 	pp_int32 buttonHeight = 11;
 
-	pp_int32 x = px+container->getSize().width-(buttonWidth+4);
+	pp_int32 x = px+container->getSize().width-(buttonWidth*2+4+2);
 	pp_int32 y = py+container->getSize().height-(buttonHeight+4);
 
 	PPButton* button = new PPButton(DISKMENU_BUTTON_HD_RECORDER, screen, this, PPPoint(x, y), PPSize(buttonWidth,buttonHeight+1));
 	button->setText("HD Recorder");
 	container->addControl(button);
 
-	buttonWidth = 8*4+4;
 	x = px+container->getSize().width-(buttonWidth+4);
 
 	container->addControl(new PPSeperator(0, screen, PPPoint(px + 2, y - 4), container->getSize().width - 4, TrackerConfig::colorThemeMain, true));
