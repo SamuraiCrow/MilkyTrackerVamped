@@ -301,7 +301,6 @@ DisplayDevice_Amiga::flush()
 void
 DisplayDevice_Amiga::setPalette(PPColor * pppal)
 {
-
 	if(!currentGraphics->needsPalette())
 		return;
 

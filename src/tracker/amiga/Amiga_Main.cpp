@@ -119,7 +119,7 @@ static const char *mixTypeDescs[] = {
 	NULL
 };
 
-static ULONG * displayModeIDs = NULL;
+static LONG * displayModeIDs = NULL;
 static PPSize * displayModeSizes = NULL;
 static char ** displayModeNames = NULL;
 static UWORD * displayModeDepths = NULL;
@@ -205,7 +205,6 @@ static Screen * discoverDisplayModes()
 {
 	int i = 0;
 	ULONG modeID;
-	ULONG displayID;
 	ULONG skipID;
 	ULONG result;
 	bool firstRun = true;
@@ -219,8 +218,8 @@ static Screen * discoverDisplayModes()
 	if(!(pubScreen = LockPubScreen(NULL)))
 		return NULL;
 
-	displayModeIDs = new ULONG[MAX_DISPLAY_MODES];
-	memset(displayModeIDs, 0, MAX_DISPLAY_MODES * sizeof(ULONG));
+	displayModeIDs = new LONG[MAX_DISPLAY_MODES];
+	memset(displayModeIDs, 0, MAX_DISPLAY_MODES * sizeof(LONG));
 	displayModeNames = new char *[MAX_DISPLAY_MODES];
 	memset(displayModeNames, 0, MAX_DISPLAY_MODES * sizeof(char *));
 	displayModeSizes = new PPSize[MAX_DISPLAY_MODES];
@@ -270,20 +269,20 @@ static Screen * discoverDisplayModes()
 		// Insert display mode
 		if(isWindowed) {
 			if(useSAGA) {
-				displayModeIDs[i] = 0;
+				displayModeIDs[i] = -1;
 				displayModeNames[i] = new char[256];
 				strcpy(displayModeNames[i], "Win: 640x480 PiP 8-bit");
 				displayModeSizes[i] = PPSize(640, 480);
 				displayModeDepths[i] = 8;
 				i++;
 
-				displayModeIDs[i] = 0;
+				displayModeIDs[i] = -1;
 				displayModeNames[i] = new char[256];
 				strcpy(displayModeNames[i], "Win: 640x480 PiP 16-bit");
 				displayModeSizes[i] = PPSize(640, 480);
 				displayModeDepths[i] = 16;
 			} else {
-				displayModeIDs[i] = 0;
+				displayModeIDs[i] = -1;
 				displayModeNames[i] = new char[256];
 				sprintf(displayModeNames[i], "Win: 640x480 %ld-bit", dimensionInfo.MaxDepth);
 				displayModeSizes[i] = PPSize(640, 480);
@@ -306,6 +305,11 @@ static Screen * discoverDisplayModes()
 		if(isWindowed)
 			modeID = INVALID_ID;
 	} while((modeID = NextDisplayInfo(modeID)) != INVALID_ID);
+
+    // Set initial screen mode
+    app->setDisplayID(displayModeIDs[0]);
+    app->setWindowSize(displayModeSizes[0]);
+    app->setBpp(displayModeDepths[0]);
 
 	return pubScreen;
 }

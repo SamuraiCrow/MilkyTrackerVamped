@@ -59,7 +59,7 @@ private:
     bool                    trackerStartUpFinished;
     char *                  loadFile;
     bool                    showAlert;
-    ULONG                   displayID;
+    LONG                    displayID;
     AudioDriver             audioDriver;
     AudioMixer              audioMixer;
 
@@ -110,7 +110,7 @@ public:
     void                    loop();
     int                     stop();
 
-    bool                    isFullScreen() const { return displayID != 0; }
+    bool                    isFullScreen() const { return displayID != -1; }
     bool                    isAMMX() const { return hasAMMX; }
     bool                    isSAGA() const { return useSAGA; }
     bool                    isP96() const { return useP96; }
@@ -139,7 +139,7 @@ public:
     void                    setUseCGX(bool useCGX) { this->useCGX = useCGX; }
     void                    setAudioDriver(AudioDriver audioDriver) { this->audioDriver = audioDriver; }
     void                    setAudioMixer(AudioMixer audioMixer) { this->audioMixer = audioMixer; }
-    void                    setDisplayID(ULONG displayID) { this->displayID = displayID; }
+    void                    setDisplayID(LONG displayID) { this->displayID = displayID; }
 
     bool                    isShiftPressed() const { return keyQualifierShiftPressed; };
     bool                    isCtrlPressed() const { return keyQualifierCtrlPressed; };
