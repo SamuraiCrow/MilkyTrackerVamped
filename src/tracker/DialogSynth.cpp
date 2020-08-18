@@ -41,6 +41,10 @@
 #include "tmm.h"
 #include <math.h>
 
+#ifdef __AMIGA__
+#	include <clib/exec_protos.h>
+#endif
+
 enum {
 	RADIOGROUP_SYNTHTYPE = 1337000,
 	RADIOGROUP_NOISETYPE,
@@ -112,7 +116,13 @@ DialogSynth::DialogSynth(
 
 	mod = tracker->getModuleEditor()->getModule();
 	idx = index;
+
+    // @todo
+#ifdef __AMIGA__
+	tmm = new TMM(44100, 8);
+#else
 	tmm = new TMM(44100, 16);
+#endif
 
 	pp_int32 x = getMessageBoxContainer()->getLocation().x, y = getMessageBoxContainer()->getLocation().y;
 
@@ -665,13 +675,25 @@ void DialogSynth::generateSample()
 	mp_sint32 smpidx = editor->instruments[idx].usedSamples[0];
 	TXMSample* dst = &mod->smp[smpidx];
 	if(dst->sample) {
+#ifdef __AMIGA__
+        // @todo Uuuuuuh this is hacky. USE A MEMORY POOL INSTEAD
+        if(dst->samplen == 32768) {
+            FreeMem(dst->sample, dst->samplen);
+        }
+#endif
 		editor->clearSample(smpidx);
 	}
 
 	int freq = XModule::getc4spd(0, 0);
 
 	// @todo support protracker playmode = 8-bit
-	dst->type      = 16; // 16-bit
+    // @todo Ask audio driver for available bitrate
+    dst->type = 0;
+
+#ifndef __AMIGA__
+	dst->type |= 16;
+#endif
+
 	dst->loopstart = 0;
 	dst->venvnum   = editor->instruments[idx].volumeEnvelope+1;
 	dst->penvnum   = editor->instruments[idx].panningEnvelope+1;
@@ -683,9 +705,14 @@ void DialogSynth::generateSample()
 	dst->vibrate   = editor->instruments[idx].vibrate;
 	dst->volfade   = editor->instruments[idx].volfade << 1;
 
-	dst->sample  = (mp_sbyte *) mod->allocSampleMem(262144 * 2); // @todo depending from synth type
-	dst->samplen = this->tmm->GenerateSamples(&mod->instr[idx].tmm, (void *) dst->sample, freq);
-	dst->looplen = dst->samplen;
+    // @todo
+#ifdef __AMIGA__
+    dst->sample    = (mp_sbyte *) mod->allocSampleMem(32768);
+#else
+	dst->sample    = (mp_sbyte *) mod->allocSampleMem(32768 * 2);
+#endif
+	dst->samplen   = this->tmm->GenerateSamples(&mod->instr[idx].tmm, (void *) dst->sample, freq);
+	dst->looplen   = dst->samplen;
 
 	// Loop?
 	if(mod->instr[idx].tmm.extensions.flags & TMM_FLAG_LOOP_FWD) {
