@@ -31,7 +31,26 @@
 #include "PPPathFactory.h"
 #include "BasicTypes.h"
 
-#if !defined(__PPUI_WINDOWS__)
+#if defined(__AMIGA__)
+
+#include "PPPath_Amiga.h"
+
+PPPathEntry* PPPathFactory::createPathEntry()
+{
+	return new PPPathEntry_Amiga();
+}
+
+PPPath* PPPathFactory::createPath()
+{
+	return new PPPath_Amiga();
+}
+
+PPPath* PPPathFactory::createPathFromString(const PPSystemString& path)
+{
+	return new PPPath_Amiga(path);
+}
+
+#elif !defined(__PPUI_WINDOWS__)
 
 #include "PPPath_POSIX.h"
 

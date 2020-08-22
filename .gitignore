@@ -1,8 +1,10 @@
 # The build output folders
 build/
 Debug/
+Debug-*/
 emu/
 Release/
+Release-*/
 
 # Resources generated with docerator on OSX
 resources/pictures/docicons/osx/MilkyTracker-*.icns

@@ -75,6 +75,7 @@ static int cpuType = 0;
 static bool hasFPU = false;
 static bool hasAMMX = false;
 static bool useSAGA = false;
+static BPTR programDirLock = NULL;
 
 struct Device * TimerBase = NULL;
 static struct IORequest timereq;
@@ -95,7 +96,7 @@ static const char *driverNames[] = {
 
 static const char *driverDescs[] = {
 	"4-ch/8-bit",
-	"16-ch/16-bit (Apollo Core only)",
+	"8-ch/16-bit >= Core 7649",
 	NULL
 };
 
@@ -123,6 +124,10 @@ static LONG * displayModeIDs = NULL;
 static PPSize * displayModeSizes = NULL;
 static char ** displayModeNames = NULL;
 static UWORD * displayModeDepths = NULL;
+
+BPTR GetProgramDirLock() {
+    return programDirLock;
+}
 
 void PrintStackSize() {
 	struct Task * task = FindTask(NULL);
@@ -160,8 +165,8 @@ pp_uint32 PPGetTickCount() {
 }
 
 bool QueryClassicBrowser(bool currentSetting) {
-	// For fullscreen mode, always use the classic browser on Amiga
-	if(app && app->isFullScreen()) {
+	// For SAGA PIP and fullscreen mode, always use the classic browser on Amiga
+	if(app && (app->isSAGA() || app->isFullScreen())) {
 		return true;
 	}
 	return currentSetting;
@@ -306,11 +311,6 @@ static Screen * discoverDisplayModes()
 			modeID = INVALID_ID;
 	} while((modeID = NextDisplayInfo(modeID)) != INVALID_ID);
 
-    // Set initial screen mode
-    app->setDisplayID(displayModeIDs[0]);
-    app->setWindowSize(displayModeSizes[0]);
-    app->setBpp(displayModeDepths[0]);
-
 	return pubScreen;
 }
 
@@ -324,11 +324,18 @@ static int setup()
 	long winWidth, winHeight;
 	bool setupRunning = true;
 	struct Gadget * driverDesc, * mixTypeDesc;
-	UWORD audioDriverIndex = (cpuType == 68080) ? 1 : 0;
+	AmigaApplication::AudioDriver audioDriverIndex = (cpuType == 68080) ? AmigaApplication::Arne : AmigaApplication::Paula;
 
 	if(!(pubScreen = discoverDisplayModes()))
 		return -4;
 
+    // Set default application configuration
+    app->setDisplayID(displayModeIDs[0]);
+    app->setWindowSize(displayModeSizes[0]);
+    app->setBpp(displayModeDepths[0]);
+    app->setAudioDriver(audioDriverIndex);
+
+    // Create Gadtools UI
 	gadget = CreateContext(&gadgetList);
 
 	newGadget.ng_VisualInfo = GetVisualInfo(pubScreen, TAG_END);
@@ -391,6 +398,7 @@ static int setup()
 	gadget = CreateGadget (BUTTON_KIND, gadget, &newGadget,
 		TAG_END);
 
+    // Open setup dialog
 	if(gadget) {
 		winWidth = newGadget.ng_LeftEdge + newGadget.ng_Width + 4 + pubScreen->WBorRight;
 		winHeight = newGadget.ng_TopEdge + newGadget.ng_Height + 4 + pubScreen->WBorBottom;
@@ -490,7 +498,6 @@ static int setup()
 	delete[] displayModeSizes;
 	delete[] displayModeDepths;
 
-
 	return ret;
 }
 
@@ -516,9 +523,11 @@ static int boot(int argc, char * argv[])
 	if(fromWorkbench) {
    		struct WBArg * workbenchArgs = ((struct WBStartup *) argv)->sm_ArgList;
 		dirLock = workbenchArgs->wa_Lock;
+        programDirLock = workbenchArgs->wa_Lock;
 		strncpy(exePath, (char *) workbenchArgs->wa_Name, 255);
 		oldDir = CurrentDir(dirLock);
 	} else {
+        programDirLock = GetProgramDir();
 		strncpy(exePath, argv[0], 255);
 	}
 

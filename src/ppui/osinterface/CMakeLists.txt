@@ -101,15 +101,15 @@ elseif(AROS OR AMIGA)
             amiga/PPOpenPanel_Amiga.cpp
             amiga/PPQuitSaveAlert_Amiga.cpp
             amiga/PPSavePanel_Amiga.cpp
-            posix/PPPath_POSIX.cpp
-            posix/PPSystem_POSIX.cpp
+            amiga/PPPath_Amiga.cpp
+            amiga/PPSystem_Amiga.cpp
 
             # Headers
             amiga/AslRequester.h
             amiga/PPMutex.h
-            posix/PPPath_POSIX.h
+            amiga/PPPath_POSIX.h
+            amiga/PPSystem_POSIX.h
             posix/PPSystemString_POSIX.h
-            posix/PPSystem_POSIX.h
     )
 
     target_include_directories(osinterface PUBLIC posix)
