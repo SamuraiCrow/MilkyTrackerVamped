@@ -25,14 +25,16 @@
 
 #include "PPPath.h"
 
+#include <clib/exec_protos.h>
+#include <clib/dos_protos.h>
+
 class PPPathEntry_Amiga : public PPPathEntry
 {
 public:
 	PPPathEntry_Amiga() { }
 
 	virtual void create(const PPSystemString& path, const PPSystemString& name);
-
-	virtual bool isHidden() const;
+    virtual void createDosDevice(const PPSystemString& dosDevice);
 };
 
 class PPPath_Amiga : public PPPath
@@ -40,7 +42,13 @@ class PPPath_Amiga : public PPPath
 protected:
 	PPSystemString current;
 	PPPathEntry_Amiga entry;
+    BPTR dirLock;
+    struct FileInfoBlock * dirFIB;
+    struct DosList * dosList;
+    bool isDosList;
 
+    virtual bool isRootDirectory() const;
+	virtual bool updatePath();
 public:
 	PPPath_Amiga();
 	PPPath_Amiga(const PPSystemString& path);

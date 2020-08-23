@@ -392,7 +392,11 @@ void Tracker::applySettingByKey(PPDictionaryKey* theKey, TMixerSettings& setting
 	}
 	else if (theKey->getKey().compareTo("SCOPES") == 0)
 	{
+#ifndef __AMIGA__
 		showScopes(v2 & 1, v2>>1);
+#else
+        showScopes(false, 0);
+#endif
 	}
 	else if (theKey->getKey().compareTo("SPACING") == 0)
 	{
@@ -502,9 +506,9 @@ void Tracker::applySettingByKey(PPDictionaryKey* theKey, TMixerSettings& setting
 	}
 	else if (theKey->getKey().compareTo("INTERNALDISKBROWSER") == 0)
 	{
+#ifndef __AMIGA__
 		useClassicBrowser = (v2 != 0);
-
-#if defined(__AMIGA__)
+#else
 		useClassicBrowser = QueryClassicBrowser(useClassicBrowser);
 #endif
 	}

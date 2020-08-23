@@ -107,12 +107,16 @@ elseif(AROS OR AMIGA)
             # Headers
             amiga/AslRequester.h
             amiga/PPMutex.h
-            amiga/PPPath_POSIX.h
-            amiga/PPSystem_POSIX.h
+            amiga/PPPath_Amiga.h
+            amiga/PPSystem_Amiga.h
             posix/PPSystemString_POSIX.h
     )
 
-    target_include_directories(osinterface PUBLIC posix)
+    target_include_directories(osinterface
+        PUBLIC
+            amiga
+            posix
+    )
 else()
     target_sources(osinterface
         PRIVATE

@@ -25,7 +25,7 @@
 
 extern "C" void usleep(unsigned long microseconds);
 
-SYSCHAR System::buffer[PATH_MAX+1];
+SYSCHAR System::buffer[108+1];
 
 const SYSCHAR* System::getTempFileName()
 {

@@ -75,7 +75,7 @@ static int cpuType = 0;
 static bool hasFPU = false;
 static bool hasAMMX = false;
 static bool useSAGA = false;
-static BPTR programDirLock = NULL;
+static BPTR programDirLock = 0;
 
 struct Device * TimerBase = NULL;
 static struct IORequest timereq;

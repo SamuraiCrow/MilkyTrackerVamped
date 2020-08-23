@@ -21,76 +21,105 @@
  */
 
 #include "PPPath_Amiga.h"
-#include <clib/exec_protos.h>
-#include <clib/dos_protos.h>
-
-static BPTR currentDir = NULL;
-
-extern BPTR GetProgramDirLock();
 
 #define PPMAX_DIR_PATH 1024
 
-void PPPathEntry_Amiga::create(const PPSystemString& path, const PPSystemString& name)
+static BPTR currentDirLock = 0;
+
+extern BPTR GetProgramDirLock();
+
+void PPPathEntry_Amiga::createDosDevice(const PPSystemString& dosDevice)
 {
-	this->name = name;
-	PPSystemString fullPath = path;
-
-	fullPath.append(name);
-
-    printf("%s(%s, %s)\n", __PRETTY_FUNCTION__, path.getStrBuffer(), name.getStrBuffer());
-
-	/*struct stat file_status;
-
-	if (::stat(fullPath, &file_status) == 0)
-	{
-		size = file_status.st_size;
-
-		if (S_ISDIR(file_status.st_mode))
-			type = Directory;
-		//if (S_ISLNK(file_status.st_mode))
-		//	printf("foo.txt is a symbolic link\n");
-		if (S_ISCHR(file_status.st_mode))
-			type = Hidden;
-		if (S_ISBLK(file_status.st_mode))
-			type = Hidden;
-		if (S_ISFIFO(file_status.st_mode))
-			type = Hidden;
-		if (S_ISSOCK(file_status.st_mode))
-			type = Hidden;
-		if (S_ISREG(file_status.st_mode))
-			type = File;
-	}
-	else
-	{ 	type = Nonexistent;
-	}*/
+    this->name = dosDevice;
+    this->name.append(":");
+    this->type = Directory;
+    this->size = 0;
 }
 
-bool PPPathEntry_Amiga::isHidden() const
+void PPPathEntry_Amiga::create(const PPSystemString& path, const PPSystemString& name)
 {
-	return PPPathEntry::isHidden();
+    BPTR lock;
+    char dirname[PPMAX_DIR_PATH + 1];
+
+	this->name = name;
+    this->type = Nonexistent;
+
+    strcpy(dirname, path.getStrBuffer());
+
+    if(AddPart(dirname, name.getStrBuffer(), PPMAX_DIR_PATH)) {
+        if((lock = Lock(dirname, SHARED_LOCK)) != 0) {
+            struct FileInfoBlock * fib;
+
+            if((fib = (struct FileInfoBlock *) AllocDosObject(DOS_FIB, TAG_END))) {
+                if(Examine(lock, fib)) {
+                    if(fib->fib_DirEntryType < 0) {
+                        type = File;
+                        size = fib->fib_Size;
+                    } else {
+                        type = Directory;
+                        size = 0;
+                    }
+                }
+
+                FreeDosObject(DOS_FIB, fib);
+            }
+
+            UnLock(lock);
+        }
+    }
 }
 
 PPPath_Amiga::PPPath_Amiga()
+: dirLock(0)
+, dirFIB(NULL)
+, isDosList(false)
+, dosList(NULL)
 {
 	current = getCurrent();
+    updatePath();
 }
 
 PPPath_Amiga::PPPath_Amiga(const PPSystemString& path)
-: current(path)
+: dirLock(0)
+, dirFIB(NULL)
+, isDosList(false)
+, dosList(NULL)
+, current(path)
 {
+    updatePath();
+}
+
+bool PPPath_Amiga::updatePath()
+{
+    if(currentDirLock && currentDirLock != GetProgramDirLock()) {
+        UnLock(currentDirLock);
+    }
+
+    if(current.length() == 0) {
+        currentDirLock = GetProgramDirLock();
+        current = getCurrent();
+    } else {
+        if(!(currentDirLock = Lock(current.getStrBuffer(), SHARED_LOCK))) {
+            return false;
+        }
+    }
+
+    return true;
 }
 
 const PPSystemString PPPath_Amiga::getCurrent()
 {
 	STRPTR cwd = (STRPTR) AllocMem(PPMAX_DIR_PATH+1, MEMF_CLEAR);
-  	PPSystemString path("PROGDIR:");
+  	PPSystemString path;
 
-    if(!currentDir) {
-        currentDir = GetProgramDirLock();
+    if(!currentDirLock) {
+        currentDirLock = GetProgramDirLock();
     }
 
-    if(NameFromLock(currentDir, cwd, PPMAX_DIR_PATH)) {
+    if(NameFromLock(currentDirLock, cwd, PPMAX_DIR_PATH)) {
         path = cwd;
+    } else {
+        path = "PROGDIR:";
     }
 
 	return path;
@@ -98,32 +127,110 @@ const PPSystemString PPPath_Amiga::getCurrent()
 
 bool PPPath_Amiga::change(const PPSystemString& path)
 {
-	return (bool) SetCurrentDirName(path.getStrBuffer());
+    PPSystemString old = current;
+	current = path;
+
+	bool res = updatePath();
+	if (res)
+		return true;
+
+	current = old;
+	return false;
 }
 
 bool PPPath_Amiga::stepInto(const PPSystemString& directory)
 {
+	PPSystemString old = current;
+
+    char dirname[PPMAX_DIR_PATH + 1];
+    strcpy(dirname, current.getStrBuffer());
+
+    if(AddPart(dirname, directory.getStrBuffer(), PPMAX_DIR_PATH)) {
+        PPSystemString newdir(dirname);
+        if(change(newdir))
+            return true;
+    }
+
 	return false;
 }
 
 const PPPathEntry* PPPath_Amiga::getFirstEntry()
 {
-	return getNextEntry();
+    if(isDosList) {
+        dosList = LockDosList(LDF_VOLUMES | LDF_READ);
+        return getNextEntry();
+    }
+
+    if((dirLock = Lock(current.getStrBuffer(), SHARED_LOCK)) != 0) {
+        if((dirFIB = (struct FileInfoBlock *) AllocDosObject(DOS_FIB, TAG_END))) {
+            if(Examine(dirLock, dirFIB)) {
+                if(dirFIB->fib_DirEntryType > 0) {
+                    return getNextEntry();
+                }
+            }
+            FreeDosObject(DOS_FIB, dirFIB);
+            dirFIB = NULL;
+        }
+        UnLock(dirLock);
+        dirLock = 0;
+    }
+
+    return NULL;
 }
 
 const PPPathEntry* PPPath_Amiga::getNextEntry()
 {
-	return NULL;
+    if(isDosList) {
+		dosList = NextDosEntry(dosList, LDF_VOLUMES);
+        if(dosList != NULL) {
+            char dname[256] = {0};
+
+            // Decode BCPL string (sigh)
+            char * str = (char *) (dosList->dol_Name * 4);
+            char len = str[0];
+            memcpy(dname, str+1, len);
+            dname[len] = '\0';
+
+            PPSystemString device(dname);
+
+            this->entry.createDosDevice(device);
+
+            return &this->entry;
+        }
+        UnLockDosList(LDF_VOLUMES | LDF_READ);
+        dosList = NULL;
+        isDosList = false;
+    } else {
+        if(dirLock && dirFIB) {
+            LONG ret = ExNext(dirLock, dirFIB);
+            if(ret) {
+                PPSystemString file(dirFIB->fib_FileName);
+
+                this->entry.create(current, file);
+
+                return &this->entry;
+            } else {
+                FreeDosObject(DOS_FIB, dirFIB);
+                dirFIB = NULL;
+
+                UnLock(dirLock);
+                dirLock = 0;
+            }
+        }
+    }
+
+    return NULL;
 }
 
 bool PPPath_Amiga::canGotoHome() const
 {
-	return true;
+	return currentDirLock != GetProgramDirLock();
 }
 
 void PPPath_Amiga::gotoHome()
 {
-    SetCurrentDirName("PROGDIR:");
+    currentDirLock = GetProgramDirLock();
+    current = getCurrent();
 }
 
 bool PPPath_Amiga::canGotoRoot() const
@@ -133,6 +240,7 @@ bool PPPath_Amiga::canGotoRoot() const
 
 void PPPath_Amiga::gotoRoot()
 {
+    isDosList = true;
 }
 
 bool PPPath_Amiga::canGotoParent() const
@@ -142,6 +250,12 @@ bool PPPath_Amiga::canGotoParent() const
 
 void PPPath_Amiga::gotoParent()
 {
+    if(isRootDirectory()) {
+        isDosList = true;
+    } else {
+        currentDirLock = ParentDir(currentDirLock);
+        current = getCurrent();
+    }
 }
 
 char PPPath_Amiga::getPathSeparatorAsASCII() const
@@ -157,6 +271,11 @@ const PPSystemString PPPath_Amiga::getPathSeparator() const
 bool PPPath_Amiga::fileExists(const PPSystemString& fileName) const
 {
 	return false;
+}
+
+bool PPPath_Amiga::isRootDirectory() const
+{
+    return current.charAt(current.length() - 1) == ':';
 }
 
 

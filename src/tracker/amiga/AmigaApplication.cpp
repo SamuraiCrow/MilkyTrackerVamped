@@ -5,8 +5,8 @@
 #include "Screen.h"
 #include "Tracker.h"
 #include "PPMutex.h"
-#include "PPSystem_POSIX.h"
-#include "PPPath_POSIX.h"
+#include "PPSystem_Amiga.h"
+#include "PPPath_Amiga.h"
 #include "PlayerMaster.h"
 #include "../../milkyplay/drivers/amiga/AudioDriver_Paula.h"
 #include "../../milkyplay/drivers/amiga/AudioDriver_Arne.h"
@@ -90,7 +90,7 @@ void AmigaApplication::raiseEventSynchronized(PPEvent * event)
 
 int AmigaApplication::load(char * loadFile)
 {
-	PPPath_POSIX path;
+	PPPath_Amiga path;
     PPSystemString newCwd = path.getCurrent();
 
     // Change to old path
@@ -150,7 +150,7 @@ int AmigaApplication::start()
     int ret = 0;
 
     // Store old path
-    PPPath_POSIX path;
+    PPPath_Amiga path;
     oldCwd = path.getCurrent();
 
     // Startup tracker

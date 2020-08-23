@@ -107,18 +107,7 @@ const PPSystemString PPPath_POSIX::getCurrent()
 	getcwd(cwd, PPMAX_DIR_PATH+1);
 
 	PPSystemString path(cwd);
-
-#ifdef __AMIGA__
-	//
-	// On some Amiga OS versions the format VOLUME:/ is *not* supported
-	// @todo why?
-	//
-	if(path.length() > 1 && path.charAt(path.length() - 1) != ':') {
-		path.ensureTrailingCharacter(getPathSeparatorAsASCII());
-	}
-#else
 	path.ensureTrailingCharacter(getPathSeparatorAsASCII());
-#endif
 
 	delete[] cwd;
 
@@ -129,17 +118,9 @@ bool PPPath_POSIX::change(const PPSystemString& path)
 {
 	PPSystemString old = current;
 	current = path;
-#ifdef __AMIGA__
-	//
-	// On some Amiga OS versions the format VOLUME:/ is *not* supported
-	// @todo why?
-	//
-	if(current.length() > 1 && current.charAt(current.length() - 1) != ':') {
-		current.ensureTrailingCharacter(getPathSeparatorAsASCII());
-	}
-#else
+
 	current.ensureTrailingCharacter(getPathSeparatorAsASCII());
-#endif
+
 	bool res = updatePath();
 	if (res)
 		return true;
