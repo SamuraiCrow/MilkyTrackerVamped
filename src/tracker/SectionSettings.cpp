@@ -1271,8 +1271,8 @@ public:
 		radioGroup->setHorizontal(true);
 		radioGroup->addItem("x1");
 		radioGroup->addItem("x2");
+		radioGroup->addItem("x3");
 		radioGroup->addItem("x4");
-		radioGroup->addItem("x8");
 
 		container->addControl(radioGroup);
 	}
@@ -1301,15 +1301,16 @@ public:
 
 		pp_int32 screenScaleFactor = settingsDatabase->restore("SCREENSCALEFACTOR")->getIntValue();
 		pp_int32 index = 0;
+
 		switch (screenScaleFactor)
 		{
 			case 2:
 				index = 1;
 				break;
-			case 4:
+			case 3:
 				index = 2;
 				break;
-			case 8:
+			case 4:
 				index = 3;
 				break;
 		}
@@ -2719,7 +2720,21 @@ pp_int32 SectionSettings::handleEvent(PPObject* sender, PPEvent* event)
 			case RADIOGROUP_SETTINGS_MAGNIFY:
 			{
 				pp_int32 v = reinterpret_cast<PPRadioGroup*>(sender)->getChoice();
-				tracker.settingsDatabase->store("SCREENSCALEFACTOR", 1 << v);
+				pp_uint32 scale = 1;
+
+				switch(v) {
+				case 1:
+					scale = 2;
+					break;
+				case 2:
+					scale = 3;
+					break;
+				case 3:
+					scale = 4;
+					break;
+				}
+
+				tracker.settingsDatabase->store("SCREENSCALEFACTOR", scale);
 				update();
 				break;
 			}
