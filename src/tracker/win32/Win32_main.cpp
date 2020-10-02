@@ -112,7 +112,7 @@ VOID CALLBACK
 TrackMouseTimerProc(HWND hWnd,UINT uMsg,UINT idEvent,DWORD dwTime) {
 	RECT rect;
 	POINT pt;
-	
+
 	GetClientRect(hWnd,&rect);
 	MapWindowPoints(hWnd,NULL,(LPPOINT)&rect,2);
 	GetCursorPos(&pt);
@@ -120,7 +120,7 @@ TrackMouseTimerProc(HWND hWnd,UINT uMsg,UINT idEvent,DWORD dwTime) {
 		if (!KillTimer(hWnd,idEvent)) {
 			// Error killing the timer!
 		}
-		
+
 		PostMessage(hWnd,WM_MOUSELEAVE,0,0);
 	}
 }
@@ -128,23 +128,23 @@ TrackMouseTimerProc(HWND hWnd,UINT uMsg,UINT idEvent,DWORD dwTime) {
 BOOL
 TrackMouseEvent(LPTRACKMOUSEEVENT ptme) {
 	OutputDebugString(_T("TrackMouseEvent\n"));
-	
+
 	if (!ptme || ptme->cbSize < sizeof(TRACKMOUSEEVENT)) {
 		OutputDebugString(_T("TrackMouseEvent: invalid TRACKMOUSEEVENT structure\n"));
 		return FALSE;
 	}
-	
+
 	if (!IsWindow(ptme->hwndTrack)) {
 		OutputDebugString(
 						  _T("TrackMouseEvent: invalid hwndTrack\n"));
 		return FALSE;
 	}
-	
+
 	if (!(ptme->dwFlags & TME_LEAVE)) {
 		OutputDebugString(_T("TrackMouseEvent: invalid dwFlags\n"));
 		return FALSE;
 	}
-	
+
 	return SetTimer(ptme->hwndTrack, ptme->dwFlags,
 					100,(TIMERPROC)TrackMouseTimerProc);
 }
@@ -329,9 +329,9 @@ static void SendFile(LPCTSTR file)
 {
 	PPSystemString finalFile(file);
 	PPSystemString* strPtr = &finalFile;
-		
+
 	PPEvent event(eFileDragDropped, &strPtr, sizeof(PPSystemString*));
-	myTrackerScreen->raiseEvent(&event);		
+	myTrackerScreen->raiseEvent(&event);
 }
 
 static void OnDropFiles(HDROP hDropInfo)
@@ -343,7 +343,7 @@ static void OnDropFiles(HDROP hDropInfo)
 	if (count)
 	{
 		::DragQueryFile(hDropInfo, 0, buffer, MAX_PATH);
-		
+
 		::SendFile(buffer);
 	}
 }
@@ -363,7 +363,7 @@ static void StopMidiRecording()
 	}
 }
 
-static void StartMidiRecording(UINT devID, 
+static void StartMidiRecording(UINT devID,
 							   bool recordVelocity,
 							   UINT velocityAmplify,
 							   UINT threadPriority = CMIDIInDevice::MIDI_THREAD_PRIORITY_NORMAL)
@@ -382,15 +382,15 @@ static void StartMidiRecording(UINT devID,
 	try
 	{
 		myMidiInDevice->Open(devID);
-	
+
 		// Start recording
 		myMidiInDevice->StartRecording((CMIDIInDevice::ThreadPriority)threadPriority);
 	}
 	catch (midi::CMIDIInException e)
 	{
 		StopMidiRecording();
-		
-		PPSystemString str("Error while trying to setup the MIDI device. The error message is:\r\n");		
+
+		PPSystemString str("Error while trying to setup the MIDI device. The error message is:\r\n");
 		str.append(e.what());
 		str.append("\r\nMIDI will be disabled.");
 
@@ -431,7 +431,7 @@ static void RaiseEventSynchronized(PPEvent* event)
 
 		if (myTrackerScreen)
 			myTrackerScreen->raiseEvent(event);
-			
+
 		g_globalMutex->unlock();
 	//}
 }
@@ -476,13 +476,13 @@ static LONG WINAPI CrashHandler(EXCEPTION_POINTERS*)
 		num++;
 	}
 
-	if (num != 100) 
+	if (num != 100)
 		myTracker->saveModule(buffer);
 
 	MessageBox(NULL, _T("MilkyTracker has crashed, sorry for the inconvenience.\n\n")\
 		_T("An attempt was made to save the current module in the application folder.\n")\
 		_T("Please report this error back to the MilkyTracker development team.\n"), NULL, MB_OK);
-	
+
 	return EXCEPTION_CONTINUE_SEARCH;
 }
 
@@ -497,17 +497,17 @@ static LONG WINAPI CrashHandler(EXCEPTION_POINTERS*)
 LRESULT CALLBACK Ex_WndProc(HWND hwnd,UINT msg,WPARAM wParam,LPARAM lParam)
 {
 	static BOOL		lMouseDown			= FALSE;
-	static DWORD	ltime;	
+	static DWORD	ltime;
 	static PPPoint	llastClickPosition	= PPPoint(0,0);
 	static WORD		lClickCount			= 0;
 	static DWORD	lButtonDownStartTime;
-	
+
 	static BOOL		rMouseDown			= FALSE;
 	static DWORD	rtime;
 	static PPPoint	rlastClickPosition	= PPPoint(0,0);
 	static WORD		rClickCount			= 0;
 	static DWORD	rButtonDownStartTime;
-	
+
 	static DWORD	timerTicker			= 0;
 
 	static PPPoint	p;
@@ -534,12 +534,12 @@ LRESULT CALLBACK Ex_WndProc(HWND hwnd,UINT msg,WPARAM wParam,LPARAM lParam)
 		rClickCount = 0;
 	}
 
-	switch (msg) 
+	switch (msg)
 	{
 		case WM_CREATE:
 			myThreadTimer.SetTimer (NULL, 1, 20, MyThreadTimerProc);
 #ifndef _DEBUG
-			SetUnhandledExceptionFilter(CrashHandler); 
+			SetUnhandledExceptionFilter(CrashHandler);
 #endif
 			fInWindow = FALSE;
 			fInMenu = FALSE;
@@ -831,13 +831,13 @@ LRESULT CALLBACK Ex_WndProc(HWND hwnd,UINT msg,WPARAM wParam,LPARAM lParam)
 				PPPoint p(-1000, -1000);
 				if (lMouseDown)
 				{
-					PPEvent myEvent(eLMouseUp, &p, sizeof(PPPoint));					
+					PPEvent myEvent(eLMouseUp, &p, sizeof(PPPoint));
 					RaiseEventSynchronized(&myEvent);
 					lMouseDown = TRUE;
 				}
 				if (rMouseDown)
 				{
-					PPEvent myEvent(eRMouseDown, &p, sizeof(PPPoint));					
+					PPEvent myEvent(eRMouseDown, &p, sizeof(PPPoint));
 					RaiseEventSynchronized(&myEvent);
 					rMouseDown = TRUE;
 				}
@@ -856,7 +856,7 @@ LRESULT CALLBACK Ex_WndProc(HWND hwnd,UINT msg,WPARAM wParam,LPARAM lParam)
 		case WM_MOUSEMOVE:
 		{
 #ifdef MOUSETRACKING
-			if (!fInWindow) 
+			if (!fInWindow)
 			{
 				fInWindow = TRUE;
 				tme.cbSize = sizeof(TRACKMOUSEEVENT);
@@ -868,7 +868,7 @@ LRESULT CALLBACK Ex_WndProc(HWND hwnd,UINT msg,WPARAM wParam,LPARAM lParam)
 						TEXT("Mouse Leave"),MB_OK);
 				}
 			}
-#endif			
+#endif
 			if (!myTrackerScreen)
 				break;
 
@@ -909,15 +909,15 @@ LRESULT CALLBACK Ex_WndProc(HWND hwnd,UINT msg,WPARAM wParam,LPARAM lParam)
 
 		case WM_CHAR:
 		{
-			WORD chr = (WORD)wParam; 
+			WORD chr = (WORD)wParam;
 
 			if (chr < 32 || chr > 127)
 				break;
-				
+
 			PPEvent myEvent(eKeyChar, &chr, sizeof(chr));
-			
+
 			RaiseEventSynchronized(&myEvent);
-			
+
 			break;
 		}
 
@@ -925,7 +925,7 @@ LRESULT CALLBACK Ex_WndProc(HWND hwnd,UINT msg,WPARAM wParam,LPARAM lParam)
 		case WM_SYSKEYDOWN:
 		{
 			if (msg == WM_SYSKEYDOWN &&
-				wParam == VK_RETURN && 
+				wParam == VK_RETURN &&
 				myTrackerScreen)
 			{
 				PPEvent e(eFullScreen);
@@ -944,9 +944,9 @@ LRESULT CALLBACK Ex_WndProc(HWND hwnd,UINT msg,WPARAM wParam,LPARAM lParam)
 				wParam = VK_RMENU;
 			// Check for right CTRL key
 			else if (GetAsyncKeyState(VK_RCONTROL)>>15)
-				wParam = VK_RCONTROL;			
+				wParam = VK_RCONTROL;
 
-			WORD chr[3] = {(WORD)wParam, (WORD)(lParam>>16)&255, keyBuf[0]}; 
+			WORD chr[3] = {(WORD)wParam, (WORD)(lParam>>16)&255, keyBuf[0]};
 
 			EnableNumPad(chr, lParam);
 
@@ -961,7 +961,7 @@ LRESULT CALLBACK Ex_WndProc(HWND hwnd,UINT msg,WPARAM wParam,LPARAM lParam)
 			}
 
 			PPEvent myEvent(eKeyDown, &chr, sizeof(chr));
-			
+
 			RaiseEventSynchronized(&myEvent);
 
 			if (wParam == VK_SPACE && (GetAsyncKeyState(VK_MENU)>>15))
@@ -977,22 +977,22 @@ LRESULT CALLBACK Ex_WndProc(HWND hwnd,UINT msg,WPARAM wParam,LPARAM lParam)
 			if (ToAscii(wParam, (lParam>>16)&255+256, 0, keyBuf, 0) != 1)
 				keyBuf[0] = keyBuf[1] = 0;
 
-			WORD chr[3] = {(WORD)wParam, (WORD)(lParam>>16)&255, keyBuf[0]}; 
+			WORD chr[3] = {(WORD)wParam, (WORD)(lParam>>16)&255, keyBuf[0]};
 
 			EnableNumPad(chr, lParam);
 
 			PPEvent myEvent(eKeyUp, &chr, sizeof(chr));
-			
+
 			RaiseEventSynchronized(&myEvent);
-			
+
 			// Disable F10 system menu pop-up
 			// --------------------------------------------------------
 			// From MSDN:
-			// If the F10 key is pressed, the DefWindowProc function 
-			// sets an internal flag. When DefWindowProc receives the 
-			// WM_KEYUP message, the function checks whether the 
-			// internal flag is set and, if so, sends a WM_SYSCOMMAND 
-			// message to the top-level window. The wParam parameter of 
+			// If the F10 key is pressed, the DefWindowProc function
+			// sets an internal flag. When DefWindowProc receives the
+			// WM_KEYUP message, the function checks whether the
+			// internal flag is set and, if so, sends a WM_SYSCOMMAND
+			// message to the top-level window. The wParam parameter of
 			// the message is set to SC_KEYMENU.
 			// --------------------------------------------------------
 			// Solution is to skip DefWindowProc when F10 is pressed
@@ -1008,23 +1008,23 @@ LRESULT CALLBACK Ex_WndProc(HWND hwnd,UINT msg,WPARAM wParam,LPARAM lParam)
 			if (!myTrackerScreen)
 				break;
 
-			PPEvent myEvent(eTimer);			
+			PPEvent myEvent(eTimer);
 			RaiseEventSynchronized(&myEvent);
 
 			timerTicker++;
 			DWORD currentTime = GetTickCount();
-			
+
 			if (lMouseDown &&
 				(currentTime - lButtonDownStartTime) > 500 &&
 				!(timerTicker%3))
 			{
-				PPEvent myEvent(eLMouseRepeat, &p, sizeof(PPPoint));				
+				PPEvent myEvent(eLMouseRepeat, &p, sizeof(PPPoint));
 				RaiseEventSynchronized(&myEvent);
 			}
 			else if (rMouseDown &&
 				(currentTime - rButtonDownStartTime) > 500)
 			{
-				PPEvent myEvent(eRMouseRepeat, &p, sizeof(PPPoint));				
+				PPEvent myEvent(eRMouseRepeat, &p, sizeof(PPPoint));
 				RaiseEventSynchronized(&myEvent);
 			}
 
@@ -1066,10 +1066,10 @@ LRESULT CALLBACK Ex_WndProc(HWND hwnd,UINT msg,WPARAM wParam,LPARAM lParam)
 			OnDropFiles((HDROP)wParam);
 			break;
 
-		case WM_ACTIVATE:	
-			g_fPaused = (wParam == WA_INACTIVE); 
+		case WM_ACTIVATE:
+			g_fPaused = (wParam == WA_INACTIVE);
 			break;
-		
+
 		case WM_CLOSE:
 		{
 			if (GetAsyncKeyState(VK_F4) && GetAsyncKeyState(VK_MENU))
@@ -1095,7 +1095,7 @@ LRESULT CALLBACK Ex_WndProc(HWND hwnd,UINT msg,WPARAM wParam,LPARAM lParam)
 			// Ignore WM_SIZE events sent during window creation, minimize and restore
 			return 0;
 
-		case WM_DESTROY:	
+		case WM_DESTROY:
 			PostQuitMessage(0);
 			break;
 
@@ -1106,11 +1106,11 @@ LRESULT CALLBACK Ex_WndProc(HWND hwnd,UINT msg,WPARAM wParam,LPARAM lParam)
 				PPEvent e(eFullScreen);
 				RaiseEventSynchronized(&e);
 			}
-			else 
+			else
 				wasFullScreen = false;
 
 			break;
-		
+
 		case WM_SETFOCUS:
 			if (myTrackerScreen && wasFullScreen)
 			{
@@ -1185,7 +1185,7 @@ static BOOL AppInit(HINSTANCE hinst,int nCmdShow)
 	rect.left = rect.top = 0;
 	rect.right = windowSize.width * scaleFactor;
 	rect.bottom = windowSize.height * scaleFactor;
- 
+
 #ifdef FULLSCREEN
 	AdjustWindowRect(&rect, WS_POPUP, false);
 	hWnd = CreateWindow(c_szClassName,
@@ -1271,7 +1271,7 @@ public:
 		return m_args[index];
 	}
 
-	size_t size() const 
+	size_t size() const
 	{
 		return m_args.size();
 	}
@@ -1355,10 +1355,10 @@ int PASCAL WinMain(HINSTANCE hinst, HINSTANCE hinstPrev, LPSTR szCmdLine, int nC
 
 	// Convert command line parameters
 	CmdLineArgs args;
-	
+
 	if (args.size() >= 2)
 	{
-		// Retrieve second parameter (= input file)	
+		// Retrieve second parameter (= input file)
 		PPSystemString fileInput = args[1];
 
 		// When there is something specified, check if it's an existing file
@@ -1380,7 +1380,7 @@ int PASCAL WinMain(HINSTANCE hinst, HINSTANCE hinstPrev, LPSTR szCmdLine, int nC
 			TranslateMessage(&Msg);
 			DispatchMessage(&Msg);
 		}
-	
+
 	}
 
 	delete myMidiInDevice;
