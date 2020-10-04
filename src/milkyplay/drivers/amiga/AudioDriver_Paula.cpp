@@ -456,6 +456,7 @@ AudioDriver_Paula_ResampleHW::setChannelVolume(ChannelMixer::TMixerChannel * chn
             vol = chn->finalvolr;
             break;
     }
+
     *((volatile mp_uword *) AUDIO_VOLUME(chn->index)) = ((vol >> 21) + 6) >> 3;
 }
 

@@ -38,7 +38,7 @@
 
 void Zapper::zapAll()
 {
-#ifdef __AMIGA__
+#ifndef __AMIGA__
 	if(!tracker.checkForChanges())
 		return;
 #endif

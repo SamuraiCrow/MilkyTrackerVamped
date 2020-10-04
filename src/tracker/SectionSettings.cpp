@@ -176,6 +176,7 @@ enum ControlIDs
 	BUTTON_RESOLUTIONS_CUSTOM,
 	BUTTON_RESOLUTIONS_FULL,
 	STATICTEXT_SETTINGS_MAGNIFY,
+    STATICTEXT_SETTINGS_WINDOWED_ONLY,
 	RADIOGROUP_SETTINGS_MAGNIFY,
 	LISTBOX_COLORS,
 	SLIDER_COLOR_RED,
@@ -1262,6 +1263,9 @@ public:
 
 		y2+=lbheight + 6;
 
+#ifdef __AMIGA__
+		container->addControl(new PPStaticText(STATICTEXT_SETTINGS_WINDOWED_ONLY, NULL, NULL, PPPoint(x2 + 2, y2), "Windowed mode only", true));
+#else
 		container->addControl(new PPStaticText(STATICTEXT_SETTINGS_MAGNIFY, NULL, NULL, PPPoint(x2 + 2, y2), "Scale:", true));
 
 		PPRadioGroup* radioGroup = new PPRadioGroup(RADIOGROUP_SETTINGS_MAGNIFY, screen, this, PPPoint(x2 + 2 + 7*8, y2 - 4), PPSize(120, 16));
@@ -1275,6 +1279,7 @@ public:
 		radioGroup->addItem("x4");
 
 		container->addControl(radioGroup);
+#endif
 	}
 
 	virtual void update(PPScreen* screen, TrackerSettingsDatabase* settingsDatabase, ModuleEditor& moduleEditor)
@@ -1296,6 +1301,7 @@ public:
 		if (!found)
 			static_cast<PPListBox*>(container->getControlByID(LISTBOX_SETTINGS_RESOLUTIONS))->setSelectedIndex(NUMRESOLUTIONS-1, false, false);
 
+#ifndef __AMIGA__
 		static_cast<PPStaticText*>(container->getControlByID(STATICTEXT_SETTINGS_MAGNIFY))->enable(screen->supportsScaling());
 		static_cast<PPRadioGroup*>(container->getControlByID(RADIOGROUP_SETTINGS_MAGNIFY))->enable(screen->supportsScaling());
 
@@ -1316,6 +1322,7 @@ public:
 		}
 
 		static_cast<PPRadioGroup*>(container->getControlByID(RADIOGROUP_SETTINGS_MAGNIFY))->setChoice(index);
+#endif
 	}
 
 };
@@ -1658,6 +1665,8 @@ public:
 
 	virtual void init(PPScreen* screen)
 	{
+        PPCheckBox* checkBox;
+
 		pp_int32 x = 0;
 		pp_int32 y = 0;
 
@@ -1668,31 +1677,31 @@ public:
 
 		container->addControl(new PPStaticText(0, NULL, NULL, PPPoint(x2 + 2, y2), "Other", true, true));
 		y2+=4+11;
-		PPCheckBox* checkBox = new PPCheckBox(CHECKBOX_SETTINGS_INTERNALDISKBROWSER, screen, this, PPPoint(x2 + 4 + 17 * 8 + 4, y2 - 1));
+
+#ifndef __AMIGA__
+		checkBox = new PPCheckBox(CHECKBOX_SETTINGS_INTERNALDISKBROWSER, screen, this, PPPoint(x2 + 4 + 17 * 8 + 4, y2 - 1));
 		container->addControl(checkBox);
 		container->addControl(new PPCheckBoxLabel(0, NULL, this, PPPoint(x2 + 2, y2), "Internal browser:", checkBox, true));
-
 		y2+=12;
+
 		checkBox = new PPCheckBox(CHECKBOX_SETTINGS_SHOWSPLASH, screen, this, PPPoint(x2 + 4 + 17 * 8 + 4, y2 - 1));
 		container->addControl(checkBox);
 		container->addControl(new PPCheckBoxLabel(0, NULL, this, PPPoint(x2 + 2, y2), "Splash screen:", checkBox, true));
-
 		y2+=14;
+#endif
+
 		checkBox = new PPCheckBox(CHECKBOX_SETTINGS_AUTOESTPLAYTIME, screen, this, PPPoint(x2 + 4 + 17 * 8 + 4, y2 - 3));
 		container->addControl(checkBox);
 		PPCheckBoxLabel* cbLabel = new PPCheckBoxLabel(0, NULL, this, PPPoint(x2 + 2, y2), "Estimate playtime after load", checkBox, true);
 		cbLabel->setFont(PPFont::getFont(PPFont::FONT_TINY));
 		container->addControl(cbLabel);
-
-
 		y2+=10;
 
-#ifndef __LOWRES__
+#if !defined(__LOWRES__) && !defined(__AMIGA__)
 		checkBox = new PPCheckBox(CHECKBOX_SETTINGS_SCOPES, screen, this, PPPoint(x2 + 4 + 17 * 8 + 4, y2 - 1));
 		container->addControl(checkBox);
 		container->addControl(new PPCheckBoxLabel(0, NULL, this, PPPoint(x2 + 2, y2), "Show scopes:", checkBox, true));
 		y2+=12;
-#endif
 
 		container->addControl(new PPStaticText(STATICTEXT_SETTINGS_SCOPESAPPEARANCE, NULL, NULL, PPPoint(x2 + 2, y2), "Scope Style:", true));
 
@@ -1703,8 +1712,7 @@ public:
 		radioGroup->addItem("Solid");
 		radioGroup->addItem("Smooth Lines");
 		container->addControl(radioGroup);
-
-		//container->addControl(new PPSeperator(0, screen, PPPoint(x2 + 158, y+4), UPPERFRAMEHEIGHT-8, TrackerConfig::colorThemeMain, false));
+#endif
 	}
 
 	virtual void update(PPScreen* screen, TrackerSettingsDatabase* settingsDatabase, ModuleEditor& moduleEditor)
@@ -1712,20 +1720,23 @@ public:
 		pp_int32 v = settingsDatabase->restore("AUTOESTPLAYTIME")->getIntValue();
 		static_cast<PPCheckBox*>(container->getControlByID(CHECKBOX_SETTINGS_AUTOESTPLAYTIME))->checkIt(v!=0);
 
+#ifndef __AMIGA__
 		v = settingsDatabase->restore("INTERNALDISKBROWSER")->getIntValue();
 		static_cast<PPCheckBox*>(container->getControlByID(CHECKBOX_SETTINGS_INTERNALDISKBROWSER))->checkIt(v!=0);
 
 		v = settingsDatabase->restore("SHOWSPLASH")->getIntValue();
 		static_cast<PPCheckBox*>(container->getControlByID(CHECKBOX_SETTINGS_SHOWSPLASH))->checkIt(v!=0);
+#endif
 
+#if !defined(__LOWRES__) && !defined(__AMIGA__)
 		v = settingsDatabase->restore("SCOPES")->getIntValue();
-#ifndef __LOWRES__
+
 		static_cast<PPCheckBox*>(container->getControlByID(CHECKBOX_SETTINGS_SCOPES))->checkIt(v & 1);
 
 		static_cast<PPRadioGroup*>(container->getControlByID(RADIOGROUP_SETTINGS_SCOPESAPPEARANCE))->enable((v & 1) != 0);
 		static_cast<PPStaticText*>(container->getControlByID(STATICTEXT_SETTINGS_SCOPESAPPEARANCE))->enable((v & 1) != 0);
-#endif
 		static_cast<PPRadioGroup*>(container->getControlByID(RADIOGROUP_SETTINGS_SCOPESAPPEARANCE))->setChoice(v >> 1);
+#endif
 	}
 
 };

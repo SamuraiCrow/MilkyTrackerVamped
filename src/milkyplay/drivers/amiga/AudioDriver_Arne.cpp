@@ -4,7 +4,7 @@
 #define CUSTOM_DMACON2          (CUSTOM_DMACON  + 0x200)
 #define CUSTOM_INTENA2          (CUSTOM_INTENA  + 0x200)
 
-#define AUDIO_REGBASE(CH)       (CUSTOM_REGBASE + 0x400 + ((CH & 0xf) << 4))
+#define AUDIO_REGBASE(CH)       (CUSTOM_REGBASE + 0x400 + (((CH) & 0xf) << 4))
 #define AUDIO_REG(CH, IDX)      (AUDIO_REGBASE(CH) + (IDX))
 
 #define AUDIO_LOCHI(CH)         AUDIO_REG(CH, 0x00)
@@ -39,7 +39,7 @@ AudioDriver_Arne::getChannels() const
 const char*
 AudioDriver_Arne::getDriverID()
 {
-    return "Apollo SAGA Arne 16-ch";
+    return "Apollo SAGA Arne 8-ch";
 }
 
 mp_sint32
@@ -361,8 +361,6 @@ AudioDriver_Arne_ResampleHW::setChannelVolume(ChannelMixer::TMixerChannel * chn)
 {
     mp_sint32 vol = 0;
 
-    // @todo Configure Panning
-
     switch (chn->index & 3) {
         case 0:
         case 3:
@@ -373,6 +371,7 @@ AudioDriver_Arne_ResampleHW::setChannelVolume(ChannelMixer::TMixerChannel * chn)
             vol = chn->finalvolr;
             break;
     }
+
     *((volatile mp_uword *) AUDIO_VOLUME(chn->index)) = ((vol >> 21) + 6) >> 3;
 }
 

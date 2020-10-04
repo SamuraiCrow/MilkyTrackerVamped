@@ -5,8 +5,8 @@
 #include "Screen.h"
 #include "Tracker.h"
 #include "PPMutex.h"
-#include "PPSystem_POSIX.h"
-#include "PPPath_POSIX.h"
+#include "PPSystem_Amiga.h"
+#include "PPPath_Amiga.h"
 #include "PlayerMaster.h"
 #include "../../milkyplay/drivers/amiga/AudioDriver_Paula.h"
 #include "../../milkyplay/drivers/amiga/AudioDriver_Arne.h"
@@ -90,7 +90,7 @@ void AmigaApplication::raiseEventSynchronized(PPEvent * event)
 
 int AmigaApplication::load(char * loadFile)
 {
-	PPPath_POSIX path;
+	PPPath_Amiga path;
     PPSystemString newCwd = path.getCurrent();
 
     // Change to old path
@@ -150,7 +150,7 @@ int AmigaApplication::start()
     int ret = 0;
 
     // Store old path
-    PPPath_POSIX path;
+    PPPath_Amiga path;
     oldCwd = path.getCurrent();
 
     // Startup tracker
@@ -160,77 +160,54 @@ int AmigaApplication::start()
         ::audioMixer = audioMixer;
         tracker = new Tracker();
 
-        if (pubScreen = LockPubScreen(NULL)) {
-            if(isFullScreen()) {
-                if(useP96)
-                    screen = p96OpenScreenTags(
-                        P96SA_DisplayID             , displayID,
-                        P96SA_Left                  , 0,
-                        P96SA_Top                   , 0,
-                        P96SA_Width                 , windowSize.width,
-                        P96SA_Height                , windowSize.height,
-                        P96SA_Depth                 , bpp,
-                        P96SA_DetailPen             , 0,
-                        P96SA_BlockPen              , 1,
-                        P96SA_Quiet                 , FALSE,
-                        P96SA_Type                  , CUSTOMSCREEN,
-                        P96SA_BitMap                , FALSE,
-                        P96SA_ConstantBytesPerRow   , TRUE,
-                        P96SA_AutoScroll            , FALSE,
-                        P96SA_Exclusive             , TRUE,
-                        P96SA_ShowTitle             , FALSE,
-                        TAG_DONE);
-                if(useCGX)
-                    screen = OpenScreenTags(NULL,
-                        SA_DisplayID                , displayID,
-                        SA_Left                     , 0,
-                        SA_Top                      , 0,
-                        SA_Width                    , windowSize.width,
-                        SA_Height                   , windowSize.height,
-                        SA_Depth                    , bpp,
-                        SA_DetailPen                , 0,
-                        SA_BlockPen                 , 1,
-                        SA_Quiet                    , FALSE,
-                        SA_Type                     , CUSTOMSCREEN,
-                        SA_BitMap                   , FALSE,
-                        SA_AutoScroll               , FALSE,
-                        SA_Exclusive                , TRUE,
-                        SA_ShowTitle                , FALSE,
-                        TAG_DONE);
-                if(screen) {
-                    window = OpenWindowTags(NULL,
-                        WA_CustomScreen  , (APTR) screen,
-                        WA_Left          , 0,
-                        WA_Top           , 0,
-                        WA_InnerWidth    , windowSize.width,
-                        WA_InnerHeight   , windowSize.height,
-                        WA_Borderless    , TRUE,
-                        WA_Backdrop      , TRUE,
-                        WA_Activate      , TRUE,
-                        WA_ReportMouse   , TRUE,
-                        WA_NoCareRefresh , TRUE,
-                        WA_RMBTrap       , TRUE,
-                        WA_IDCMP         , IDCMP_CLOSEWINDOW | IDCMP_MOUSEBUTTONS | IDCMP_MOUSEMOVE | IDCMP_RAWKEY,
-                        TAG_DONE);
-                    if(!window) {
-                        fprintf(stderr, "Could not create window!\n");
-                        ret = 7;
-                    }
-                } else {
-                    fprintf(stderr, "Could not create P96/CGX screen!\n");
-                    ret = 6;
-                }
-            } else {
+        if(isFullScreen()) {
+            // Open screen
+            if(useP96) {
+                screen = p96OpenScreenTags(
+                    P96SA_DisplayID             , displayID,
+                    P96SA_Left                  , 0,
+                    P96SA_Top                   , 0,
+                    P96SA_Width                 , windowSize.width,
+                    P96SA_Height                , windowSize.height,
+                    P96SA_Depth                 , bpp,
+                    P96SA_DetailPen             , 0,
+                    P96SA_BlockPen              , 1,
+                    P96SA_Quiet                 , FALSE,
+                    P96SA_Type                  , CUSTOMSCREEN,
+                    P96SA_BitMap                , FALSE,
+                    P96SA_ConstantBytesPerRow   , TRUE,
+                    P96SA_AutoScroll            , FALSE,
+                    P96SA_Exclusive             , TRUE,
+                    P96SA_ShowTitle             , FALSE,
+                    TAG_DONE);
+            } else if(useCGX) {
+                screen = OpenScreenTags(NULL,
+                    SA_DisplayID                , displayID,
+                    SA_Left                     , 0,
+                    SA_Top                      , 0,
+                    SA_Width                    , windowSize.width,
+                    SA_Height                   , windowSize.height,
+                    SA_Depth                    , bpp,
+                    SA_DetailPen                , 0,
+                    SA_BlockPen                 , 1,
+                    SA_Quiet                    , FALSE,
+                    SA_Type                     , CUSTOMSCREEN,
+                    SA_BitMap                   , FALSE,
+                    SA_AutoScroll               , FALSE,
+                    SA_Exclusive                , TRUE,
+                    SA_ShowTitle                , FALSE,
+                    TAG_DONE);
+            }
+
+            if(screen) {
                 window = OpenWindowTags(NULL,
-                    WA_CustomScreen  , (APTR) pubScreen,
-                    WA_Left          , (pubScreen->Width - windowSize.width) / 2,
-                    WA_Top           , (pubScreen->Height - windowSize.height) / 2,
+                    WA_CustomScreen  , (APTR) screen,
+                    WA_Left          , 0,
+                    WA_Top           , 0,
                     WA_InnerWidth    , windowSize.width,
                     WA_InnerHeight   , windowSize.height,
-                    WA_Title         , (APTR) "Loading MilkyTracker ...",
-                    WA_DragBar       , TRUE,
-                    WA_DepthGadget   , TRUE,
-                    WA_CloseGadget   , TRUE,
+                    WA_Borderless    , TRUE,
+                    WA_Backdrop      , TRUE,
                     WA_Activate      , TRUE,
                     WA_ReportMouse   , TRUE,
                     WA_NoCareRefresh , TRUE,
@@ -239,12 +216,36 @@ int AmigaApplication::start()
                     TAG_DONE);
                 if(!window) {
                     fprintf(stderr, "Could not create window!\n");
-                    ret = 5;
+                    ret = 7;
                 }
+            } else {
+                fprintf(stderr, "Could not create P96/CGX screen!\n");
+                ret = 6;
+            }
+        } else if (pubScreen = LockPubScreen(NULL)) {
+            window = OpenWindowTags(NULL,
+                WA_CustomScreen  , (APTR) pubScreen,
+                WA_Left          , (pubScreen->Width - windowSize.width) / 2,
+                WA_Top           , (pubScreen->Height - windowSize.height) / 2,
+                WA_InnerWidth    , windowSize.width,
+                WA_InnerHeight   , windowSize.height,
+                WA_Title         , (APTR) "Loading MilkyTracker ...",
+                WA_DragBar       , TRUE,
+                WA_DepthGadget   , TRUE,
+                WA_CloseGadget   , TRUE,
+                WA_Activate      , TRUE,
+                WA_ReportMouse   , TRUE,
+                WA_NoCareRefresh , TRUE,
+                WA_RMBTrap       , TRUE,
+                WA_IDCMP         , IDCMP_CLOSEWINDOW | IDCMP_MOUSEBUTTONS | IDCMP_MOUSEMOVE | IDCMP_RAWKEY,
+                TAG_DONE);
+            if(!window) {
+                fprintf(stderr, "Could not create window!\n");
+                ret = 5;
             }
         } else {
             fprintf(stderr, "Could not get public screen!\n");
-            ret = 1;
+            ret = 4;
         }
 
         if(!ret) {
@@ -260,11 +261,11 @@ int AmigaApplication::start()
                 trackerStartUpFinished = true;
             } else {
                 fprintf(stderr, "Could not init display device!\n");
-                ret = 4;
+                ret = 3;
             }
         } else {
             fprintf(stderr, "Could not init Intuition objects!\n");
-            ret = 3;
+            ret = 2;
         }
     }
     globalMutex->unlock();
@@ -511,7 +512,6 @@ AmigaApplication::loop()
 
             displayDevice->setSize(windowSize);
         }
-
 
         if(signal & vbMask) {
             if(!(vbCount & 1)) {

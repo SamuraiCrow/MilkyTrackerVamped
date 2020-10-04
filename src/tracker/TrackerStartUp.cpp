@@ -101,6 +101,9 @@ pp_int32 Tracker::getScreenScaleFactorFromDatabase()
 
 bool Tracker::getShowSplashFlagFromDatabase()
 {
+#ifdef __AMIGA_
+    return false;
+#else
 	bool showSplash = true;
 
 	if (XMFile::exists(System::getConfigFileName()))
@@ -113,6 +116,7 @@ bool Tracker::getShowSplashFlagFromDatabase()
 	}
 
 	return showSplash;
+#endif
 }
 
 #define SPLASH_WAIT_TIME 1000
