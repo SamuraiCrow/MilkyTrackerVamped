@@ -190,11 +190,7 @@ elseif(WIN32)
         set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DWIN32")
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DWIN32")
     endif()
-elseif(AROS)
-    # AROS will provide the SDL dependency via makefile.
-elseif(AMIGA)
-    find_package(SDL 1.2 REQUIRED)
-
+elseif(AMIGA OR AROS)
     install(FILES ${PROJECT_SOURCE_DIR}/resources/packaging/amigaos/milkytracker.info DESTINATION .)
 else()
     # Workaround for SDL bug #3295, which occurs in SDL2 <2.0.5
