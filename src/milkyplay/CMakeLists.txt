@@ -153,7 +153,6 @@ elseif(AROS OR AMIGA)
     target_sources(milkyplay
         PRIVATE
             # Sources
-            drivers/sdl/AudioDriver_SDL.cpp
             drivers/amiga/AudioDriver_Amiga.cpp
             drivers/amiga/AudioDriver_Arne.cpp
             drivers/amiga/AudioDriver_Paula.cpp
@@ -162,7 +161,6 @@ elseif(AROS OR AMIGA)
             drivers/amiga/AudioDriver_Arne.s
 
             # Headers
-            drivers/sdl/AudioDriver_SDL.h
             drivers/amiga/AudioDriver_Amiga.h
             drivers/amiga/AudioDriver_Arne.h
             drivers/amiga/AudioDriver_Paula.h
