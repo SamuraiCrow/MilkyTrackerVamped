@@ -5,9 +5,8 @@
             "includePath": [
                 "${workspaceFolder}/**",
                 "${workspaceFolder}/include/amiga",
-                "C:/Development/pussygon/build/gcc6/include/SDL",
-                "C:/Development/pussygon/build/gcc6/m68k-amigaos/include",
-                "C:/Development/pussygon/build/gcc6/m68k-amigaos/ndk-include"
+                "C:/msys64/opt/m68k-amigaos/m68k-amigaos/include",
+                "C:/msys64/opt/m68k-amigaos/m68k-amigaos/ndk-include"
             ],
             "defines": [
                 "_DEBUG",
@@ -20,7 +19,7 @@
                 "_NO_INLINE"
             ],
             "windowsSdkVersion": "8.1",
-            "compilerPath": "C:/Development/pussygon/build/gcc6/bin/m68k-amigaos-g++.exe",
+            "compilerPath": "C:/msys64/opt/m68k-amigaos/bin/m68k-amigaos-g++.exe",
             "cStandard": "c11",
             "cppStandard": "c++17",
             "intelliSenseMode": "gcc-x86"

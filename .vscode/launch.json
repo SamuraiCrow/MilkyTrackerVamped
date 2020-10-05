@@ -5,7 +5,7 @@
             "name": "milkymagic",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}\\Debug-win32\\src\\tracker\\MilkyTracker.exe",
+            "program": "${workspaceFolder}\\build-win64\\src\\tracker\\MilkyTracker.exe",
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
