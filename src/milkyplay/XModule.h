@@ -201,7 +201,8 @@ public:
 	static mp_ubyte* allocPaddedMem(mp_uint32 size)
 	{
 #ifdef __AMIGA__
-		mp_ubyte* result = (mp_ubyte *)AllocVec(getPaddedSize(size), MEMF_CHIP | MEMF_CLEAR);
+		extern APTR AllocSample(ULONG size);
+		mp_ubyte* result = (mp_ubyte *)AllocSample(getPaddedSize(size));
 #else
 		mp_ubyte* result = new mp_ubyte[getPaddedSize(size)];
 #endif
@@ -226,7 +227,8 @@ public:
 			return;
 
 #ifdef __AMIGA__
-		FreeVec(getPadStartAddr(mem));
+		extern void FreeSample(APTR mem);
+		FreeSample(getPadStartAddr(mem));
 #else
 		delete[] getPadStartAddr(mem);
 #endif

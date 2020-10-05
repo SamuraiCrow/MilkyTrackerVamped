@@ -126,6 +126,17 @@ static char ** displayModeNames = NULL;
 static UWORD * displayModeDepths = NULL;
 static AudioDriverInterface * audioDriver = NULL;
 
+APTR AllocSample(ULONG size) {
+	if(app && app->isAMMX()) {
+		return AllocVec(size, MEMF_FAST | MEMF_CLEAR);
+	}
+	return AllocVec(size, MEMF_CHIP | MEMF_CLEAR);
+}
+
+void FreeSample(APTR mem) {
+	FreeVec(mem);
+}
+
 bool ForceLogPeriod() {
 	if(!app)
 		return false;
