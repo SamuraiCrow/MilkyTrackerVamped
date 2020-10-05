@@ -124,6 +124,27 @@ static LONG * displayModeIDs = NULL;
 static PPSize * displayModeSizes = NULL;
 static char ** displayModeNames = NULL;
 static UWORD * displayModeDepths = NULL;
+static AudioDriverInterface * audioDriver = NULL;
+
+bool ForceLogPeriod() {
+	if(!app)
+		return false;
+	return app->getAudioMixer() == AmigaApplication::ResampleHW;
+}
+
+AudioDriverInterface * CreateAudioDriver() {
+	if(!app)
+		return NULL;
+
+	return app->createAudioDriver();
+}
+
+int GetAudioDriverResolution() {
+	if(!app)
+		return 8;
+
+	return app->isSAGA() ? 16 : 8;
+}
 
 BPTR GetProgramDirLock() {
     return programDirLock;

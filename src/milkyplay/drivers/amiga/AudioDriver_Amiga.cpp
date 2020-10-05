@@ -296,4 +296,3 @@ AudioDriver_Amiga::getStatValue(mp_uint32 key)
 
     return 0;
 }
-

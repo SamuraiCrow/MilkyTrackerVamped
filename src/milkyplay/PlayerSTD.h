@@ -331,10 +331,8 @@ private:
 	mp_sint32		getperiod(mp_sint32 note,mp_sint32 relnote,mp_sint32 finetune)
 	{
 #ifdef __AMIGA__
-		extern int audioMixer;
-
-		// If ResampleHW Mixer is used, we can only support logarithmic period
-		if(audioMixer == 0) {
+		extern bool ForceLogPeriod();
+		if(ForceLogPeriod()) {
 			return getlogperiod(note,relnote,finetune);
 		}
 #endif

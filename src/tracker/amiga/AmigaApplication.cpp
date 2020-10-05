@@ -12,7 +12,6 @@
 #include "../../milkyplay/drivers/amiga/AudioDriver_Arne.h"
 
 PPMutex* globalMutex = NULL;
-int audioDriver, audioMixer;
 
 static pp_uint32
 getVerticalBeamPosition() {
@@ -74,6 +73,32 @@ struct Screen * AmigaApplication::getScreen() const
     if(isFullScreen())
         return screen;
     return pubScreen;
+}
+
+AudioDriverInterface * AmigaApplication::createAudioDriver()
+{
+    switch(audioDriver) {
+    case Paula:
+        switch(audioMixer) {
+        case ResampleHW:
+            return new AudioDriver_Paula_ResampleHW();
+        case DirectOut:
+            return new AudioDriver_Paula_DirectOut();
+        case MixDown:
+            return new AudioDriver_Paula_Mix();
+        }
+        break;
+    case Arne:
+        switch(audioMixer) {
+        case ResampleHW:
+            return new AudioDriver_Arne_ResampleHW();
+        default:
+            return new AudioDriver_Arne_DirectOut();
+        }
+        break;
+    }
+
+    return NULL;
 }
 
 void AmigaApplication::raiseEventSynchronized(PPEvent * event)
@@ -156,8 +181,6 @@ int AmigaApplication::start()
     // Startup tracker
     globalMutex->lock();
     {
-        ::audioDriver = audioDriver;
-        ::audioMixer = audioMixer;
         tracker = new Tracker();
 
         if(isFullScreen()) {
@@ -567,4 +590,3 @@ int AmigaApplication::stop()
 
     return 0;
 }
-

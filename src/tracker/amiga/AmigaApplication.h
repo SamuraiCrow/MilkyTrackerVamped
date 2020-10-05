@@ -32,6 +32,7 @@ class Tracker;
 class DisplayDevice_Amiga;
 class PPScreen;
 class PPEvent;
+class AudioDriverInterface;
 
 class AmigaApplication
 {
@@ -121,6 +122,7 @@ public:
 
     const PPSize&           getWindowSize() const { return windowSize; }
     pp_uint32               getBpp() const { return bpp; }
+    AudioDriverInterface *  createAudioDriver();
     AudioDriver             getAudioDriver() const { return audioDriver; }
     AudioMixer              getAudioMixer() const { return audioMixer; }
 

@@ -23,7 +23,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#define DEBUG_DRIVER            1
+#define DEBUG_DRIVER            0
 
 #define CIAAPRA                 0xbfe001
 

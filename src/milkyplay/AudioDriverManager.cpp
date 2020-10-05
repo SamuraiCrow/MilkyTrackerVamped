@@ -220,46 +220,14 @@ AudioDriverManager::AudioDriverManager() :
 //////////////////////////////////////////////////////////////////
 #include "AudioDriver_Paula.h"
 #include "AudioDriver_Arne.h"
-#include <exec/exec.h>
-#include <proto/exec.h>
 
-extern int audioDriver, audioMixer;
+extern AudioDriverInterface * CreateAudioDriver();
 
 AudioDriverManager::AudioDriverManager() :
 	defaultDriverIndex(0)
 {
-	AudioDriverInterface * audioDriver;
-
 	ALLOC_DRIVERLIST(1);
-
-    // Create audio driver (@todo)
-    switch(::audioDriver) {
-    case 0:
-        switch(::audioMixer) {
-        case 0:
-            audioDriver = new AudioDriver_Paula_ResampleHW();
-            break;
-        case 1:
-            audioDriver = new AudioDriver_Paula_DirectOut();
-            break;
-        case 2:
-            audioDriver = new AudioDriver_Paula_Mix();
-            break;
-        }
-        break;
-    case 1:
-        switch(::audioMixer) {
-        case 0:
-            audioDriver = new AudioDriver_Arne_ResampleHW();
-            break;
-        default:
-            audioDriver = new AudioDriver_Arne_DirectOut();
-            break;
-        }
-        break;
-    }
-
-	driverList[0] = audioDriver;
+	driverList[0] = CreateAudioDriver();
 }
 
 #endif
