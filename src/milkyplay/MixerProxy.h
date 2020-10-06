@@ -40,8 +40,6 @@
 // Intermediate structure as glue between the mixer and the driver
 // This one can be quite interdisciplinary.
 //
-// -> @todo this is not clean yet.
-//
 
 struct Mixable;
 class ProxyProcessor;

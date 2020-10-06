@@ -1798,18 +1798,6 @@ void PlayerSTD::doEffect(mp_sint32 chn, TModuleChannel* chnInf, mp_sint32 effcnt
 						pjumpPriority = MP_NUMEFFECTS*chn + effcnt;
 					}; break;
 
-		// MAGIC Filter control (@todo)
-		case 0x30 : {
-					}; break;
-
-		// MAGIC cutoff (@todo)
-		case 0x12: {
-				   }; break;
-
-		// MAGIC resonance (@todo)
-		case 0x13: {
-				   }; break;
-
 		// Fine porta up
 		case 0x31 : {
 						if (eop) chnInf->old[effcnt].fineportaup=eop;

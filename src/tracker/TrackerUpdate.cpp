@@ -1044,7 +1044,11 @@ void Tracker::updateAfterLoad(bool loadResult, bool wasPlaying, bool wasPlayingP
 					playerController->switchPlayMode(PlayerController::PlayMode_FastTracker2);
 					break;
 				case ModuleEditor::ModSaveTypeTMM:
-					playerController->switchPlayMode(PlayerController::PlayMode_FastTracker2);
+					// @todo Add better detection which play mode to choose
+					if (moduleEditor->getNumChannels() == 4)
+						playerController->switchPlayMode(PlayerController::PlayMode_ProTracker2);
+					else
+						playerController->switchPlayMode(PlayerController::PlayMode_FastTracker2);
 					break;
 				default:
 					ASSERT(false);
@@ -1134,4 +1138,3 @@ void Tracker::updateAfterTabSwitch()
 	}
 	screen->paint(true);
 }
-

@@ -243,6 +243,7 @@ enum ControlIDs
 
 	CHECKBOX_SETTINGS_INVERTMWHEEL,
 	CHECKBOX_SETTINGS_INVERTMWHEELZOOM,
+	CHECKBOX_SETTINGS_SPECIALMAGIC,
 
 	// Page V (only on desktop version)
 	RADIOGROUP_SETTINGS_STOPBACKGROUNDBEHAVIOUR,
@@ -1675,7 +1676,7 @@ public:
 		pp_int32 x2 = x;
 		pp_int32 y2 = y;
 
-		container->addControl(new PPStaticText(0, NULL, NULL, PPPoint(x2 + 2, y2), "Other", true, true));
+		container->addControl(new PPStaticText(0, NULL, NULL, PPPoint(x2 + 2, y2 + 2), "Other", true, true));
 		y2+=4+11;
 
 #ifndef __AMIGA__
@@ -1759,7 +1760,7 @@ public:
 		pp_int32 x2 = x;
 		pp_int32 y2 = y;
 
-		container->addControl(new PPStaticText(0, NULL, NULL, PPPoint(x2 + 2, y2), "Mouse Wheel", true, true));
+		container->addControl(new PPStaticText(0, NULL, NULL, PPPoint(x2 + 2, y2 + 2), "Mouse Wheel", true, true));
 		y2+=4+11;
 		PPCheckBox* checkBox = new PPCheckBox(CHECKBOX_SETTINGS_INVERTMWHEEL, screen, this, PPPoint(x2 + 4 + 17 * 8 + 4, y2 - 1));
 		container->addControl(checkBox);
@@ -1771,15 +1772,34 @@ public:
 		container->addControl(checkBox);
 		container->addControl(new PPCheckBoxLabel(0, NULL, this, PPPoint(x2 + 2, y2), "Invert zoom:", checkBox, true));
 
-		y2+=12;
+		y2+=11;
+
+		// ------------------ special features -------------------
+		container->addControl(new PPSeperator(0, screen, PPPoint(x2, y2), 158, TrackerConfig::colorThemeMain, true));
+
+		y2+=3;
+
+		container->addControl(new PPStaticText(0, NULL, NULL, PPPoint(x2 + 2, y2), "Special features", true, true));
+		y2+=4+11;
+		checkBox = new PPCheckBox(CHECKBOX_SETTINGS_SPECIALMAGIC, screen, this, PPPoint(x2 + 4 + 17 * 8 + 4, y2 - 1));
+		container->addControl(checkBox);
+		PPCheckBoxLabel* cbLabel = new PPCheckBoxLabel(0, NULL, this, PPPoint(x2 + 2, y2), "Titan's magic toolbox", checkBox, true);
+		cbLabel->setFont(PPFont::getFont(PPFont::FONT_TINY));
+		container->addControl(cbLabel);
 	}
 
 	virtual void update(PPScreen* screen, TrackerSettingsDatabase* settingsDatabase, ModuleEditor& moduleEditor)
 	{
-		pp_int32 v = settingsDatabase->restore("INVERTMWHEELZOOM")->getIntValue();
+		pp_int32 v;
+
+		v = settingsDatabase->restore("INVERTMWHEELZOOM")->getIntValue();
 		static_cast<PPCheckBox*>(container->getControlByID(CHECKBOX_SETTINGS_INVERTMWHEELZOOM))->checkIt(v!=0);
+
 		v = settingsDatabase->restore("INVERTMWHEEL")->getIntValue();
 		static_cast<PPCheckBox*>(container->getControlByID(CHECKBOX_SETTINGS_INVERTMWHEEL))->checkIt(v!=0);
+
+		v = settingsDatabase->restore("SPECIALMAGIC")->getIntValue();
+		static_cast<PPCheckBox*>(container->getControlByID(CHECKBOX_SETTINGS_SPECIALMAGIC))->checkIt(v!=0);
 	}
 };
 
@@ -1938,7 +1958,8 @@ void SectionSettings::showRestartMessageBox()
 {
 	if (tracker.settingsDatabase->restore("XRESOLUTION")->getIntValue() != tracker.settingsDatabaseCopy->restore("XRESOLUTION")->getIntValue() ||
 		tracker.settingsDatabase->restore("YRESOLUTION")->getIntValue() != tracker.settingsDatabaseCopy->restore("YRESOLUTION")->getIntValue() ||
-		tracker.settingsDatabase->restore("SCREENSCALEFACTOR")->getIntValue() != tracker.settingsDatabaseCopy->restore("SCREENSCALEFACTOR")->getIntValue())
+		tracker.settingsDatabase->restore("SCREENSCALEFACTOR")->getIntValue() != tracker.settingsDatabaseCopy->restore("SCREENSCALEFACTOR")->getIntValue() ||
+		tracker.settingsDatabase->restore("SPECIALMAGIC")->getIntValue() != tracker.settingsDatabaseCopy->restore("SPECIALMAGIC")->getIntValue())
 	{
 		SystemMessage message(*tracker.screen, SystemMessage::MessageResChangeRestart);
 		message.show();
@@ -2343,6 +2364,15 @@ pp_int32 SectionSettings::handleEvent(PPObject* sender, PPEvent* event)
 					break;
 
 				tracker.settingsDatabase->store("INVERTMWHEELZOOM", (pp_int32)reinterpret_cast<PPCheckBox*>(sender)->isChecked());
+				break;
+			}
+
+			case CHECKBOX_SETTINGS_SPECIALMAGIC:
+			{
+				if (event->getID() != eCommand)
+					break;
+
+				tracker.settingsDatabase->store("SPECIALMAGIC", (pp_int32)reinterpret_cast<PPCheckBox*>(sender)->isChecked());
 				break;
 			}
 

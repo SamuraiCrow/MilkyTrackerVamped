@@ -56,6 +56,7 @@ class PPMessageBoxContainer;
 class TrackerSettingsDatabase;
 class PPDictionaryKey;
 class PPFont;
+class PPButton;
 
 // OS Interfaces
 class PPSavePanel;
@@ -164,6 +165,10 @@ private:
 	bool followSong;
 	bool caughtMouseInUpperLeftCorner;
 	bool useClassicBrowser;
+
+	// Titan's magic toolbox
+	PPButton* magicButton;
+	bool specialMagic;
 
 	// - Keyboard bindings -----------------------------------------------------
 	PPKeyBindings<TTrackerKeyBindingHandler>* eventKeyDownBindings;

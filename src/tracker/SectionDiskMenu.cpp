@@ -630,7 +630,8 @@ void SectionDiskMenu::init(pp_int32 px, pp_int32 py)
 
 	radioGroup->addItem(".xm");
 	radioGroup->addItem(".mod");
-	radioGroup->addItem(".tmm");
+	if(specialMagic)
+		radioGroup->addItem(".tmm");
 	container->addControl(radioGroup);
 
 	// ---- Pattern ----------
@@ -1962,7 +1963,3 @@ void SectionDiskMenu::assureExtension()
 {
 	updateFilenameEditFieldExtension(classicViewState);
 }
-
-
-
-
