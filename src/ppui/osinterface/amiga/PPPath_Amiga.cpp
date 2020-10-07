@@ -122,6 +122,10 @@ const PPSystemString PPPath_Amiga::getCurrent()
         path = "PROGDIR:";
     }
 
+    if(path[strlen(path)-1] != ':') {
+        path.ensureTrailingCharacter(getPathSeparatorAsASCII());
+    }
+
 	return path;
 }
 
@@ -277,5 +281,3 @@ bool PPPath_Amiga::isRootDirectory() const
 {
     return current.charAt(current.length() - 1) == ':';
 }
-
-
