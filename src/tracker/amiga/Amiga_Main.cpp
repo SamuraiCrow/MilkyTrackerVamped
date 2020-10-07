@@ -306,12 +306,12 @@ static Screen * discoverDisplayModes()
 		// Insert display mode
 		if(isWindowed) {
 			if(useSAGA) {
-				displayModeIDs[i] = -1;
+				/*displayModeIDs[i] = -1;
 				displayModeNames[i] = new char[256];
 				strcpy(displayModeNames[i], "Win: 640x480 PiP 8-bit");
 				displayModeSizes[i] = PPSize(640, 480);
 				displayModeDepths[i] = 8;
-				i++;
+				i++;*/
 
 				displayModeIDs[i] = -1;
 				displayModeNames[i] = new char[256];
