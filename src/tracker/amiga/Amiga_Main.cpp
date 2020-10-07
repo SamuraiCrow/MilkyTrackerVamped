@@ -296,7 +296,7 @@ static Screen * discoverDisplayModes()
 			continue;
 		if(dimensionInfo.Nominal.MaxY+1 < 480)
 			continue;
-		if(dimensionInfo.MaxDepth != 8 && dimensionInfo.MaxDepth != 16)
+		if(/* dimensionInfo.MaxDepth != 8 && */ dimensionInfo.MaxDepth != 16)
 			continue;
 		if(P96Base && !p96GetModeIDAttr(modeID, P96IDA_ISP96))
 			continue;
