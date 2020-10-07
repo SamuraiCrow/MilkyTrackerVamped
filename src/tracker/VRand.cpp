@@ -25,7 +25,5 @@
 
 #include "VRand.h"
 
-float VPinkNoise[PinkNoiseBins];
+float * VPinkNoise;
 VPinkNoiseGlobal dummy_to_init_pink_noise;
-
-
