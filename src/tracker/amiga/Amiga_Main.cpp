@@ -90,13 +90,13 @@ static AmigaApplication::AudioDriver drivers[] = {
 
 static const char *driverNames[] = {
 	"Paula",
-	"Arne (Apollo Core)",
+	NULL,
 	NULL
 };
 
 static const char *driverDescs[] = {
 	"4-ch/8-bit",
-	"8-ch/16-bit >= Core 7649",
+	NULL,
 	NULL
 };
 
@@ -232,6 +232,9 @@ static bool checkHardware()
 	if (cpuType == 68080) {
 		hasAMMX = true;
 		useSAGA = true;
+
+		driverNames[1] = "Arne (Apollo Core)";
+		driverDescs[1] = "8-ch/16-bit >= Core 7649";
 	}
 #endif
 
