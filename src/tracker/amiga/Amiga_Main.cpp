@@ -244,8 +244,7 @@ static bool checkHardware()
 static Screen * discoverDisplayModes()
 {
 	int i = 0;
-	ULONG modeID;
-	ULONG skipID;
+	ULONG modeID, readID;
 	ULONG result;
 	bool firstRun = true;
 	DisplayInfoHandle displayHandle;
@@ -285,6 +284,11 @@ static Screen * discoverDisplayModes()
 			continue;
 		if(!(displayHandle = FindDisplayInfo(modeID)))
 			continue;
+
+		readID = modeID;
+		if(isWindowed)
+			modeID = INVALID_ID;
+
 		if(!(result = GetDisplayInfoData(displayHandle, (UBYTE *) &displayInfo, sizeof(struct DisplayInfo), DTAG_DISP, 0)))
 			continue;
 		if(!(result = GetDisplayInfoData(displayHandle, (UBYTE *) &dimensionInfo, sizeof(struct DimensionInfo), DTAG_DIMS, 0)))
@@ -301,9 +305,9 @@ static Screen * discoverDisplayModes()
 			continue;
 		if(/* dimensionInfo.MaxDepth != 8 && */ dimensionInfo.MaxDepth != 16)
 			continue;
-		if(P96Base && !p96GetModeIDAttr(modeID, P96IDA_ISP96))
+		if(P96Base && !p96GetModeIDAttr(readID, P96IDA_ISP96))
 			continue;
-		else if(CyberGfxBase && !IsCyberModeID(modeID))
+		else if(CyberGfxBase && !IsCyberModeID(readID))
 			continue;
 
 		// Insert display mode
@@ -329,7 +333,7 @@ static Screen * discoverDisplayModes()
 				displayModeDepths[i] = dimensionInfo.MaxDepth;
 			}
 		} else {
-			displayModeIDs[i] = modeID;
+			displayModeIDs[i] = readID;
 			displayModeNames[i] = new char[256];
 			sprintf(displayModeNames[i], "FS: %s", nameInfo.Name);
 			displayModeSizes[i] = PPSize(dimensionInfo.Nominal.MaxX+1, dimensionInfo.Nominal.MaxY+1);
@@ -338,12 +342,9 @@ static Screen * discoverDisplayModes()
 		i++;
 
 		// Bail out when we reached the max number of display modes
-		if(i == MAX_DISPLAY_MODES)
+		if(i == MAX_DISPLAY_MODES-1)
 			break;
 
-		// Prepare for NextDisplayInfo
-		if(isWindowed)
-			modeID = INVALID_ID;
 	} while((modeID = NextDisplayInfo(modeID)) != INVALID_ID);
 
 	return pubScreen;
@@ -353,7 +354,7 @@ static int setup()
 {
 	int ret = 0;
 	struct Gadget * gadgetList = NULL, * gadget;
-	struct NewGadget newGadget;
+	struct NewGadget newGadget = {0};
 	struct Window * window;
 	struct Screen * pubScreen;
 	long winWidth, winHeight;
@@ -372,6 +373,10 @@ static int setup()
 
     // Create Gadtools UI
 	gadget = CreateContext(&gadgetList);
+	if(!gadget) {
+		fprintf(stderr, "Cannot create context!\n");
+		return -2;
+	}
 
 	newGadget.ng_VisualInfo = GetVisualInfo(pubScreen, TAG_END);
 	newGadget.ng_TextAttr 	= pubScreen->Font;
@@ -387,6 +392,10 @@ static int setup()
 	gadget = CreateGadget(CYCLE_KIND, gadget, &newGadget,
 		GTCY_Labels, displayModeNames,
 		TAG_END);
+	if(!gadget) {
+		fprintf(stderr, "Cannot create gadget %d!\n", newGadget.ng_GadgetID);
+		return -2;
+	}
 
 	newGadget.ng_TopEdge   += newGadget.ng_Height + 4;
 	newGadget.ng_GadgetText = (UBYTE *) "Audio driver";
@@ -395,6 +404,10 @@ static int setup()
 		GTCY_Labels, driverNames,
 		GTCY_Active, audioDriverIndex,
 		TAG_END);
+	if(!gadget) {
+		fprintf(stderr, "Cannot create gadget %d!\n", newGadget.ng_GadgetID);
+		return -2;
+	}
 
 	newGadget.ng_TopEdge   += newGadget.ng_Height;
 	newGadget.ng_GadgetText = NULL;
@@ -402,6 +415,10 @@ static int setup()
 	gadget = CreateGadget(TEXT_KIND, gadget, &newGadget,
 		GTTX_Text, driverDescs[audioDriverIndex],
 		TAG_END);
+	if(!gadget) {
+		fprintf(stderr, "Cannot create gadget %d!\n", newGadget.ng_GadgetID);
+		return -2;
+	}
 	driverDesc = gadget;
 
 	newGadget.ng_TopEdge   += newGadget.ng_Height + 4;
@@ -410,6 +427,10 @@ static int setup()
 	gadget = CreateGadget(CYCLE_KIND, gadget, &newGadget,
 		GTCY_Labels, mixTypeNames,
 		TAG_END);
+	if(!gadget) {
+		fprintf(stderr, "Cannot create gadget %d!\n", newGadget.ng_GadgetID);
+		return -2;
+	}
 
 	newGadget.ng_TopEdge   += newGadget.ng_Height;
 	newGadget.ng_GadgetText = NULL;
@@ -417,6 +438,10 @@ static int setup()
 	gadget = CreateGadget(TEXT_KIND, gadget, &newGadget,
 		GTTX_Text, mixTypeDescs[0],
 		TAG_END);
+	if(!gadget) {
+		fprintf(stderr, "Cannot create gadget %d!\n", newGadget.ng_GadgetID);
+		return -2;
+	}
 	mixTypeDesc = gadget;
 
 	newGadget.ng_LeftEdge   = pubScreen->WBorLeft + 4;
@@ -426,12 +451,20 @@ static int setup()
 	newGadget.ng_GadgetID   = GID_RUN;
 	gadget = CreateGadget(BUTTON_KIND, gadget, &newGadget,
 		TAG_END);
+	if(!gadget) {
+		fprintf(stderr, "Cannot create gadget %d!\n", newGadget.ng_GadgetID);
+		return -2;
+	}
 
 	newGadget.ng_LeftEdge  += newGadget.ng_Width + 4;
 	newGadget.ng_GadgetText = (UBYTE *) "Quit";
 	newGadget.ng_GadgetID   = GID_QUIT;
 	gadget = CreateGadget (BUTTON_KIND, gadget, &newGadget,
 		TAG_END);
+	if(!gadget) {
+		fprintf(stderr, "Cannot create gadget %d!\n", newGadget.ng_GadgetID);
+		return -2;
+	}
 
     // Open setup dialog
 	if(gadget) {
