@@ -751,7 +751,7 @@ void SectionDiskMenu::init(pp_int32 px, pp_int32 py)
 	x = container->getLocation().x + container->getSize().width - 28;
 	pp_int32 x4 = x;
 	y = py + 2;
-	button = new PPButton(DISKMENU_BUTTON_FLIP, screen, this, PPPoint(x, y), PPSize(24, 11), false);
+	flipButton = button = new PPButton(DISKMENU_BUTTON_FLIP, screen, this, PPPoint(x, y), PPSize(24, 11), false);
 	button->setText("Flip");
 	button->setColor(TrackerConfig::colorThemeMain);
 	button->setTextColor(PPUIConfig::getInstance()->getColor(PPUIConfig::ColorStaticText));
@@ -1157,8 +1157,13 @@ void SectionDiskMenu::setConfigUInt32(pp_uint32 config)
 	}
 	else if (!(config & 1))
 	{
-		showNormalView(true);
-		showClassicView(false);
+		if(enforceClassicBrowser) {
+			showNormalView(false);
+			showClassicView(true);
+		} else {
+			showNormalView(true);
+			showClassicView(false);
+		}
 	}
 
 	if ((config & 2) && listBoxFiles->getSize().height != fileBrowserExtent.height)
@@ -1186,6 +1191,17 @@ void SectionDiskMenu::setConfigUInt32(pp_uint32 config)
 
 	listBoxFiles->setSortType((PPListBoxFileBrowser::SortTypes)(config >> 24));
 	updateButtonStates(false);
+}
+
+void SectionDiskMenu::setEnforceClassicBrowser(bool enforceClassicBrowser)
+{
+	this->enforceClassicBrowser = enforceClassicBrowser;
+
+	if(enforceClassicBrowser) {
+		showNormalView(false);
+		showClassicView(true);
+		flipButton->hide(true);
+	}
 }
 
 PPSystemString SectionDiskMenu::getCurrentPath()

@@ -217,10 +217,13 @@ void Tracker::startUp(bool forceNoSplash/* = false*/)
 		settingsDatabaseCopy = NULL;
 	}
 
+	// Pre-read some settings which initUI needs
 	sectionDiskMenu->specialMagic = settingsDatabase->restore("SPECIALMAGIC")->getIntValue() != 0;
+
+	// Creates the user interface
 	initUI();
 
-	// apply ALL settings, not just the different ones
+	// Apply ALL settings, not just the different ones
 	applySettings(settingsDatabase, NULL, true, false);
 
 	// Application of settings could have changed palette, update it

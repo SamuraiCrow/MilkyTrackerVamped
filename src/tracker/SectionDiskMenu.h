@@ -63,12 +63,14 @@ private:
 	bool classicViewVisible;
 
 	bool forceClassicBrowser;
+	bool enforceClassicBrowser;
 	bool moduleTypeAdjust;
 	bool sortAscending;
 	bool storePath;
 	bool specialMagic;
 
 	PPControl* lastFocusedControl;
+	PPControl* flipButton;
 
 	PPListBoxFileBrowser* listBoxFiles;
 	class PPListBox* editFieldCurrentFile;
@@ -115,6 +117,7 @@ public:
 	static pp_uint32 getDefaultConfigUInt32();
 	pp_uint32 getConfigUInt32();
 	void setConfigUInt32(pp_uint32 config);
+	void setEnforceClassicBrowser(bool enforceClassicBrowser);
 
 	PPSystemString getCurrentPath();
 	void setCurrentPath(const PPSystemString& path, bool reload = true);

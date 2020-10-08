@@ -514,6 +514,9 @@ void Tracker::applySettingByKey(PPDictionaryKey* theKey, TMixerSettings& setting
 #else
 		useClassicBrowser = QueryClassicBrowser(useClassicBrowser);
 #endif
+
+		if (sectionDiskMenu)
+			sectionDiskMenu->setEnforceClassicBrowser(useClassicBrowser);
 	}
 	else if (theKey->getKey().compareTo("INTERNALDISKBROWSERSETTINGS") == 0)
 	{
