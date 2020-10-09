@@ -60,6 +60,7 @@
 #define GID_AUDIO_MIXER_DESC	(GID_BASE + 5)
 #define GID_RUN					(GID_BASE + 6)
 #define GID_QUIT				(GID_BASE + 7)
+#define GID_DETECTED			(GID_BASE + 8)
 
 extern struct ExecBase * SysBase;
 
@@ -75,6 +76,7 @@ static int cpuType = 0;
 static bool hasFPU = false;
 static bool hasAMMX = false;
 static bool useSAGA = false;
+static bool isV4Core = false;
 static BPTR programDirLock = 0;
 
 struct Device * TimerBase = NULL;
@@ -127,7 +129,7 @@ static UWORD * displayModeDepths = NULL;
 static AudioDriverInterface * audioDriver = NULL;
 
 APTR AllocSample(ULONG size) {
-	if(app && app->isAMMX()) {
+	if(app && app->isSAGA() && app->isV4()) {
 		return AllocVec(size, MEMF_FAST | MEMF_CLEAR);
 	}
 	return AllocVec(size, MEMF_CHIP | MEMF_CLEAR);
@@ -154,7 +156,7 @@ int GetAudioDriverResolution() {
 	if(!app)
 		return 8;
 
-	return app->isSAGA() ? 16 : 8;
+	return (app->isSAGA() && app->isV4()) ? 16 : 8;
 }
 
 BPTR GetProgramDirLock() {
@@ -198,7 +200,7 @@ pp_uint32 PPGetTickCount() {
 
 bool QueryClassicBrowser(bool currentSetting) {
 	// For SAGA PIP and fullscreen mode, always use the classic browser on Amiga
-	if(app && (app->isSAGA() || app->isFullScreen())) {
+	if(app && ((app->isSAGA() && app->isV4()) || app->isFullScreen())) {
 		return true;
 	}
 	return currentSetting;
@@ -209,8 +211,6 @@ static bool checkHardware()
 	cpuType = 0;
 	hasFPU = true;
 	hasAMMX = false;
-
-#if !defined(__amigaos4__) && !defined(MORPHOS) && !defined(WARPOS) && defined(__AMIGA__)
 
 	if ((SysBase->AttnFlags & AFF_68080) != 0)
 		cpuType = 68080;
@@ -229,14 +229,18 @@ static bool checkHardware()
 
 	if ((SysBase->AttnFlags & AFF_FPU40) != 0)
 		hasFPU = true;
+
 	if (cpuType == 68080) {
 		hasAMMX = true;
 		useSAGA = true;
 
 		driverNames[1] = "Arne (Apollo Core)";
 		driverDescs[1] = "8-ch/16-bit >= Core 7649";
+
+		UWORD model = (*((UWORD *)0xdff3fc)) >> 8;
+		if(model == 0x03 || model == 0x05)
+			isV4Core = true;
 	}
-#endif
 
 	return hasFPU;
 }
@@ -312,7 +316,7 @@ static Screen * discoverDisplayModes()
 
 		// Insert display mode
 		if(isWindowed) {
-			if(useSAGA) {
+			if(useSAGA && isV4Core) {
 				/*displayModeIDs[i] = -1;
 				displayModeNames[i] = new char[256];
 				strcpy(displayModeNames[i], "Win: 640x480 PiP 8-bit");
@@ -361,6 +365,7 @@ static int setup()
 	bool setupRunning = true;
 	struct Gadget * driverDesc, * mixTypeDesc;
 	AmigaApplication::AudioDriver audioDriverIndex = (cpuType == 68080) ? AmigaApplication::Arne : AmigaApplication::Paula;
+	char detected[256] = {0};
 
 	if(!(pubScreen = discoverDisplayModes()))
 		return -4;
@@ -382,11 +387,30 @@ static int setup()
 	newGadget.ng_TextAttr 	= pubScreen->Font;
 	newGadget.ng_Flags 		= 0;
 
-	newGadget.ng_LeftEdge   = pubScreen->WBorLeft + 4 + 14 * pubScreen->RastPort.TxWidth;
+	newGadget.ng_LeftEdge   = pubScreen->WBorLeft + 4;
+	newGadget.ng_TopEdge    = pubScreen->WBorTop + pubScreen->RastPort.TxHeight + 5;
 	newGadget.ng_Width      = 30 * pubScreen->RastPort.TxWidth + 20;
 	newGadget.ng_Height     = pubScreen->RastPort.TxHeight + 6;
 
-	newGadget.ng_TopEdge    = pubScreen->WBorTop + pubScreen->RastPort.TxHeight + 5;
+	sprintf(detected, "Specs: %ld, FPU: %s, SAGA: %s, AMMX: %s, V4: %s",
+		cpuType,
+		hasFPU ? "Y" : "N",
+		useSAGA ? "Y" : "N",
+		hasAMMX ? "Y" : "N",
+		isV4Core ? "Y" : "N");
+
+	newGadget.ng_GadgetText = NULL;
+	newGadget.ng_GadgetID   = GID_DETECTED;
+	gadget = CreateGadget(TEXT_KIND, gadget, &newGadget,
+		GTTX_Text, detected,
+		TAG_END);
+	if(!gadget) {
+		fprintf(stderr, "Cannot create gadget %d!\n", newGadget.ng_GadgetID);
+		return -2;
+	}
+
+	newGadget.ng_LeftEdge   = pubScreen->WBorLeft + 4 + 14 * pubScreen->RastPort.TxWidth;
+	newGadget.ng_TopEdge   += newGadget.ng_Height + 4;
 	newGadget.ng_GadgetText = (UBYTE *) "Screen mode";
 	newGadget.ng_GadgetID   = GID_SCREEN_MODE;
 	gadget = CreateGadget(CYCLE_KIND, gadget, &newGadget,
@@ -583,6 +607,7 @@ static int boot(int argc, char * argv[])
 	app->setHasFPU(hasFPU);
 	app->setHasAMMX(hasAMMX);
 	app->setUseSAGA(useSAGA);
+	app->setIsV4Core(isV4Core);
 	app->setUseP96(P96Base != NULL);
 	app->setUseCGX(CyberGfxBase != NULL);
 

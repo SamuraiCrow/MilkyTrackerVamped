@@ -52,6 +52,7 @@ private:
     bool                    hasFPU;
     bool                    hasAMMX;
     bool                    useSAGA;
+    bool                    isV4Core;
     bool                    useP96;
     bool                    useCGX;
     pp_uint32               bpp;
@@ -114,6 +115,7 @@ public:
     bool                    isFullScreen() const { return displayID != -1; }
     bool                    isAMMX() const { return hasAMMX; }
     bool                    isSAGA() const { return useSAGA; }
+    bool                    isV4() const { return isV4Core; }
     bool                    isP96() const { return useP96; }
     bool                    isCGX() const { return useCGX; }
 
@@ -137,6 +139,7 @@ public:
     void                    setWindowTitle(const char * title);
     void                    setScreenAlert(const char * title);
     void                    setUseSAGA(bool useSAGA) { this->useSAGA = useSAGA; }
+    void                    setIsV4Core(bool isV4Core) { this->isV4Core = isV4Core; }
     void                    setUseP96(bool useP96) { this->useP96 = useP96; }
     void                    setUseCGX(bool useCGX) { this->useCGX = useCGX; }
     void                    setAudioDriver(AudioDriver audioDriver) { this->audioDriver = audioDriver; }

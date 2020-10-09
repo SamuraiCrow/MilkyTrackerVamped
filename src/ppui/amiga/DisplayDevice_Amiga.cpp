@@ -36,7 +36,7 @@ DisplayDevice_Amiga::DisplayDevice_Amiga(AmigaApplication * app)
     useRTGMode = useRTGFullscreen || useRTGWindowed;
 
     useSAGADirectFB = app->isAMMX() && app->isSAGA() && useRTGFullscreen;
-    useSAGAPiP = app->isAMMX() && app->isSAGA() && useRTGWindowed;
+    useSAGAPiP = app->isAMMX() && app->isSAGA() && app->isV4() && useRTGWindowed;
     useSAGAMode = useSAGADirectFB || useSAGAPiP;
 
     // Prefer P96 over CGX
