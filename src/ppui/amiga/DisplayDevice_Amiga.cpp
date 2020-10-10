@@ -172,9 +172,6 @@ DisplayDevice_Amiga::init()
                 WRITE32(SAGA_VID_BPLPTR, (ULONG) alignedScreenBuffer[1]);
                 break;
             }
-            if(screenMode == SAGA_PIP_16) {
-            } else if(screenMode == SAGA_DIRECT_16) {
-            }
         } else if(useRTGMode) {
             //
             // For RTG modes, use an offscreen buffer. RTG is doing the double-buffering
@@ -249,7 +246,7 @@ DisplayDevice_Amiga::flush()
     if(drawCommands.size() > 0) {
 
         if(useSAGAMode) {
-            pp_uint16 * ps = (pp_uint16 *) alignedScreenBuffer[dbPage];
+            pp_uint8 * ps = (pp_uint8 *) alignedScreenBuffer[dbPage];
 
             // Display and flip
             switch(screenMode) {
@@ -265,14 +262,24 @@ DisplayDevice_Amiga::flush()
             dbPage ^= 1;
 
             // Copy over changed screen rects
-            pp_uint16 * pd = (pp_uint16 *) alignedScreenBuffer[dbPage];
+            pp_uint8 * pd = (pp_uint8 *) alignedScreenBuffer[dbPage];
             for(std::vector<PPRect>::iterator rect = drawCommands.begin(); rect != drawCommands.end(); ++rect) {
+                pp_uint8 * s, * d;
                 pp_uint32 rw = rect->width();
                 pp_uint32 off = rect->y1 * width + rect->x1;
-                pp_uint8 * s = (pp_uint8 *) (ps + off);
-                pp_uint8 * d = (pp_uint8 *) (pd + off);
-                pp_uint32 stride = (width - rw) << 1;
-                pp_uint32 pitch = rw << 1;
+                pp_uint32 stride = width - rw;
+                pp_uint32 pitch = rw;
+
+				if(bpp == 16) {
+                    s = (pp_uint8 *) ((pp_uint16 *) ps + off);
+                    d = (pp_uint8 *) ((pp_uint16 *) pd + off);
+
+					stride <<= 1;
+					pitch <<= 1;
+				} else {
+                    s = (pp_uint8 *) (ps + off);
+                    d = (pp_uint8 *) (pd + off);
+                }
 
                 CopyRect_68080(s, d, stride, stride, pitch, rect->height());
             }
@@ -308,7 +315,17 @@ DisplayDevice_Amiga::setPalette(PPColor * pppal)
 	currentGraphics->setPalette(pppal);
 
 	// Pass palette to RTG Viewport
-    if(useRTGMode) {
+    if(useSAGAMode) {
+        int i = 0;
+
+        for(i = 0; i < 256; i++) {
+            ULONG col = (i << 24) | (pppal[i].r << 16) | (pppal[i].g << 8) | pppal[i].b;
+            if(useSAGAPiP)
+                *((ULONG *)SAGA_VIDEO_CLUT_PIP) = col;
+            else
+                *((ULONG *)SAGA_VIDEO_CLUT_CHUNKY) = col;
+        }
+    } else if(useRTGMode) {
 	    int i = 0, j = 0;
 
         palette[j++] = (256 << 16) | 0;
@@ -326,7 +343,7 @@ DisplayDevice_Amiga::setPalette(PPColor * pppal)
 void
 DisplayDevice_Amiga::setSize(const PPSize& size)
 {
-    if(screenMode == SAGA_PIP_16) {
+    if(useSAGAPiP) {
         ULONG x0 = 0, y0 = 0;
         ULONG x1 = 0, y1 = 0;
 
