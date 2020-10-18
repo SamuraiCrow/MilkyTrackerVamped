@@ -84,6 +84,7 @@ private:
     pp_uint32               vbCount;
 
     PPPoint                 mousePosition;
+    PPPoint                 mouseLastClickPos;
 
     pp_uint32               mouseLeftSeconds;
     pp_uint32               mouseLeftMicros;

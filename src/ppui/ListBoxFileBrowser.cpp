@@ -176,11 +176,10 @@ bool PPListBoxFileBrowser::currentSelectionIsFile()
 	return entry ? entry->isFile() : false;
 }
 
-bool PPListBoxFileBrowser::stepIntoCurrentSelection()
+int PPListBoxFileBrowser::stepIntoCurrentSelection()
 {
 	const PPPathEntry* entry = getPathEntry(PPListBox::getSelectedIndex());
-
-	return entry ? stepInto(*entry) : false;
+	return entry ? (stepInto(*entry) ? 1 : 0) : -1;
 }
 
 bool PPListBoxFileBrowser::stepInto(const PPPathEntry& entry)

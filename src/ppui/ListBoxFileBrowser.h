@@ -50,7 +50,7 @@ private:
 	PPSystemString* initialPath;
 	PPSystemString* fileFullPath;
 	PPSimpleVector<class PPPathEntry> pathEntries;
-	PPUndoStack<PPSystemString> history;	
+	PPUndoStack<PPSystemString> history;
 
 	PPString filePrefix, fileSuffix;
 	PPString directoryPrefix, directorySuffix;
@@ -63,34 +63,34 @@ private:
 	SortTypes sortType;
 
 public:
-	PPListBoxFileBrowser(pp_int32 id, PPScreen* parentScreen, EventListenerInterface* eventListener, 
+	PPListBoxFileBrowser(pp_int32 id, PPScreen* parentScreen, EventListenerInterface* eventListener,
 						 const PPPoint& location, const PPSize& size);
-	
+
 	virtual ~PPListBoxFileBrowser();
-	
+
 	virtual pp_int32 dispatchEvent(PPEvent* event);
 
-	virtual bool receiveTimerEvent() const { return false; }	
-	
+	virtual bool receiveTimerEvent() const { return false; }
+
 	void refreshFiles();
-	
+
 	void setSortAscending(bool sortAscending) { this->sortAscending = sortAscending; }
 	void setCycleFilenames(bool cycleFilenames) { this->cycleFilenames = cycleFilenames; }
 	void cycleSorting() { sortType = (SortTypes)(((pp_int32)sortType+1) % NumSortRules); }
-	void setSortType(SortTypes sortType) 
-	{ 
-		this->sortType = sortType; 
+	void setSortType(SortTypes sortType)
+	{
+		this->sortType = sortType;
 		if (this->sortType >= NumSortRules)
 			this->sortType = SortByName;
 	}
 	SortTypes getSortType() const { return sortType; }
-	
-	void clearExtensions();	
+
+	void clearExtensions();
 	// must contain pairs of extensions / description
 	// terminated by TWO NULL pointers
 	void addExtensions(const char* const extensions[]);
 	void addExtension(const PPString& ext, const PPString& desc);
-	
+
 	const PPPath& getCurrentPath() const { return *currentPath; }
 	PPSystemString getCurrentPathAsString() const;
 	PPString getCurrentPathAsASCIIString() const;
@@ -106,10 +106,10 @@ public:
 	void gotoParent();
 
 	bool currentSelectionIsFile();
-	bool stepIntoCurrentSelection();
+	int stepIntoCurrentSelection();
 	bool stepInto(const PPPathEntry& entry);
 	bool gotoPath(const PPSystemString& path, bool reload = true);
-	
+
 	bool canPrev() const;
 	void prev();
 	bool canNext() const;
@@ -118,18 +118,17 @@ public:
 	void setFilePrefix(const PPString& prefix);
 	void setFileSuffix(const PPString& suffix);
 	void setDirectoryPrefix(const PPString& prefix);
-	void setDirectorySuffix(const PPString& suffix);	
+	void setDirectorySuffix(const PPString& suffix);
 	void setDirectorySuffixPathSeperator();
-	
+
 private:
 	void iterateFilesInFolder();
 	void buildFileList();
 	void sortFileList();
 	void cycle(char chr);
 	static void appendFileSize(PPString& name, const PPPathEntry& entry);
-	
+
 	bool checkExtension(const PPPathEntry& entry);
 };
 
 #endif	// __LISTBOXFILEBROWSER_H__
-

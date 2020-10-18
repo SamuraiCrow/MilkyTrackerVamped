@@ -53,6 +53,7 @@ AmigaApplication::AmigaApplication()
 , mouseRightDown(false)
 , mouseRightVBStart(0)
 , mousePosition(PPPoint(-1, -1))
+, mouseLastClickPos(PPPoint(-100000, -100000))
 , keyQualifierShiftPressed(false)
 , keyQualifierCtrlPressed(false)
 , keyQualifierAltPressed(false)
@@ -477,25 +478,30 @@ AmigaApplication::loop()
                         {
                             resetScreenAlert();
 
-                            if(DoubleClick(mouseLeftSeconds, mouseLeftMicros, msg->Seconds, msg->Micros)) {
-                                PPEvent mouseDownEvent(eLMouseDoubleClick, &mousePosition, sizeof(PPPoint));
-                                raiseEventSynchronized(&mouseDownEvent);
-                            }
-
                             PPEvent mouseDownEvent(eLMouseDown, &mousePosition, sizeof(PPPoint));
                             raiseEventSynchronized(&mouseDownEvent);
 
-                            mouseLeftSeconds  = msg->Seconds;
-                            mouseLeftMicros   = msg->Micros;
                             mouseLeftDown     = true;
                             mouseLeftVBStart  = vbCount;
-                            mouseRightSeconds = 0;
-                            mouseRightMicros  = 0;
                             mouseRightDown    = false;
                         }
                         break;
                     case IECODE_LBUTTON | IECODE_UP_PREFIX:
                         {
+                            if(DoubleClick(mouseLeftSeconds, mouseLeftMicros, msg->Seconds, msg->Micros) &&
+                                abs(mouseLastClickPos.x - msg->MouseX) < 4 &&
+                                abs(mouseLastClickPos.y - msg->MouseY) < 4)
+                            {
+                                PPEvent mouseDownEvent(eLMouseDoubleClick, &mousePosition, sizeof(PPPoint));
+                                raiseEventSynchronized(&mouseDownEvent);
+                            }
+
+                            mouseLeftSeconds  = msg->Seconds;
+                            mouseLeftMicros   = msg->Micros;
+                            mouseRightSeconds = 0;
+                            mouseRightMicros  = 0;
+                            mouseLastClickPos = PPPoint(msg->MouseX, msg->MouseY);
+
                             PPEvent mouseUpEvent(eLMouseUp, &mousePosition, sizeof(PPPoint));
                             raiseEventSynchronized(&mouseUpEvent);
                             mouseLeftDown = false;
@@ -503,25 +509,30 @@ AmigaApplication::loop()
                         break;
                     case IECODE_RBUTTON:
                         {
-                            if(DoubleClick(mouseRightSeconds, mouseRightMicros, msg->Seconds, msg->Micros)) {
-                                PPEvent mouseDownEvent(eRMouseDoubleClick, &mousePosition, sizeof(PPPoint));
-                                raiseEventSynchronized(&mouseDownEvent);
-                            }
-
                             PPEvent mouseDownEvent(eRMouseDown, &mousePosition, sizeof(PPPoint));
                             raiseEventSynchronized(&mouseDownEvent);
 
-                            mouseLeftSeconds  = 0;
-                            mouseLeftMicros   = 0;
                             mouseLeftDown     = false;
-                            mouseRightSeconds = msg->Seconds;
-                            mouseRightMicros  = msg->Micros;
                             mouseRightDown    = true;
                             mouseRightVBStart = vbCount;
                         }
                         break;
                     case IECODE_RBUTTON | IECODE_UP_PREFIX:
                         {
+                            if(DoubleClick(mouseRightSeconds, mouseRightMicros, msg->Seconds, msg->Micros) &&
+                                abs(mouseLastClickPos.x - msg->MouseX) < 4 &&
+                                abs(mouseLastClickPos.y - msg->MouseY) < 4)
+                            {
+                                PPEvent mouseDownEvent(eRMouseDoubleClick, &mousePosition, sizeof(PPPoint));
+                                raiseEventSynchronized(&mouseDownEvent);
+                            }
+
+                            mouseLeftSeconds  = 0;
+                            mouseLeftMicros   = 0;
+                            mouseRightSeconds = msg->Seconds;
+                            mouseRightMicros  = msg->Micros;
+                            mouseLastClickPos = PPPoint(msg->MouseX, msg->MouseY);
+
                             PPEvent mouseUpEvent(eRMouseUp, &mousePosition, sizeof(PPPoint));
                             raiseEventSynchronized(&mouseUpEvent);
                             mouseRightDown = false;

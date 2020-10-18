@@ -1481,15 +1481,16 @@ void SectionDiskMenu::updateFilenameEditFieldFromBrowser()
 
 void SectionDiskMenu::handleLoadOrStep()
 {
-	if (listBoxFiles->stepIntoCurrentSelection())
+	switch(listBoxFiles->stepIntoCurrentSelection())
 	{
+	case 0:
+		loadCurrentSelectedFile();
+		break;
+	case 1:
 		listBoxFiles->refreshFiles();
 		updateButtonStates();
 		tracker.screen->paintControl(listBoxFiles);
-	}
-	else
-	{
-		loadCurrentSelectedFile();
+		break;
 	}
 }
 
