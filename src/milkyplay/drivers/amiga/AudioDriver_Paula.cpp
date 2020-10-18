@@ -349,6 +349,9 @@ AudioDriver_Paula_ResampleHW::disableIRQ()
     ciab.ciatblo = oldTimerBLo;
     ciab.ciatbhi = oldTimerBHi;
 
+    // Disable CIA interrupts
+    ciab.ciaicr = CIAICRF_IR | CIAICRF_FLG | CIAICRF_SP | CIAICRF_ALRM | CIAICRF_TB | CIAICRF_TA;
+
     irqEnabled = false;
 }
 
@@ -388,6 +391,12 @@ AudioDriver_Paula_ResampleHW::enableIRQ()
     if(!wasExterIRQEnabled)
         custom.intena = INTF_SETCLR | INTF_EXTER;
     irqEnabled = true;
+}
+
+void
+AudioDriver_Paula_ResampleHW::disableDMA()
+{
+    custom.dmacon = DMAF_AUDIO;
 }
 
 void

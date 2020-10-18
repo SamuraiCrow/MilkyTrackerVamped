@@ -247,6 +247,13 @@ AudioDriver_Arne_ResampleHW::bufferAudio()
 }
 
 void
+AudioDriver_Arne_ResampleHW::disableDMA()
+{
+    custom.dmacon = DMAF_AUDIO;
+    *((volatile mp_uword *) CUSTOM_DMACON2) = DMA2F_AUDIO;
+}
+
+void
 AudioDriver_Arne_ResampleHW::disableIRQ()
 {
     if(!irqEnabled)
@@ -261,6 +268,9 @@ AudioDriver_Arne_ResampleHW::disableIRQ()
     ciab.ciatahi = oldTimerAHi;
     ciab.ciatblo = oldTimerBLo;
     ciab.ciatbhi = oldTimerBHi;
+
+    // Disable CIA interrupts
+    ciab.ciaicr = CIAICRF_IR | CIAICRF_FLG | CIAICRF_SP | CIAICRF_ALRM | CIAICRF_TB | CIAICRF_TA;
 
     irqEnabled = false;
 }
@@ -492,7 +502,10 @@ AudioDriver_Arne_ResampleHW::tickDone(ChannelMixer::TMixerChannel * chn)
     }
 
     for(i = 0; i < MAX_CHANNELS; i++) {
+        //
         // Period is bound to Paula/Video clock !
+        // @todo Is bound to 50Hz so can be inprecise for some operations
+        //
         channelSamplePos[i] += (PAULA_CLK / REFRESHRATE) / channelPeriod[i];
     }
 }

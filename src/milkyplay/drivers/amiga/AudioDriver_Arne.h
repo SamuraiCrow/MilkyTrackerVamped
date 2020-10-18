@@ -73,6 +73,7 @@ protected:
 	virtual void        initHardware();
 	virtual void        bufferAudioImpl();
 
+	virtual void        disableDMA();
 	virtual void      	disableIRQ();
 	virtual void        enableIRQ();
 
