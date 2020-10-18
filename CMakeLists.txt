@@ -51,9 +51,9 @@ string(TOLOWER ${PROJECT_NAME} PROJECT_NAME_LOWER)
 string(TOLOWER ${CMAKE_SYSTEM_NAME} SYSTEM_NAME_LOWER)
 
 # Version number in format X.YY.ZZ
-set(VER_X  1)
-set(VER_YY 02)
-set(VER_ZZ 01)
+set(VER_X  20)
+set(VER_YY 10)
+set(VER_ZZ 005)
 set(VER_FULL "${VER_X}.${VER_YY}.${VER_ZZ}")
 
 # Build date Information
@@ -64,7 +64,7 @@ string(REGEX REPLACE "^0+" "" VER_MONTH "${VER_MONTH}")
 string(REGEX REPLACE "^0+" "" VER_DAY "${VER_DAY}")
 
 # Final build filename, for example "milkytracker-1.02.00-win32.zip"
-set(BUILD_FILENAME "milkytracker-${VER_FULL}-${SYSTEM_NAME_LOWER}")
+set(BUILD_FILENAME "milkytracker-vamped-${VER_FULL}-${SYSTEM_NAME_LOWER}")
 
 # Generate version header from the above
 configure_file(
@@ -184,7 +184,7 @@ elseif(WIN32)
     # Windows MIDI support requires no external libraries
     message(STATUS "Enabled MIDI support (WinMM)")
     add_subdirectory(src/midi)
-    
+
     # MingW support
     if(MINGW)
         set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DWIN32")
