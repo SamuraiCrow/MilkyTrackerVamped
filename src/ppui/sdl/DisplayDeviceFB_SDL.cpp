@@ -451,7 +451,11 @@ void PPDisplayDeviceFB::setPalette(PPColor * pppal)
 		palette[i].b = pppal[i].b;
 	}
 
+#if SDL_VERSION_ATLEAST(2, 0, 0)
+	SDL_SetPaletteColors(theSurface->format->palette, palette, 0, 256);
+#else
 	SDL_SetColors(theSurface, palette, 0, 256);
+#endif
 }
 
 void PPDisplayDeviceFB::update()
